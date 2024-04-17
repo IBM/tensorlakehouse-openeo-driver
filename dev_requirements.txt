@@ -1,0 +1,36 @@
+# tests
+pytest==7.4.2
+pytest-cov==4.1.0
+# checks
+black==23.1.0
+flake8==6.0.0
+pep8-naming==0.13.0
+mypy==1.5.1
+pre-commit==2.18.1
+# docs
+# pinning sphinx to older version to resolve flake8 conflict under python3.7: flake8 4.0.1 depends on importlib-metadata<4.3; python_version < "3.8" and sphinx 4.4.0 depends on importlib-metadata>=4.4; python_version < "3.10"
+sphinx==4.3.2
+# see this cryptography issue https://www.mend.io/vulnerability-database/CVE-2024-26130
+cryptography>=42.0.4
+sphinx-autodoc-typehints==1.17.1
+better-apidoc==0.3.2
+six==1.16.0
+sphinx-rtd-theme==1.0.0
+myst-parser==0.17.2
+moto==4.1.4
+boto3==1.26.91
+time-machine==2.9.0
+re-assert==1.1.0
+requests-mock==1.10.0
+py-openapi-schema-to-json-schema==0.0.3
+folium
+matplotlib
+detect-secrets @ git+https://github.com/ibm/detect-secrets.git@f9394932e9836bd0161999ad9cd426f262a75b0d
+pre-commit
+python-dotenv
+numpy>=1.22.0
+jupyter-server>=2.11.2
+ipython>=8.10.0
+tornado>=6.3.3
+nbmake
+pytest-reportlog==0.4.0
