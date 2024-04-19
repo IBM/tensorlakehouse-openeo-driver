@@ -6,9 +6,9 @@ import pandas as pd
 from openeo_driver.save_result import ImageCollectionResult
 import xarray as xr
 from typing import Optional
-from openeo_geodn_driver.driver_data_cube import GeoDNDataCube
+from tensorlakehouse_openeo_driver.driver_data_cube import GeoDNDataCube
 import json
-from openeo_geodn_driver.constants import (
+from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     FILE_DATETIME_FORMAT,
     GEOTIFF_PREFIX,
@@ -75,7 +75,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                 ds = array.to_dataset(dim=DEFAULT_BANDS_DIMENSION)
                 dimensions = ds.dims
                 logger.debug(f"DataSet dimensions {dimensions}")
-                ds.to_netcdf(path=filename, engine=engine)  # type: ignore[call-overload]
+                ds.to_netcdf(path=filename, engine=engine)
             except TypeError as e:
                 logger.error(
                     f"TypeError: Invalid attr. Exception handling: trying to convert invalid attrs to str: {e}"
@@ -83,25 +83,19 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                 valid_types = (str, Number, np.ndarray, np.number, list, tuple)
                 # convert attributes of the xarray.Dataset
                 for attr_key, attr_value in ds.attrs.items():
-                    if not isinstance(attr_value, valid_types) or isinstance(
-                        attr_value, bool
-                    ):
+                    if not isinstance(attr_value, valid_types) or isinstance(attr_value, bool):
                         logger.debug(f"Invalid attr: {attr_key}")
                         ds.attrs[attr_key] = str(attr_value)
                 # convert attributes of the variables
                 for variable in list(ds):
                     for attr_key, attr_value in ds[variable].attrs.items():
-                        if not isinstance(attr_value, valid_types) or isinstance(
-                            attr_value, bool
-                        ):
+                        if not isinstance(attr_value, valid_types) or isinstance(attr_value, bool):
                             logger.debug(f"Invalid attr: {attr_key}")
                             ds[variable].attrs[attr_key] = str(attr_value)
 
-                ds.to_netcdf(path=filename, engine=engine)  # type: ignore[call-overload]
-
+                ds.to_netcdf(path=filename, engine=engine)  # Works as expected
         else:
             raise NotImplementedError(f"Support for {format} is not implemented")
-        logger.debug(f"save_result process: {filename=}")
         return filename
 
     def _save_as_geotiff(self, filename: str) -> str:
@@ -116,9 +110,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
         driver = "COG"
         data = self.cube.data
 
-        assert isinstance(
-            data, xr.DataArray
-        ), f"Error! Not a xr.DataArray: {type(self.cube.data)}"
+        assert isinstance(data, xr.DataArray), f"Error! Not a xr.DataArray: {type(self.cube.data)}"
 
         # Save each slice of the DataArray as a separate GeoTIFF file
         if data.openeo is not None and data.openeo.temporal_dims is not None:
@@ -155,9 +147,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                 timestamp = pd.Timestamp(t)
                 timestamp_str = timestamp.strftime(FILE_DATETIME_FORMAT)
                 unique_id = uuid.uuid4().hex
-                output_filename = (
-                    parent_dir / f"{GEOTIFF_PREFIX}_{timestamp_str}_{unique_id}.tif"
-                )
+                output_filename = parent_dir / f"{GEOTIFF_PREFIX}_{timestamp_str}_{unique_id}.tif"
                 slice_array = data.isel({time_dim: index})
                 if not np.isnan(slice_array.data).all():
                     slice_array.rio.to_raster(output_filename)

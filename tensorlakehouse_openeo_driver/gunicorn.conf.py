@@ -1,6 +1,7 @@
 """gunicorn WSGI server configuration."""
+
 from multiprocessing import cpu_count
-from openeo_geodn_driver.constants import OPENEO_GEODN_DRIVER_PORT
+from tensorlakehouse_openeo_driver.constants import OPENEO_GEODN_DRIVER_PORT
 
 
 def max_workers():

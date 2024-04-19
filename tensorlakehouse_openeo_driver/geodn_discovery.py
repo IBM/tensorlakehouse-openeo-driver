@@ -13,11 +13,11 @@ import logging
 import logging.config
 import os
 from datetime import datetime, timedelta
-from openeo_geodn_driver.dataset import DatasetMetadata
+from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
 import ibmpairs.authentication as authentication
 import ibmpairs.client as client
 import ibmpairs.catalog as catalog
-from openeo_geodn_driver.layer import LayerMetadata
+from tensorlakehouse_openeo_driver.layer import LayerMetadata
 from ibmpairs.catalog import DataSet, DataLayers, DataSets
 
 assert os.path.isfile("logging.conf")
@@ -211,9 +211,7 @@ class GeoDNDiscovery:
         Returns:
             List: _description_
         """
-        datasets: DataSets = catalog.get_data_sets(
-            client=self.pairs_client, verify=True
-        )
+        datasets: DataSets = catalog.get_data_sets(client=self.pairs_client)
 
         dataset_metadata = list()
         for d in datasets.get_data_sets():

@@ -14,13 +14,13 @@ def load_collection_agg_time(
     temporal_extent: TemporalInterval,
     bands: Optional[List[str]],
 ) -> xr.DataArray:
-    STAC_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000Z"
+    stac_datetime_format = "%Y-%m-%dT%H:%M:%S.000Z"
 
     start = pd.Timestamp(temporal_extent.start.to_numpy()).to_pydatetime()
     end = pd.Timestamp(temporal_extent.end.to_numpy()).to_pydatetime()
     temporal_extent = [
-        start.strftime(STAC_DATETIME_FORMAT),
-        end.strftime(STAC_DATETIME_FORMAT),
+        start.strftime(stac_datetime_format),
+        end.strftime(stac_datetime_format),
     ]
 
     filename = "sample_file_sentinel2.tiff"

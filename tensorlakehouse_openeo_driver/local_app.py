@@ -9,12 +9,14 @@ from asgiref.wsgi import WsgiToAsgi
 from dask.distributed import Client, LocalCluster
 
 import openeo_driver
-from openeo_geodn_driver.geodn_backend import GeoDNBackendImplementation
+from tensorlakehouse_openeo_driver.tensorlakehouse_backend import (
+    GeoDNBackendImplementation,
+)
 
 # from openeo_driver.server import run_gunicorn
 from openeo_driver.util.logging import get_logging_config, setup_logging, show_log_level
 from openeo_driver.views import OpenEoApiApp, build_app
-from openeo_geodn_driver.constants import (
+from tensorlakehouse_openeo_driver.constants import (
     DASK_SCHEDULER_ADDRESS,
     OPENEO_GEODN_DRIVER_PORT,
     STAC_URL,

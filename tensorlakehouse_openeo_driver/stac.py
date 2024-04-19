@@ -1,7 +1,8 @@
+import json
 from typing import Any, Dict, List, Optional
 
 import urllib.parse
-from openeo_geodn_driver.constants import STAC_URL, logger
+from tensorlakehouse_openeo_driver.constants import STAC_URL, logger
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -21,9 +22,7 @@ class STAC:
         }
         return headers
 
-    def _get(
-        self, endpoint: str, params: Optional[Dict[str, Any]] = None
-    ) -> requests.Response:
+    def _get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> requests.Response:
         """this method makes all GET requests to the Discovery
 
         Args:
@@ -65,9 +64,7 @@ class STAC:
                 logger.error(e)
                 raise e
 
-    def _post(
-        self, endpoint: str, payload: Optional[Dict[str, Any]] = None
-    ) -> requests.Response:
+    def _post(self, endpoint: str, payload: Optional[Dict[str, Any]] = None) -> requests.Response:
         """this method makes all GET requests to the Discovery
 
         Args:
@@ -109,9 +106,7 @@ class STAC:
                 logger.error(e)
                 raise e
 
-    def _put(
-        self, endpoint: str, payload: Optional[Dict[str, Any]] = None
-    ) -> requests.Response:
+    def _put(self, endpoint: str, payload: Optional[Dict[str, Any]] = None) -> requests.Response:
         """this method makes all GET requests to the Discovery
 
         Args:
@@ -163,10 +158,9 @@ class STAC:
         endpoint = urllib.parse.quote(path)
         resp = self._get(endpoint=endpoint)
         item = resp.json()
-        assert isinstance(item, dict)
         return item
 
-    def list_items(self, collection_id: str, limit: int = 10) -> Dict[str, Any]:
+    def list_item(self, collection_id: str, limit: int = 10) -> Dict[str, Any]:
         """make a request to get STAC item specified by collection and item ids
 
         Args:
@@ -180,7 +174,6 @@ class STAC:
         endpoint = urllib.parse.quote(path)
         resp = self._get(endpoint=endpoint, params={"limit": limit})
         item = resp.json()
-        assert isinstance(item, dict)
         return item
 
     def search(
@@ -194,8 +187,20 @@ class STAC:
         }
         resp = self._post(endpoint="/search", payload=payload)
         items = resp.json()
-        assert isinstance(items, list)
         return items
+
+    def get_summaries(self, collection: str):
+        items = self.list_item(collection_id=collection)
+        item = items.get("features")[0]
+        cube_dims = item["properties"]["cube:dimensions"]
+        cube_vars = item["properties"]["cube:variables"]
+        band_values = list()
+        if cube_vars is not None:
+            for k, v in cube_vars.items():
+                band_values.append(k)
+        cube_dims.update({"bands": {"type": "bands", "values": band_values}})
+        c = {"cube:dimensions": cube_dims}
+        return json.dumps(c)
 
     def list_collections(self):
         resp = self._get(endpoint="/collections")
@@ -212,7 +217,6 @@ class STAC:
         resp = self._get(endpoint=f"/collections/{collection_id}")
         resp.raise_for_status()
         coll = resp.json()
-        assert isinstance(coll, dict)
         return coll
 
     def update_collection(self, new_collection):

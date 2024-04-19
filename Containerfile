@@ -1,11 +1,10 @@
 FROM registry.cirrus.ibm.com/public/python-39:latest
 # setup
-LABEL "name"="openeo_geodn_driver"
+LABEL "name"="tensorlakehouse_openeo_driver"
 LABEL "vendor"="IBM"
-LABEL "summary"="OpenEO GeoDN driver"
+LABEL "summary"="Backend implementation of openEO API"
 # https://distributed.dask.org/en/latest/worker-memory.html#automatically-trim-memory
 ENV MALLOC_TRIM_THRESHOLD_=0
-# PYTHONPATH=libs/openeo-python-driver:/Users/ltizzei/Projects/Orgs/geodn-discovery/openeo-geodn-driver/:/Users/ltizzei/Projects/Orgs/geodn-discovery/openeo-geodn-driver/libs/dataservice_sdk/src
 # set path to openeo-geodn-driver
 ENV OPENEO_GEODN_DRIVER_DIR=/opt/app-root/src/openeo-geodn-driver
 
@@ -41,7 +40,7 @@ COPY dev_requirements.txt .
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
 RUN python3 -m pip install --no-cache-dir -r dev_requirements.txt
 # copy app
-COPY openeo_geodn_driver openeo_geodn_driver
+COPY tensorlakehouse_openeo_driver tensorlakehouse_openeo_driver
 COPY libs libs
 COPY logging.conf .
 COPY pyproject.toml .
@@ -56,9 +55,9 @@ ENV LC_CTYPE=C.UTF-8
 ENV PORT=9091
 EXPOSE ${PORT}
 
-CMD bash openeo_geodn_driver/run_gunicorn.sh
+CMD bash tensorlakehouse_openeo_driver/run_gunicorn.sh
 
-# ENV FLASK_APP=openeo_geodn_driver.local_app
+# ENV FLASK_APP=tensorlakehouse_openeo_driver.local_app
 # ENV FLASK_DEBUG=0
 # CMD flask run --host=0.0.0.0 --port=${PORT}
-# CMD python3 openeo_geodn_driver/local_app.py
+# CMD python3 tensorlakehouse_openeo_driver/local_app.py

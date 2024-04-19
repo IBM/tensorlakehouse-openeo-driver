@@ -1,9 +1,8 @@
-from pathlib import Path
 from openeo_pg_parser_networkx import OpenEOProcessGraph
 from typing import Any, Dict
 from celery import Celery
 from celery import states
-from openeo_geodn_driver.constants import (
+from tensorlakehouse_openeo_driver.constants import (
     GTIFF,
     NETCDF,
     OPENEO_GEODN_DRIVER_DATA_DIR,
@@ -12,15 +11,15 @@ from openeo_geodn_driver.constants import (
 from shapely.geometry.polygon import Polygon
 from shapely.ops import unary_union
 import geopandas
-from openeo_geodn_driver.cos_parser import COSConnector
+from tensorlakehouse_openeo_driver.cos_parser import COSConnector
 import pandas as pd
 
-from openeo_geodn_driver.processing import GeoDNProcessing
-from openeo_geodn_driver.save_result import GeoDNImageCollectionResult
+from tensorlakehouse_openeo_driver.processing import GeoDNProcessing
+from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
 
 app = Celery("tasks")
 
-app.config_from_object("openeo_geodn_driver.celeryconfig")
+app.config_from_object("tensorlakehouse_openeo_driver.celeryconfig")
 OUTPUT_BUCKET_NAME = "openeo-geodn-driver-output"
 
 
@@ -34,13 +33,13 @@ def create_batch_jobs(
     job_options: Dict,
     title: str,
     description: Dict,
-) -> Dict[str, Any]:
+) -> str:
     job_id = self.request.id
     logger.debug(
         f"tasks::create_batch_jobs - job_id={job_id} status={status} process={process} title={title}"
     )
     # set metadata
-    metadata: Dict[str, Any] = {
+    metadata = {
         "created": created,
         "title": title,  # required by get_result_assets
         "status": status,
@@ -64,7 +63,7 @@ def create_batch_jobs(
     # execute the process graph, i.e., traverse all nodes and execute each one of them
     datacube = pg_callable()
     # store result into COS
-    cos = COSConnector()
+    cos = COSConnector(bucket=OUTPUT_BUCKET_NAME)
     media_type = metadata["media_type"]
     assert media_type is not None, f"Error! invalid media type = {media_type}"
     assert isinstance(media_type, str), f"Error! media_type is not a str: {media_type}"
@@ -83,20 +82,12 @@ def create_batch_jobs(
     filename = path.split("/")[-1]
     metadata["filename"] = filename  # required by get_result_assets
     # upload file to COS
-    creds = COSConnector.get_credentials_by_bucket(bucket=OUTPUT_BUCKET_NAME)
-    cos.upload_fileobj(
-        key=filename,
-        bucket=OUTPUT_BUCKET_NAME,
-        path=Path(path),
-        endpoint=creds["endpoint"],
-        access_key_id=creds["access_key_id"],
-        secret=creds["secret_access_key"],
-    )
+    cos.upload_fileobj(key=filename, path=path)
     # create pre-signed url to allow users to download it
-    href = cos.create_presigned_link(bucket=OUTPUT_BUCKET_NAME, key=filename)
+    href = cos.create_presigned_link(key=filename)
 
     metadata["href"] = href  # required by get_result_assets
-    logger.debug(f"{job_id=} has been successfully finished: {metadata=}")
+    logger.debug("Finished")
     return metadata
 
 
@@ -114,9 +105,7 @@ def _extract_metadata(process: Dict[str, Any]) -> Dict:
     except KeyError as e:
         logger.error(f"Error! missing process_graph: {process}")
         raise e
-    assert isinstance(
-        process_graph, dict
-    ), f"Error! process_graph is not a dict:{process_graph}"
+    assert isinstance(process_graph, dict), f"Error! process_graph is not a dict:{process_graph}"
     polygons = list()
     start_datetime = end_datetime = None
     epsg = 4326

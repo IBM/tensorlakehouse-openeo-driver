@@ -4,7 +4,7 @@ from collections import namedtuple
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 from rasterio.enums import Resampling
-from openeo_geodn_driver.process_implementations.load_collection import (
+from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     AbstractLoadCollection,
     LoadCollectionFromCOS,
     LoadCollectionFromHBase,
@@ -37,12 +37,12 @@ from openeo_processes_dask.process_implementations.math import (
 )
 
 from pyproj import Transformer
-from pystac_client import Client
+from pystac_client import Client, exceptions
 from rasterio import crs
 from shapely.geometry import shape
 from shapely.geometry.polygon import Polygon
 
-from openeo_geodn_driver.constants import (
+from tensorlakehouse_openeo_driver.constants import (
     # BANDS,
     DEFAULT_BANDS_DIMENSION,
     GTIFF,
@@ -55,9 +55,9 @@ from openeo_geodn_driver.constants import (
     # X,
     # Y,
 )
-from openeo_geodn_driver.driver_data_cube import GeoDNDataCube
-from openeo_geodn_driver.save_result import GeoDNImageCollectionResult
-from openeo_geodn_driver.geospatial_utils import reproject_cube
+from tensorlakehouse_openeo_driver.driver_data_cube import GeoDNDataCube
+from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
+from tensorlakehouse_openeo_driver.geospatial_utils import reproject_cube
 
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
@@ -143,9 +143,7 @@ def rename_labels(
         data = data.assign_coords({dimension: target})
     else:
         # TODO: Add errors form openeo, e.g. LabelNotAvailable, LabelMismatch
-        raise ValueError(
-            "LabelNotAvailable: A label with the specified name does not exist"
-        )
+        raise ValueError("LabelNotAvailable: A label with the specified name does not exist")
     return data
 
 
@@ -176,15 +174,11 @@ def _get_bounding_box(spatial_extent: BoundingBox) -> Tuple[float, float, float,
         )
     assert 90 >= latmax >= latmin >= -90, f"Error! latmax < latmin: {latmax} < {latmin}"
 
-    assert (
-        180 >= lonmax >= lonmin >= -180
-    ), f"Error! lonmax < lonmin: {lonmax} < {lonmin}"
+    assert 180 >= lonmax >= lonmin >= -180, f"Error! lonmax < lonmin: {lonmax} < {lonmin}"
     return lonmin, latmin, lonmax, latmax
 
 
-def to_epsg4326(
-    latmax: float, latmin: float, lonmax: float, lonmin: float, crs_from: pyproj.CRS
-):
+def to_epsg4326(latmax: float, latmin: float, lonmax: float, lonmin: float, crs_from: pyproj.CRS):
     """convert
 
     Args:
@@ -198,9 +192,7 @@ def to_epsg4326(
         _type_: _description_
     """
     epsg4326 = pyproj.CRS.from_epsg(4326)
-    transformer = Transformer.from_crs(
-        crs_from=crs_from, crs_to=epsg4326, always_xy=True
-    )
+    transformer = Transformer.from_crs(crs_from=crs_from, crs_to=epsg4326, always_xy=True)
     east, north = transformer.transform(lonmax, latmax)
     west, south = transformer.transform(lonmin, latmin)
     return west, south, east, north
@@ -222,9 +214,7 @@ def _get_start_and_endtime(
     Returns:
         Tuple[datetime, datetime]: start, end
     """
-    logger.debug(
-        f"Converting datetime start={temporal_extent.start} end={temporal_extent.end}"
-    )
+    logger.debug(f"Converting datetime start={temporal_extent.start} end={temporal_extent.end}")
     starttime = pd.Timestamp(temporal_extent.start.to_numpy()).to_pydatetime()
     endtime = pd.Timestamp(temporal_extent.end.to_numpy()).to_pydatetime()
     assert starttime <= endtime, f"Error! start > end: {starttime} > {endtime}"
@@ -258,22 +248,16 @@ def save_result(
     assert isinstance(format, str), f"Error! Unexpected type of format var: {format}"
     format = format.upper()
     if format == NETCDF:
-        assert isinstance(
-            data, xr.DataArray
-        ), f"Error! data is not a xarray.Dataset: {type(data)}"
+        assert isinstance(data, xr.DataArray), f"Error! data is not a xarray.Dataset: {type(data)}"
         if "reduced_dimensions_min_values" in data.attrs.keys():
             attr: Dict[str, np.datetime64] = data.attrs["reduced_dimensions_min_values"]
             time_dim = next(iter(attr.keys()))
-            data.attrs["reduced_dimensions_min_values"] = pd.Timestamp(
-                attr[time_dim]
-            ).isoformat()
+            data.attrs["reduced_dimensions_min_values"] = pd.Timestamp(attr[time_dim]).isoformat()
         return GeoDNImageCollectionResult(
             cube=GeoDNDataCube(data=data), format=format, options=options
         )
     elif format in [GTIFF, ZIP]:
-        assert isinstance(
-            data, xr.DataArray
-        ), f"Error! data is not a xarray.Dataset: {type(data)}"
+        assert isinstance(data, xr.DataArray), f"Error! data is not a xarray.Dataset: {type(data)}"
         if "reduced_dimensions_min_values" in data.attrs.keys():
             attr = data.attrs["reduced_dimensions_min_values"]
             data.attrs["reduced_dimensions_min_values"] = pd.Timestamp(
@@ -334,20 +318,14 @@ def load_collection(
     Returns:
         xr.DataArray: a data cube which has x, y, bands dimensions and optionally t dimension
     """
-    logger.debug(
-        f"Running load_collection process: collectiond ID={id} STAC URL={STAC_URL}"
-    )
+    logger.debug(f"Running load_collection process: collectiond ID={id} STAC URL={STAC_URL}")
     stac_catalog = Client.open(STAC_URL)
     # extract coordinates from BoundingBox object
     try:
         collection = stac_catalog.get_collection(id)
-        extra_fields = collection.extra_fields
-        cube_dimensions = extra_fields["cube:dimensions"]
-        assert isinstance(
-            cube_dimensions, dict
-        ), f"Error! Unexpected type {cube_dimensions}"
-        assert isinstance(bands, list), f"Error! Unexpected type: {bands}"
-        dimension_names = _get_dimension_names(cube_dimensions=cube_dimensions)
+        dimension_names = _get_dimension_names(
+            cube_dimensions=collection.summaries.schemas["cube:dimensions"]
+        )
         if _is_data_on_hbase(collection=collection):
             loader: AbstractLoadCollection = LoadCollectionFromHBase()
         else:
@@ -361,17 +339,15 @@ def load_collection(
             dimensions=dimension_names,
         )
         return data
-    except Exception as e:
-        msg = f"Error! collection_id={id} spatial_extent={spatial_extent} temporal_extent={temporal_extent} msg={e}"
-        logger.error(msg=msg)
-        raise e
-        # return _load_collection_from_external_openeo_instance(
-        #     collection_id=id,
-        #     spatial_extent=spatial_extent,
-        #     temporal_extent=temporal_extent,
-        #     bands=bands,
-        #     properties=properties,
-        # )
+    except exceptions.APIError as e:
+        logger.warning(e)
+        return _load_collection_from_external_openeo_instance(
+            collection_id=id,
+            spatial_extent=spatial_extent,
+            temporal_extent=temporal_extent,
+            bands=bands,
+            properties=properties,
+        )
 
 
 def _get_dimension_names(cube_dimensions: Dict[str, Any]) -> Dict[str, str]:
@@ -467,9 +443,7 @@ def aggregate_spatial(
     logger.debug(f"Dimensions: y={y_dim} x={x_dim} band={applicable_band_dim}")
     clip_area = _make_geodataframe(geometries)
     if target_dimension == "result":
-        assert isinstance(
-            data, xr.DataArray
-        ), f"Expecting xr.DataArray and not {type(data)}"
+        assert isinstance(data, xr.DataArray), f"Expecting xr.DataArray and not {type(data)}"
         data_arrays = list()
         # for each variable
         for band_index in range(0, data[applicable_band_dim].size):
@@ -489,9 +463,7 @@ def aggregate_spatial(
         return agg_dataarray
 
 
-def _check_geometries_within_data_boundaries(
-    clip_area: gpd.GeoDataFrame, data: RasterCube
-) -> bool:
+def _check_geometries_within_data_boundaries(clip_area: gpd.GeoDataFrame, data: RasterCube) -> bool:
     """validate whether the area that will be clipped is within the total area.
 
     Args:
@@ -510,9 +482,7 @@ def _check_geometries_within_data_boundaries(
     min_x = data.coords[x_dim].min()
     max_y = data.coords[y_dim].max()
     min_y = data.coords[y_dim].min()
-    boundaries = Polygon(
-        [[min_x, min_y], [max_x, min_y], [max_x, max_y], [min_x, max_y]]
-    )
+    boundaries = Polygon([[min_x, min_y], [max_x, min_y], [max_x, max_y], [min_x, max_y]])
     for aoi in clip_area.geometry:
         # aoi = Polygon(geom["coordinates"][0])
         if not aoi.within(boundaries):
@@ -555,26 +525,16 @@ def aggregate_temporal(
             )
         applicable_temporal_dimension = temporal_dims[0]
     bins = _create_bins(intervals=intervals)
-    grouped_data = data.groupby_bins(
-        group=applicable_temporal_dimension, labels=labels, bins=bins
-    )
+    grouped_data = data.groupby_bins(group=applicable_temporal_dimension, labels=labels, bins=bins)
     if isinstance(reducer, str):
         if reducer.lower() in ["mean", "average", "avg"]:
-            aggregated_data = grouped_data.mean(
-                skipna=True, dim=applicable_temporal_dimension
-            )
+            aggregated_data = grouped_data.mean(skipna=True, dim=applicable_temporal_dimension)
         elif reducer.lower() in ["max", "maximum"]:
-            aggregated_data = grouped_data.max(
-                skipna=True, dim=applicable_temporal_dimension
-            )
+            aggregated_data = grouped_data.max(skipna=True, dim=applicable_temporal_dimension)
         elif reducer.lower() in ["min", "minimum"]:
-            aggregated_data = grouped_data.min(
-                skipna=True, dim=applicable_temporal_dimension
-            )
+            aggregated_data = grouped_data.min(skipna=True, dim=applicable_temporal_dimension)
         elif reducer.lower() in ["median"]:
-            aggregated_data = grouped_data.median(
-                skipna=True, dim=applicable_temporal_dimension
-            )
+            aggregated_data = grouped_data.median(skipna=True, dim=applicable_temporal_dimension)
         else:
             raise NotImplementedError(f"Error! {reducer} not supported")
     else:
@@ -583,17 +543,7 @@ def aggregate_temporal(
     return aggregated_data
 
 
-def _create_bins(intervals: List[TemporalInterval]) -> List[List[np.datetime64]]:
-    """create bins (which are represented by two numpy.datetime objects) given a list of
-    time ranges (TemporalInterval)
-
-    Args:
-        intervals (List[TemporalInterval]): list of time ranges
-
-
-    Returns:
-        List[List[np.datetime64]]: bins
-    """
+def _create_bins(intervals: List[str]) -> List[List[np.datetime64]]:
     numpy_intervals = list()
     for interval in intervals:
         s = interval.start.to_numpy()
@@ -724,15 +674,14 @@ def merge_cubes(
 
             # Need to rechunk here to ensure that the cube dimension isn't chunked and the chunks for the other dimensions are not too large.
             concat_both_cubes_rechunked = concat_both_cubes.chunk(
-                {NEW_DIM_NAME: -1}
-                | {dim: "auto" for dim in cube1.dims if dim != NEW_DIM_NAME}
+                {NEW_DIM_NAME: -1} | {dim: "auto" for dim in cube1.dims if dim != NEW_DIM_NAME}
             )
             if overlap_resolver is None:
                 # Example 3.1: Concat along new "cubes" dimension
                 merged_cube = concat_both_cubes_rechunked
             else:
                 # Example 3.2: Elementwise operation
-                positional_parameters: Dict = {}
+                positional_parameters = {}
                 named_parameters = {
                     x_dim: cube1.data,
                     y_dim: cube2.data,
@@ -766,9 +715,7 @@ def merge_cubes(
 
                 if len(cube1.openeo.band_dims) > 0 or len(cube2.openeo.band_dims) > 0:
                     # Same reordering issue mentioned above
-                    previous_band_order = list(
-                        cube1[cube1.openeo.band_dims[0]].values
-                    ) + [
+                    previous_band_order = list(cube1[cube1.openeo.band_dims[0]].values) + [
                         band
                         for band in list(cube2[cube2.openeo.band_dims[0]].values)
                         if band not in list(cube1[cube1.openeo.band_dims[0]].values)
@@ -778,9 +725,7 @@ def merge_cubes(
 
                 # compat="override" to deal with potentially conflicting coords
                 # see https://github.com/Open-EO/openeo-processes-dask/pull/148 for context
-                merged_cube = xr.combine_by_coords(
-                    [cube1, cube2], combine_attrs="drop_conflicts"
-                )
+                merged_cube = xr.combine_by_coords([cube1, cube2], combine_attrs="drop_conflicts")
                 # merged_cube = xr.concat([cube1, cube2], dim=BANDS, compat="override", combine_attrs="drop_conflicts", coords="minimal")
                 if isinstance(merged_cube, xr.Dataset):
                     merged_cube = merged_cube.to_array(dim=bands_dim)
@@ -802,18 +747,10 @@ def merge_cubes(
                 stacked_conflicts = xr.concat(
                     [
                         cube1.sel(
-                            **{
-                                overlapping_dim: overlap_per_shared_dim[
-                                    overlapping_dim
-                                ].in_both
-                            }
+                            **{overlapping_dim: overlap_per_shared_dim[overlapping_dim].in_both}
                         ),
                         cube2.sel(
-                            **{
-                                overlapping_dim: overlap_per_shared_dim[
-                                    overlapping_dim
-                                ].in_both
-                            }
+                            **{overlapping_dim: overlap_per_shared_dim[overlapping_dim].in_both}
                         ),
                     ],
                     dim=NEW_DIM_NAME,
@@ -821,8 +758,7 @@ def merge_cubes(
 
                 # Need to rechunk here to ensure that the cube dimension isn't chunked and the chunks for the other dimensions are not too large.
                 stacked_conflicts_rechunked = stacked_conflicts.chunk(
-                    {NEW_DIM_NAME: -1}
-                    | {dim: "auto" for dim in cube1.dims if dim != NEW_DIM_NAME}
+                    {NEW_DIM_NAME: -1} | {dim: "auto" for dim in cube1.dims if dim != NEW_DIM_NAME}
                 )
 
                 conflicts_cube_1 = cube1.sel(
@@ -849,18 +785,10 @@ def merge_cubes(
                 )
 
                 rest_of_cube_1 = cube1.sel(
-                    **{
-                        overlapping_dim: overlap_per_shared_dim[
-                            overlapping_dim
-                        ].only_in_cube1
-                    }
+                    **{overlapping_dim: overlap_per_shared_dim[overlapping_dim].only_in_cube1}
                 )
                 rest_of_cube_2 = cube2.sel(
-                    **{
-                        overlapping_dim: overlap_per_shared_dim[
-                            overlapping_dim
-                        ].only_in_cube2
-                    }
+                    **{overlapping_dim: overlap_per_shared_dim[overlapping_dim].only_in_cube2}
                 )
                 merged_cube = xr.combine_by_coords(
                     [merge_conflicts, rest_of_cube_1, rest_of_cube_2],
@@ -868,9 +796,7 @@ def merge_cubes(
                 )
 
             else:
-                raise ValueError(
-                    "More than one overlapping dimension, merge not possible."
-                )
+                raise ValueError("More than one overlapping dimension, merge not possible.")
 
     elif len(differing_dims) <= 2:
         if overlap_resolver is None or not callable(overlap_resolver):
@@ -898,8 +824,7 @@ def merge_cubes(
 
         # Need to rechunk here to ensure that the cube dimension isn't chunked and the chunks for the other dimensions are not too large.
         both_stacked_rechunked = both_stacked.chunk(
-            {NEW_DIM_NAME: -1}
-            | {dim: "auto" for dim in cube1.dims if dim != NEW_DIM_NAME}
+            {NEW_DIM_NAME: -1} | {dim: "auto" for dim in cube1.dims if dim != NEW_DIM_NAME}
         )
 
         positional_parameters = {}
@@ -984,17 +909,15 @@ def _reproject_cube_match(
         "__unified_non_spatial_dimension__"
     )
     # And we bring the dimensions back to the original order
-    data_cube_stacked_reprojected = data_cube_stacked_reprojected.transpose(
-        *data_cube.dims
-    )
+    data_cube_stacked_reprojected = data_cube_stacked_reprojected.transpose(*data_cube.dims)
 
-    return data_cube_stacked_reprojected  # type: ignore[no-any-return]
+    return data_cube_stacked_reprojected
 
 
 def resample_spatial(
     data: RasterCube,
     projection: Optional[Union[str, int]] = None,
-    resolution: Optional[int] = 0,
+    resolution: int = 0,
     method: str = "near",
     align: str = "upper-left",
 ) -> RasterCube:
@@ -1058,11 +981,7 @@ def resample_spatial(
             resolution=resolution,
             resampling=resampling,
         )
-    elif (
-        resolution is not None
-        and isinstance(resolution, (float, int))
-        and resolution > 0
-    ):
+    else:
         # based on https://corteva.github.io/rioxarray/html/examples/resampling.html
         # get bounding box
         min_x, min_y, max_x, max_y = data.rio.bounds()
@@ -1076,9 +995,7 @@ def resample_spatial(
             resampling=resampling,
             shape=(new_height, new_width),
         )
-    else:
-        # if target CRS is equal to source CRS and resolution is zero, do nothing
-        pass
+
     return data
 
 

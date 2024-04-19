@@ -46,21 +46,19 @@ class DatasetMetadata:
 
     @property
     def temporal_min(self) -> Optional[datetime]:
+        dt = None
         if self._temporal_min is not None:
             dt = pd.to_datetime(self._temporal_min, unit="ms")
             assert isinstance(dt, datetime)
-            return dt
-        else:
-            return None
+        return dt
 
     @property
     def temporal_max(self) -> Optional[datetime]:
+        dt = None
         if self._temporal_max is not None:
             dt = pd.to_datetime(self._temporal_max, unit="ms")
             assert isinstance(dt, datetime)
-            return dt
-        else:
-            return None
+        return dt
 
     @property
     def collection_id(self) -> str:

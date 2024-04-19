@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
+from pystac import Item
 import pystac
 import stackstac
 import xarray as xr
@@ -13,7 +14,7 @@ import s3fs
 from rasterio.session import AWSSession
 import logging
 import logging.config
-from openeo_geodn_driver.constants import (
+from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     CREDENTIALS,
     DEFAULT_X_DIMENSION,
@@ -21,7 +22,7 @@ from openeo_geodn_driver.constants import (
 )
 from boto3.session import Session
 from urllib.parse import urlparse
-from openeo_geodn_driver.geospatial_utils import (
+from tensorlakehouse_openeo_driver.geospatial_utils import (
     clip,
     filter_by_time,
     get_dimension_name,
@@ -37,48 +38,35 @@ logger = logging.getLogger("geodnLogger")
 class COSConnector:
     DATA = "data"
 
-    @staticmethod
-    def get_credentials_by_bucket(bucket: str) -> Dict[str, str]:
-        """get the credentials to access the specified bucket
-
-        Args:
-            bucket (str): input bucket name
-
-        Returns:
-            Dict[str, str]: a dict that contains endpoint, access_key_id, secret_access_key, region,
-                endpoint
-        """
-
+    def __init__(self, bucket: str) -> None:
         assert bucket is not None
         assert isinstance(bucket, str)
         assert (
             bucket in CREDENTIALS.keys()
         ), f"Error! Missing credentials to access COS bucket: {bucket}"
-        bucket_credentials: Dict = CREDENTIALS[bucket]
-        assert all(
-            k in bucket_credentials.keys()
-            for k in ["access_key_id", "secret_access_key", "region", "endpoint"]
-        )
-        return bucket_credentials
+        bucket_credentials = CREDENTIALS[bucket]
+        self._access_key_id = bucket_credentials["access_key_id"]
+        self._secret = bucket_credentials["secret_access_key"]
+        self._endpoint = bucket_credentials["endpoint"]
+        self._region_name = bucket_credentials["region"]
+        self.bucket = bucket
 
-    def _make_ibm_boto3_client(self, endpoint: str, access_key_id: str, secret: str):
+    def _make_ibm_boto3_client(self):
         client = ibm_boto3.client(
             "s3",
-            endpoint_url=f"https://{endpoint}",
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=secret,
+            endpoint_url=f"https://{self._endpoint}",
+            aws_access_key_id=self._access_key_id,
+            aws_secret_access_key=self._secret,
             verify=False,
             config=Config(tcp_keepalive=True),
         )
         return client
 
-    def _create_boto3_session(
-        self, access_key_id: str, secret: str, region_name: str
-    ) -> Session:
+    def _create_boto3_session(self) -> Session:
         session = Session(
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=secret,
-            region_name=region_name,
+            aws_access_key_id=self._access_key_id,
+            aws_secret_access_key=self._secret,
+            region_name=self._region_name,
         )
         return session
 
@@ -93,7 +81,7 @@ class COSConnector:
 
     def load_zarr(
         self,
-        items: List[Dict[str, Any]],
+        items: List[Item],
         # item_properties: ItemProperties,
         bbox: Tuple[float, float, float, float],
     ) -> xr.DataArray:
@@ -113,40 +101,36 @@ class COSConnector:
         # assumption: multiple items are mapped to a single zarr file
         # check if this is true
         for item in items:
-            assets = dict()
-            for k, asset in item["assets"].items():
-                roles = asset["roles"]
-                if COSConnector.DATA in roles:
-                    assets[k] = asset
+            assets = item.get_assets(role=COSConnector.DATA)
             asset = assets[COSConnector.DATA]
             urls.add(asset.href)
-            datetimes.append(pd.Timestamp(item["properties"]["datetime"]))
+            datetimes.append(pd.Timestamp(item.datetime))
         assert (
             len(urls) == 1
         ), f"Error! no support for loading data from multiple ZARR files: {urls}. "
         url = urls.pop()
         # create S3Map object to load zarr into memory
-        bucket = COSConnector._extract_bucket_name_from_url(url=url)
-        creds = COSConnector.get_credentials_by_bucket(bucket=bucket)
-        store = self._create_s3map(
-            url=url,
-            endpoint=creds["endpoint"],
-            access_key_id=creds["access_key_id"],
-            secret=creds["secret_access_key"],
-        )
+        store = self._create_s3map(url=url)
         epsg = COSConnector._get_epsg(item=items[0])
         # open zarr as xarray.Dataset
         ds = xr.open_zarr(store)
-        data: xr.DataArray = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
+        data = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
         temporal_dim = get_dimension_name(item=items[0], dim_type="temporal")
         x_dim = get_dimension_name(item=items[0], axis=DEFAULT_X_DIMENSION)
         y_dim = get_dimension_name(item=items[0], axis=DEFAULT_Y_DIMENSION)
-
+        # if (
+        #     temporal_dim is not None
+        #     and temporal_dim != TIME
+        #     and temporal_dim in data.dims
+        # ):
+        #     data = data.rename({temporal_dim: TIME})
+        # if x_dim is not None and x_dim != X and x_dim in data.dims:
+        #     data = data.rename({x_dim: X})
+        # if y_dim is not None and y_dim != Y and y_dim in data.dims:
+        #     data = data.rename({y_dim: Y})
         data = clip(data=data, bbox=bbox, y_dim=y_dim, x_dim=x_dim, crs=epsg)
 
-        data = filter_by_time(
-            data=data, timestamps=datetimes, temporal_dim=temporal_dim
-        )
+        data = filter_by_time(data=data, timestamps=datetimes, temporal_dim=temporal_dim)
         return data
 
     @staticmethod
@@ -161,18 +145,12 @@ class COSConnector:
         """
         # the first char of the path is a slash, so we need to skip it to get the bucket name
         url_parsed = urlparse(url=url)
-        if (
-            url_parsed.scheme is not None
-            and url_parsed.scheme.lower() == "s3"
-            and isinstance(url_parsed.hostname, str)
-        ):
+        if url_parsed.scheme is not None and url_parsed.scheme.lower() == "s3":
             return url_parsed.hostname
         else:
             begin_bucket_name = 1
             end_bucket_name = url_parsed.path.find("/", begin_bucket_name)
-            assert (
-                end_bucket_name > begin_bucket_name
-            ), f"Error! Unable to find bucket name: {url}"
+            assert end_bucket_name > begin_bucket_name, f"Error! Unable to find bucket name: {url}"
             bucket = url_parsed.path[begin_bucket_name:end_bucket_name]
             return bucket
 
@@ -189,35 +167,31 @@ class COSConnector:
         begin_bucket_name = 1
         url_parsed = urlparse(url=url)
         slash_index = url_parsed.path.find("/", begin_bucket_name) + 1
-        assert (
-            slash_index > begin_bucket_name
-        ), f"Error! Unable to find object name: {url}"
+        assert slash_index > begin_bucket_name, f"Error! Unable to find object name: {url}"
         object_name = url_parsed.path[slash_index:]
         return object_name
 
     @staticmethod
-    def _get_epsg(item: Dict[str, Any]) -> Optional[int]:
-        item_prop = item["properties"]
+    def _get_epsg(item: pystac.Item) -> int:
+        item_prop = item.properties
         cube_dims: Dict[str, Any] = item_prop["cube:dimensions"]
-        epsg = None
         for value in cube_dims.values():
             if value.get("reference_system") is not None:
-                epsg = value.get("reference_system")
-        return epsg
+                return value.get("reference_system")
+        return None
 
     @staticmethod
-    def _get_resolution(item: Dict[str, Any]) -> Optional[float]:
-        item_prop = item["properties"]
+    def _get_resolution(item: pystac.Item) -> int:
+        item_prop = item.properties
         cube_dims: Dict[str, Any] = item_prop["cube:dimensions"]
-        resolution = None
         for value in cube_dims.values():
             if value.get("step") is not None:
-                resolution = float(np.abs(value.get("step")))
-        return resolution
+                return value.get("step")
+        return None
 
     def load_items_using_stackstac(
         self,
-        items: List[Dict[str, Any]],
+        items: List[Item],
         bbox: Tuple[float, float, float, float],
         bands: List[str],
         epsg: int,
@@ -238,52 +212,30 @@ class COSConnector:
         Returns:
             xr.DataArray: _description_
         """
-
-        dict_items = []
-        bucket = None
-        time_dim = None
-        x_dim = None
-        y_dim = None
-        for index, item in enumerate(items):
-            # select the list of assets that will be loaded
-            if index == 0:
-                # convert stackstac default dimension names to openEO default
-
-                time_dim = get_dimension_name(item=item, dim_type="temporal")
-                x_dim = get_dimension_name(item=item, axis=DEFAULT_X_DIMENSION)
-                y_dim = get_dimension_name(item=item, axis=DEFAULT_Y_DIMENSION)
-                assets_item: Dict = item["assets"]
-                arbitrary_asset_key = next(iter(assets_item.keys()))
-                url = assets_item[arbitrary_asset_key]["href"]
-                bucket = COSConnector._extract_bucket_name_from_url(url=url)
-
-                if COSConnector.DATA in assets_item.keys():
-                    assets = [COSConnector.DATA]
-                else:
-                    assets = bands
-            item_prop = item["properties"]
-
-            mydatetime = item_prop.get("datetime")
-            pddt = pd.Timestamp(mydatetime)
-            item["properties"]["datetime"] = pddt.isoformat(sep="T", timespec="seconds")
-            dict_items.append(item)
-
-        assert isinstance(time_dim, str), f"Error! Unexpected time_dim={time_dim}"
         # create boto3 session using credentials
-        assert isinstance(bucket, str)
-        credentials = COSConnector.get_credentials_by_bucket(bucket=bucket)
-        session = self._create_boto3_session(
-            access_key_id=credentials["access_key_id"],
-            secret=credentials["secret_access_key"],
-            region_name=credentials["region"],
-        )
-        endpoint = credentials["endpoint"]
-        logger.debug(f"load_items_using_stackstac - connecting to {endpoint=}")
+        session = self._create_boto3_session()
         # accessing non-AWS s3 https://github.com/rasterio/rasterio/pull/1779
         aws_session = AWSSession(
             session=session,
-            endpoint_url=endpoint,
+            endpoint_url=self._endpoint,
         )
+        # select an arbitrary item based on the assumption that all items have the same 'assets'
+        # structure, i.e., either use 'data' or band names
+        arbitrary_item = items[0]
+        # select the list of assets that will be loaded
+        if COSConnector.DATA in arbitrary_item.assets.keys():
+            assets = [COSConnector.DATA]
+        else:
+            assets = bands
+
+        dict_items = []
+        for i in items:
+            dict_item = i.to_dict()
+            mydatetime = i.properties.get("datetime")
+            pddt = pd.Timestamp(mydatetime)
+            dict_item["properties"]["datetime"] = pddt.isoformat(sep="T", timespec="seconds")
+            dict_items.append(dict_item)
+
         # setting gdal_env param is based on this https://github.com/gjoseph92/stackstac#roadmap
         data_array = stackstac.stack(
             dict_items,
@@ -294,23 +246,23 @@ class COSConnector:
             fill_value=np.nan,
             properties=["datetime"],
             assets=assets,
-            gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(
-                always=dict(session=aws_session)
-            ),
+            gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(always=dict(session=aws_session)),
             band_coords=False,
             sortby_date="asc",
         )
+        # convert stackstac default dimension names to openEO default
         if "band" in data_array.dims and "band" != DEFAULT_BANDS_DIMENSION:
             data_array = data_array.rename({"band": DEFAULT_BANDS_DIMENSION})
+        time_dim = get_dimension_name(item=arbitrary_item, dim_type="temporal")
+        x_dim = get_dimension_name(item=arbitrary_item, axis=DEFAULT_X_DIMENSION)
+        y_dim = get_dimension_name(item=arbitrary_item, axis=DEFAULT_Y_DIMENSION)
         # if time_dim in data_array.dims and "time" != TIME:
         # data_array = data_array.rename({"time": TIME})
         # drop coords that are not required to avoid merging conflicts
         for coord in list(data_array.coords.keys()):
             if coord not in [x_dim, y_dim, DEFAULT_BANDS_DIMENSION, time_dim]:
                 data_array = data_array.reset_coords(names=coord, drop=True)
-        data_array = remove_repeated_time_coords(
-            data_array=data_array, time_dim=time_dim
-        )
+        data_array = remove_repeated_time_coords(data_array=data_array, time_dim=time_dim)
 
         data_array.rio.write_crs(epsg, inplace=True)
 
@@ -342,22 +294,20 @@ class COSConnector:
         url = f"s3://{bucket}/{object}"
         return url
 
-    def _create_s3map(
-        self, url: str, endpoint: str, access_key_id: str, secret: str
-    ) -> s3fs.S3Map:
+    def _create_s3map(self, url: str) -> s3fs.S3Map:
         """create S3Map object based on specified URL
 
         Args:
             url (str): link to the asset
         """
-        if endpoint.lower().startswith("https://"):
-            endpoint_url = endpoint
+        if self._endpoint.lower().startswith("https://"):
+            endpoint_url = self._endpoint
         else:
-            endpoint_url = f"https://{endpoint}"
+            endpoint_url = f"https://{self._endpoint}"
         fs = s3fs.S3FileSystem(
             endpoint_url=endpoint_url,
-            key=access_key_id,
-            secret=secret,
+            key=self._access_key_id,
+            secret=self._secret,
         )
         parsed = urlparse(url=url)
         if parsed.scheme != "s3":
@@ -366,15 +316,26 @@ class COSConnector:
         store = s3fs.S3Map(root=url, s3=fs)
         return store
 
-    def upload_fileobj(
-        self,
-        bucket: str,
-        key: str,
-        path: Path,
-        endpoint: str,
-        access_key_id: str,
-        secret: str,
-    ):
+    def download_file(self, object: str, path: Path) -> None:
+        """download file from COS
+        Args:
+            bucket (str): bucket
+            object (str): aka key or path
+            path (str): full path to file
+        Returns:
+            None
+        """
+
+        logger.debug(f"Downloading from bucket={self.bucket} object={object} and saving as {path}")
+        # instantiate s3 client
+        # Initialize the COS client
+        cos = self._make_ibm_boto3_client()
+
+        # store into file
+        cos.download_file(self.bucket, object, path)
+        assert path.exists(), f"Error! File {path} does not exist"
+
+    def upload_fileobj(self, key: str, path: Path):
         """upload file to COS
 
         based on https://ibm.github.io/ibm-cos-sdk-python/reference/services/s3.html#S3.Object.upload_fileobj
@@ -383,25 +344,22 @@ class COSConnector:
             key (str): filename
             path (Path): local path
         """
-        logger.debug(f"Upload file to COS: {key=} {path=} {bucket=}")
+        logger.debug(f"Upload file to COS: key={key} path={path} bucket={self.bucket}")
         s3 = ibm_boto3.resource(
             "s3",
-            endpoint_url=f"https://{endpoint}",
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=secret,
+            endpoint_url=f"https://{self._endpoint}",
+            aws_access_key_id=self._access_key_id,
+            aws_secret_access_key=self._secret,
             verify=False,
             config=Config(tcp_keepalive=True),
         )
-        bucket_obj = s3.Bucket(bucket)
+        bucket_obj = s3.Bucket(self.bucket)
         obj = bucket_obj.Object(key)
 
         with open(path, "rb") as data:
             obj.upload_fileobj(data)
-        logger.debug(f"File {key=} has been uploaded")
 
-    def create_presigned_link(
-        self, bucket: str, key: str, expiration: int = 3600
-    ) -> str:
+    def create_presigned_link(self, key: str, expiration: int = 3600) -> Optional[str]:
         """Generate a presigned URL for the S3 object
         based on https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3-presigned-urls.html
         Args:
@@ -411,45 +369,39 @@ class COSConnector:
         Returns:
             Optional[str]: pre-signed url
         """
-        logger.debug(f"Create presigned link: {bucket=} {key=}")
-        creds = COSConnector.get_credentials_by_bucket(bucket=bucket)
-        s3_client = self._make_ibm_boto3_client(
-            endpoint=creds["endpoint"],
-            access_key_id=creds["access_key_id"],
-            secret=creds["secret_access_key"],
-        )
+
+        s3_client = self._make_ibm_boto3_client()
         try:
             response = s3_client.generate_presigned_url(
                 "get_object",
-                Params={"Bucket": bucket, "Key": key},
+                Params={"Bucket": self.bucket, "Key": key},
                 ExpiresIn=expiration,
             )
         except ClientError as e:
             logging.error(e)
-            raise e
+            return None
 
         # The response contains the presigned URL
-        assert isinstance(response, str), f"Error! Unexpected response: {response}"
         return response
 
 
-# def main():
-#     bucket = "openeo-geodn-driver-output"
-#     path = Path(
-#         "/Users/ltizzei/Projects/Orgs/GeoDN-Discovery/openeo-geodn-driver/examples/test/openeo_data.tif"
-#     )
-#     assert path.exists()
-#     from datetime import datetime
-#     import uuid
+def main():
+    bucket = "openeo-geodn-driver-output"
+    path = Path(
+        "/Users/ltizzei/Projects/Orgs/GeoDN-Discovery/openeo-geodn-driver/examples/test/openeo_data.tif"
+    )
+    assert path.exists()
+    from datetime import datetime
+    import uuid
 
-#     now = datetime.now().strftime("%Y%m%dT%H%M%S")
-#     random_str = uuid.uuid4().hex
-#     new_object_name = f"{now}-{random_str}-output.tif"
-#     cos = COSConnector(bucket=bucket)
-#     cos.upload_fileobj(key=new_object_name, path=path)
-#     resp = cos.create_presigned_link(key=new_object_name)
-#     print(resp)
+    now = datetime.now().strftime("%Y%m%dT%H%M%S")
+    random_str = uuid.uuid4().hex
+    new_object_name = f"{now}-{random_str}-output.tif"
+    cos = COSConnector(bucket=bucket)
+    cos.upload_fileobj(key=new_object_name, path=path)
+    resp = cos.create_presigned_link(key=new_object_name)
+    print(resp)
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()

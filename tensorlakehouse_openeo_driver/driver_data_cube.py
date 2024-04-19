@@ -23,9 +23,7 @@ class GeoDNDataCube(DriverDataCube):
     def reduce_dimension(
         self, reducer, dimension: str, context: Any, env: EvalEnv
     ) -> "GeoDNDataCube":
-        assert isinstance(
-            self.data, xr.DataArray
-        ), f"Error! {type(self.data)} is not a DataArray"
+        assert isinstance(self.data, xr.DataArray), f"Error! {type(self.data)} is not a DataArray"
         raster_cube = self.data.to_array()
         data = reduce_dimension(
             data=raster_cube, reducer=reducer, context=context, dimension=dimension

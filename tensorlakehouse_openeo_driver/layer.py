@@ -7,7 +7,7 @@ class LayerMetadata:
         layer_id: str,
         description_short: str,
         name: str,
-        dataset_id: str,
+        dataset_id: int,
         nodata: Optional[str] = None,
         data_type: Optional[str] = None,
         spatial_resolution: Optional[str] = None,
@@ -15,11 +15,10 @@ class LayerMetadata:
         level: Optional[int] = None,
     ) -> None:
         assert layer_id is not None
-        layer_id
         if isinstance(layer_id, int):
             layer_id = str(layer_id)
-
-        self._layer_id: str = layer_id
+        assert isinstance(layer_id, str)
+        self._layer_id = layer_id
 
         self.description_short = description_short
         assert name is not None

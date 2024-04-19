@@ -5,7 +5,7 @@ from pystac_client import Client, CollectionClient
 from pystac import Item
 from openeo_driver.backend import CollectionCatalog, LoadParameters
 from openeo_driver.utils import EvalEnv
-from openeo_geodn_driver.constants import (
+from tensorlakehouse_openeo_driver.constants import (
     GEODN_DATASERVICE_ENDPOINT,
     GEODN_DATASERVICE_USER,
     GEODN_DATASERVICE_PASSWORD,
@@ -16,23 +16,22 @@ from openeo_geodn_driver.constants import (
     DEFAULT_Y_DIMENSION,
     DEFAULT_TIME_DIMENSION,
 )
-from openeo_geodn_driver.dataset import DatasetMetadata
-from openeo_geodn_driver.driver_data_cube import GeoDNDataCube
-from openeo_geodn_driver.geodn_discovery import GeoDNDiscovery
+from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
+from tensorlakehouse_openeo_driver.driver_data_cube import GeoDNDataCube
+from tensorlakehouse_openeo_driver.geodn_discovery import GeoDNDiscovery
 from dataservice import query
-from openeo_geodn_driver.layer import LayerMetadata
+from tensorlakehouse_openeo_driver.layer import LayerMetadata
 from datetime import datetime
 import pandas as pd
 import logging
 import xarray as xr
-from openeo_geodn_driver.model.datacube_variable import DataCubeVariable
+from tensorlakehouse_openeo_driver.model.datacube_variable import DataCubeVariable
 
-from openeo_geodn_driver.model.dimension import (
+from tensorlakehouse_openeo_driver.model.dimension import (
     BandDimension,
     Dimension,
     HorizontalSpatialDimension,
     TemporalDimension,
-    VerticalSpatialDimension,
 )
 
 assert os.path.isfile("logging.conf")
@@ -113,9 +112,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             dict: _description_
 
         """
-        logger.debug(
-            f"GeoDNCollectionCatalog - Connecting to STAC service URL={STAC_URL}"
-        )
+        logger.debug(f"GeoDNCollectionCatalog - Connecting to STAC service URL={STAC_URL}")
         logger.debug(f"GeoDNCollectionCatalog - Searching collection: {collection_id}")
         collection = self.stac_client.get_collection(collection_id=collection_id)
         openeo_collection = self._convert_collection_client_to_openeo(
@@ -123,9 +120,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         )
         return openeo_collection
 
-    def get_collection_items(
-        self, collection_id: str, parameters: dict = {}
-    ) -> Dict[str, Any]:
+    def get_collection_items(self, collection_id: str, parameters: dict = {}) -> Dict[str, Any]:
         """
         Optional STAC API endpoint `GET /collections/{collectionId}/items`
         """
@@ -135,24 +130,21 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         limit = int(parameters.get("limit", 100))
         bbox_str: Optional[str] = parameters.get("bbox")
         if bbox_str is not None:
-            bbox = list(
-                map(float, bbox_str.replace("[", " ").replace("]", " ").split(","))
-            )
+            bbox = list(map(float, bbox_str.replace("[", " ").replace("]", " ").split(",")))
         else:
             bbox = None
         datetime_field = parameters.get("datetime")
 
         fields = {
-            "includes": [
+            "include": [
                 "id",
                 "bbox",
+                "datetime",
                 "properties.cube:variables",
                 "properties.cube:dimensions",
-                "properties.datetime",
             ],
-            "excludes": [],
+            "exclude": [],
         }
-
         collection_ids = [collection_id]
         logger.debug(
             f"Searching items: collections={collection_ids} bbox={bbox}\
@@ -168,9 +160,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         items = list()
 
         for item in result.items():
-            items.append(
-                GeoDNCollectionCatalog._convert_item_client_to_openeo(pystac_item=item)
-            )
+            items.append(GeoDNCollectionCatalog._convert_item_client_to_openeo(pystac_item=item))
         response = {
             "type": "FeatureCollection",
             "features": items,
@@ -263,24 +253,31 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             "links": [link_field.to_dict() for link_field in pystac_collection.links],
         }
         if full:
-            extra_fields = pystac_collection.extra_fields
+            # feature_collection = self.get_collection_items(
+            #     collection_id=collection_client.id, parameters=None
+            # )
+            # extract cube:dimensions from items' metadata
+            summaries_dict = pystac_collection.summaries.to_dict()
             try:
-                cube_dimensions_dict: Dict[str, Any] = extra_fields["cube:dimensions"]
+                cube_dimensions_dict = summaries_dict["cube:dimensions"]
             except KeyError as e:
-                msg = f"KeyError! extra_fields={extra_fields} - {e}"
+                msg = f"KeyError! summaries_dict={summaries_dict} - {e}"
                 logger.error(msg)
                 raise KeyError(msg)
-            cube_dimensions = self._extract_cube_dimensions(
-                cube_dimensions=cube_dimensions_dict
+            cube_dimensions = self._extract_cube_dimensions(cube_dimensions=cube_dimensions_dict)
+            # extract cube:variables from items' metadata
+            # cube_variables = self._extract_cube_variables(
+            #     feature_collection=feature_collection, dimensions=cube_dimensions
+            # )
+            collection_as_dict["cube:dimensions"] = (
+                GeoDNCollectionCatalog._export_cube_dimensions_group(cube_dimensions)
             )
-            collection_as_dict[
-                "cube:dimensions"
-            ] = GeoDNCollectionCatalog._export_cube_dimensions_group(cube_dimensions)
+            # collection_as_dict["cube:variables"] = (
+            #     GeoDNCollectionCatalog._export_cube_variables(cube_variables),
+            # )
         return collection_as_dict
 
-    def _extract_cube_dimensions(
-        self, cube_dimensions: Dict[str, Any]
-    ) -> List[Dimension]:
+    def _extract_cube_dimensions(self, cube_dimensions: Dict[str, Any]) -> Dict[str, Dimension]:
         """instantia Dimension objects based on cube:dimensions fields in dict format
 
         Args:
@@ -289,47 +286,25 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         Returns:
             Dict: Dimension objects grouped by description
         """
-        assert isinstance(cube_dimensions, dict)
         cube_dimensions_list: List[Dimension] = list()
         for name, dimension in cube_dimensions.items():
             # description cannot be none
 
             if dimension["type"] == "bands":
                 band_values = cube_dimensions["bands"]["values"]
-                cube_dimensions_list.append(
-                    BandDimension(values=band_values, description=name)
-                )
+                cube_dimensions_list.append(BandDimension(values=band_values, description=name))
             elif dimension["type"] == "spatial":
-                # type, axis and extent keys are required by datacube extension
-                # https://github.com/stac-extensions/datacube/tree/main?tab=readme-ov-file#horizontal-spatial-raster-dimension-object
                 axis = dimension["axis"]
-                if axis.lower() in [DEFAULT_X_DIMENSION, DEFAULT_Y_DIMENSION]:
-                    extent = dimension["extent"]
-                    cube_dimensions_list.append(
-                        HorizontalSpatialDimension(
-                            axis=axis, extent=extent, description=name
-                        )
-                    )
-                else:
-                    if "extent" in dimension:
-                        extent = dimension["extent"]
-                    elif "values" in dimension:
-                        extent = [min(dimension["values"]), max(dimension["values"])]
-                    else:
-                        raise Exception(f"Error! Missing extent: {dimension}")
-                    cube_dimensions_list.append(
-                        VerticalSpatialDimension(
-                            axis=axis, extent=extent, description=name
-                        )
-                    )
+                extent = dimension["extent"]
+                cube_dimensions_list.append(
+                    HorizontalSpatialDimension(axis=axis, extent=extent, description=name)
+                )
             elif dimension["type"] == "temporal":
                 extent = dimension["extent"]
                 step = dimension.get("step")
                 values = dimension.get("values")
                 cube_dimensions_list.append(
-                    TemporalDimension(
-                        extent=extent, step=step, description=name, values=values
-                    )
+                    TemporalDimension(extent=extent, step=step, description=name, values=values)
                 )
         return cube_dimensions_list
 
@@ -349,9 +324,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
 
         cube_dimensions_collection = dict()
         for dimension in group_dimensions:
-            cube_dimensions_collection = (
-                cube_dimensions_collection | dimension.to_dict()
-            )
+            cube_dimensions_collection = cube_dimensions_collection | dimension.to_dict()
         return cube_dimensions_collection
 
     @staticmethod
@@ -390,9 +363,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         for item in items:
             properties = item["properties"]
             # get cube:variables metadata
-            cube_var: Dict[str, Dict[str, Any]] = properties[
-                GeoDNCollectionCatalog.CUBE_VARIABLES
-            ]
+            cube_var: Dict[str, Dict[str, Any]] = properties[GeoDNCollectionCatalog.CUBE_VARIABLES]
             for description, cube_var_metadata in cube_var.items():
                 # variable has not been added
                 if description not in cube_variables.keys():
@@ -473,21 +444,22 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         Returns:
             str: _description_
         """
-        KM = "km"
-        M = "m"
-        DEGREE = "degrees"
+        km = "km"
+        meter = "m"
+        degree = "degrees"
         # aprox. size in meter of one degree at the equator
-        ONE_DEGREE_SIZE_EQUATOR = 111000
-        if distance.find(KM) >= 0:
-            gsd = distance.replace(KM, "")
-            gsd = str(float(gsd) * 1000)
+        one_degree_size_equator = 111000
+        if distance.find(km) >= 0:
+            gsd = distance.replace(km, "")
+            gsd = float(gsd) * 1000
+            return str(gsd)
+        elif distance.find(meter) >= 0:
+            gsd = distance.replace(meter, "").strip()
             return gsd
-        elif distance.find(M) >= 0:
-            gsd = distance.replace(M, "").strip()
-            return gsd
-        elif distance.find(DEGREE) >= 0 and level is not None:
+        elif distance.find(degree) >= 0 and level is not None:
+            gsd = float(distance.replace(degree, "").strip())
             step = GeoDNCollectionCatalog._compute_step(level=level)
-            gsd = str(ONE_DEGREE_SIZE_EQUATOR * step)
+            gsd = str(one_degree_size_equator * step)
             return gsd
         return distance
 
@@ -560,7 +532,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         Returns:
             float: step in degrees
         """
-        step = float((10**-6) * (2 ** (29 - level)))
+        step = (10**-6) * (2 ** (29 - level))
         return step
 
     @staticmethod
@@ -650,7 +622,9 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             secs_index = temporal_resolution.find(secs_pattern)
             if 0 < mins_index < secs_index:
                 total_secs = float(
-                    temporal_resolution[mins_index + len(mins_pattern) : secs_index]
+                    temporal_resolution[
+                        mins_index + len(mins_pattern) : secs_index  # noqa: ignore E203
+                    ]
                 )
                 delta = pd.Timedelta(total_secs, unit="seconds")
                 duration = delta.isoformat()
@@ -750,9 +724,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         bands = load_params.bands
         arrays = list()
         for band in bands:
-            logger.debug(
-                f"Getting global timestamps from {GEODN_DATASERVICE_ENDPOINT} band={band}"
-            )
+            logger.debug(f"Getting global timestamps from {GEODN_DATASERVICE_ENDPOINT} band={band}")
             # find available global timestamps
             # TODO can we search available timestamps of the specified area?
             timestamps = query.get_global_timestamps(

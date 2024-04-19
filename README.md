@@ -51,7 +51,7 @@ tensorlakehouse backend relies on [openeo-python-driver](https://github.com/Open
 
 ```shell
 cd <path-to-parent-dir>/tensorlakehouse-openeo-driver/
-export FLASK_APP=openeo_geodn_driver.local_app
+export FLASK_APP=tensorlakehouse_openeo_driver.local_app
 export FLASK_DEBUG=1
 flask run
 ```

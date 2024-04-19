@@ -36,7 +36,8 @@ numpy>=1.22.2
 numbagg
 odc-algo==0.2.3
 odc-geo==0.3.3
-openeo~=0.22.0
+openeo
+openeo_driver @ git+https://github.com/Open-EO/openeo-python-driver.git@fa707ae4259c55b53aac8d290595d4383e5770a3
 openeo-pg-parser-networkx~=2023.10.9
 openeo-processes==0.0.4
 openeo-processes-dask~=2023.10.7

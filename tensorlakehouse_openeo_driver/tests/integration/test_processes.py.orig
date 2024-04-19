@@ -1,0 +1,725 @@
+from openeo_pg_parser_networkx.pg_schema import ParameterReference
+from functools import partial
+from typing import Any, Dict, List, Optional, Union
+from rasterio.crs import CRS
+import pandas as pd
+import pytest
+import xarray as xr
+from openeo_pg_parser_networkx.pg_schema import BoundingBox
+import numpy as np
+from openeo_geodn_driver.process_implementations.load_collection import (
+    LoadCollectionFromHBase,
+)
+
+
+from openeo_geodn_driver.processes import (
+    resample_spatial,
+<<<<<<< HEAD
+    aggregate_temporal_period,
+=======
+    rename_labels,
+>>>>>>> main
+    merge_cubes as geodn_merge_cubes,
+)
+from openeo_geodn_driver.constants import (
+    BANDS,
+    GEODN_DISCOVERY_CRS,
+    TIME,
+    X,
+    Y,
+    logger,
+)
+from openeo_geodn_driver.processes import (
+    CRS_EPSG_4326,
+    _get_bounding_box,
+    load_collection,
+)
+from openeo_geodn_driver.processing import GeoDNProcessing
+from openeo_geodn_driver.tests.unit.unit_test_util import validate_raster_datacube
+
+COLLECTION_ID_HISTORICAL_CROP_PLANTING_MAP = "Historical crop planting map (USA)"
+BAND_CROP_30M = "111"
+
+COLLECTION_ID_ERA5_ZARR = "Global weather (ERA5) (ZARR)"
+BAND_49459 = "49459"
+
+COLLECTION_ID_ERA5 = "Global weather (ERA5)"
+
+BAND_TOTAL_PRECIPITATION = "Total precipitation"
+
+COLLECTION_ID_CROPSCAPE = "Historical crop planting map (USA)"
+BAND_CROPSCAPE = "111"
+
+COLLECTION_ID_TWC_SEASONAL_WEATHER_FORECAST = "TWC Seasonal Weather Forecast"
+BAND_TWC_MIN_TEMP = "Minimum temperature"
+
+COLLECTION_ID_SENTINEL_2_LAND_USE = "sentinel2-10m-lulc"
+BAND_SENTINEL_2_LAND_USE_LULC = "lulc"
+
+
+class MockTemporalInterval:
+    def __init__(self, start: pd.Timestamp, end: pd.Timestamp) -> None:
+        self.start = start
+        self.end = end
+
+
+test_load_collection_input = [
+    (
+        COLLECTION_ID_ERA5,
+        BoundingBox(
+            west=-123.0,
+            east=-122.0,
+            north=48,
+            south=47,
+            crs="epsg:4326",
+        ),
+        MockTemporalInterval(pd.Timestamp(2021, 1, 1), pd.Timestamp(2021, 2, 1)),
+        [BAND_TOTAL_PRECIPITATION],
+        {X: 32, Y: 32, BANDS: 1, TIME: 745},
+        {},
+        CRS_EPSG_4326,
+    ),
+    (
+        COLLECTION_ID_HISTORICAL_CROP_PLANTING_MAP,
+        BoundingBox(
+            west=-123.0,
+            east=-122.0,
+            north=48,
+            south=47,
+            crs="epsg:4326",
+        ),
+        MockTemporalInterval(pd.Timestamp(2019, 12, 31), pd.Timestamp(2021, 1, 2)),
+        [BAND_CROP_30M],
+        {"lon": 3907, "lat": 3907, BANDS: 1, TIME: 2},
+        {},
+        CRS_EPSG_4326,
+    ),
+    (
+        COLLECTION_ID_HISTORICAL_CROP_PLANTING_MAP,
+        BoundingBox(
+            west=-123.0,
+            east=-122.0,
+            north=48,
+            south=47,
+            crs="epsg:4326",
+        ),
+        MockTemporalInterval(pd.Timestamp(2021, 1, 1), pd.Timestamp(2021, 1, 1)),
+        [BAND_CROP_30M],
+        {X: 3907, Y: 3907, BANDS: 1, TIME: 1},
+        {},
+        CRS_EPSG_4326,
+    ),
+    (
+        COLLECTION_ID_SENTINEL_2_LAND_USE,
+        BoundingBox(south=32.25, west=-114.75, north=32.75, east=-114.25),
+        MockTemporalInterval(pd.Timestamp(2021, 1, 1), pd.Timestamp(2022, 1, 1)),
+        [BAND_SENTINEL_2_LAND_USE_LULC],
+        {X: 7813, Y: 7813, BANDS: 1, TIME: 1},
+        {},
+        CRS_EPSG_4326,
+    ),
+    (
+        COLLECTION_ID_SENTINEL_2_LAND_USE,
+        BoundingBox(south=39.6279, west=-102.1014, north=39.9276, east=-101.5892),
+        MockTemporalInterval(pd.Timestamp(2022, 1, 1), pd.Timestamp(2022, 1, 1)),
+        [BAND_SENTINEL_2_LAND_USE_LULC],
+        {X: 8004, Y: 4684, BANDS: 1, TIME: 1},
+        {},
+        CRS_EPSG_4326,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "collection_id, spatial_extent, temporal_extent, bands, expected_dims, expected_attrs, reference_system",
+    test_load_collection_input,
+)
+def test_load_collection(
+    collection_id: str,
+    spatial_extent: BoundingBox,
+    temporal_extent: MockTemporalInterval,
+    bands: Optional[List[str]],
+    expected_dims: Dict[str, Dict[str, Union[int, str]]],
+    expected_attrs: Dict[str, Any],
+    reference_system: str,
+):
+    if collection_id == COLLECTION_ID_HISTORICAL_CROP_PLANTING_MAP:
+        pytest.skip(f"Fix dimensions name: {collection_id}")
+    else:
+        data = load_collection(
+            id=collection_id,
+            spatial_extent=spatial_extent,
+            temporal_extent=temporal_extent,
+            bands=bands,
+        )
+        assert isinstance(
+            data, xr.DataArray
+        ), f"Error! data is not a xr.DataArray: {type(data)}"
+        # check time dimension
+        for time in data[TIME].values:
+            t = pd.Timestamp(time)
+            start = temporal_extent.start
+            end = temporal_extent.end
+            assert start <= t <= end, f"Error! invalid: {start} <= {t} <= {end}"
+        west, south, east, north = _get_bounding_box(spatial_extent=spatial_extent)
+
+        # check spatial dimension - tolerance value in degrees when validating x and y
+        tolerance = 3.0
+        for x in data.x.values:
+            assert (
+                west - tolerance <= x <= east + tolerance
+            ), f"Invalid coordinate: west <= x <= east: {west - tolerance} <= {x} <= {east + tolerance}"
+
+        for y in data.y.values:
+            assert (
+                south - tolerance <= y <= north + tolerance
+            ), f"Invalid coordinate: south <= y <= north: {south- tolerance} <= {y} <= {north + tolerance}"
+
+        validate_raster_datacube(
+            cube=data,
+            expected_dim_size=expected_dims,
+            expected_attrs=expected_attrs,
+            expected_crs=reference_system,
+        )
+
+
+test_load_collection_via_dataservice_input = [
+    (
+        # COLLECTION_ID_ERA5_ZARR,
+        "Global weather (ERA5)",
+        BoundingBox(west=-91.0, east=-90.0, south=41.0, north=42.0, crs="epsg:4326"),
+        MockTemporalInterval(pd.Timestamp(2023, 6, 20), pd.Timestamp(2023, 6, 21)),
+        ["Total precipitation"],
+        {X: 32, Y: 32, TIME: 25, BANDS: 1},
+        {},
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "collection_id, spatial_extent, temporal_extent, bands, expected_dims, expected_attrs",
+    test_load_collection_via_dataservice_input,
+)
+def test_LoadCollectionFromHBase(
+    collection_id: str,
+    spatial_extent: BoundingBox,
+    temporal_extent: MockTemporalInterval,
+    bands: Optional[List[str]],
+    expected_dims: Dict,
+    expected_attrs: Dict,
+):
+    loader = LoadCollectionFromHBase()
+    data = loader.load_collection(
+        id=collection_id,
+        spatial_extent=spatial_extent,
+        temporal_extent=temporal_extent,
+        bands=bands,
+    )
+    validate_raster_datacube(
+        cube=data,
+        expected_dim_size=expected_dims,
+        expected_attrs=expected_attrs,
+        expected_crs=GEODN_DISCOVERY_CRS,
+    )
+
+
+"""
+### Test binary math ops (e.g. subtract) with broadcast ###
+
+# from openeo_geodn_driver.processes import (
+#     subtract as norm_subtract,
+# )
+"""
+
+
+test_subtract_datacubes_parameters = [
+    (
+        "Global weather (ERA5)",
+        BoundingBox(west=-91.0, east=-90.0, south=41.0, north=42.0, crs="epsg:4326"),
+        MockTemporalInterval(pd.Timestamp(2007, 6, 20), pd.Timestamp(2007, 6, 20)),
+        MockTemporalInterval(pd.Timestamp(2007, 6, 21), pd.Timestamp(2007, 6, 21)),
+        ["Total precipitation"],
+        ["reduce", "single"],
+    ),
+    (
+        "Global weather (ERA5)",
+        BoundingBox(west=-91.0, east=-90.0, south=41.0, north=42.0, crs="epsg:4326"),
+        MockTemporalInterval(pd.Timestamp(2007, 6, 20), pd.Timestamp(2007, 6, 20)),
+        MockTemporalInterval(pd.Timestamp(2007, 6, 21), pd.Timestamp(2007, 6, 22)),
+        ["Total precipitation"],
+        ["reduce", "multi"],
+    ),
+    (
+        "Global weather (ERA5)",
+        BoundingBox(west=-91.0, east=-90.0, south=41.0, north=42.0, crs="epsg:4326"),
+        MockTemporalInterval(pd.Timestamp(2007, 6, 20), pd.Timestamp(2007, 6, 21)),
+        MockTemporalInterval(pd.Timestamp(2007, 6, 22), pd.Timestamp(2007, 6, 23)),
+        ["Total precipitation"],
+        ["reduce", "multi"],
+    ),
+    # (
+    # This will fail
+    # "Global weather (ERA5)",
+    # BoundingBox(west=-91.0, east=-90.0, south=41.0, north=42.0, crs="epsg:4326"),
+    # MockTemporalInterval(pd.Timestamp(2023, 6, 20), pd.Timestamp(2023, 6, 21)),
+    # MockTemporalInterval(pd.Timestamp(2023, 6, 22), pd.Timestamp(2023, 6, 23)),
+    # ["Total precipitation"],
+    # ["multi", "multi"],
+    # ),
+    # (
+    #     "HLSS30",
+    #     BoundingBox(west=-122.0, east=-120.0, south=34.0, north=36.0, crs="epsg:4326"),
+    #     MockTemporalInterval(pd.Timestamp(2020, 9, 1), pd.Timestamp(2020, 9, 2)),
+    #     MockTemporalInterval(pd.Timestamp(2020, 9, 1), pd.Timestamp(2020, 9, 2)),
+    #     ["B02"],
+    #     [],
+    # ),
+]
+
+
+@pytest.mark.parametrize(
+    "collection_id, spatial_extent, temporal_extent_cube1, temporal_extent_cube2, bands, hints",
+    test_subtract_datacubes_parameters,
+)
+def test_subtract_cubes(
+    collection_id: str,
+    spatial_extent: BoundingBox,
+    temporal_extent_cube1: MockTemporalInterval,
+    temporal_extent_cube2: MockTemporalInterval,
+    bands: List[str],
+    hints: Optional[List[str]],
+):
+    """
+    Test how subtraction of DataArrays is performed within OpenEO
+    given dataarrays from actual data
+    Expect it to conform or be same as xr.DataArray '-' operator.
+
+    - cube1 time coordinate has a single timestamp or we reduce it to none if it has multiple timestamps
+    - If the binary operation did not succeed the result xarray has empty time dimension
+    e.g.<xarray.DataArray '49459' (band: 1, time: 0, y: 32, x: 32)>
+    This is a problem, it means operation has failed
+
+    """
+
+    cube1 = load_collection(
+        id=collection_id,
+        spatial_extent=spatial_extent,
+        temporal_extent=temporal_extent_cube1,
+        bands=bands,
+    )
+    logger.debug(f"cube1:\n{cube1}")
+
+    if TIME in cube1.dims:
+        if len(cube1.coords[TIME].values) > 0:
+            if hints != [] and hints[0] in ["reduce", "single"]:
+                cube1 = cube1.reduce(np.min, dim=TIME)
+                # cube1 = cube1.max(dim = TIME)
+                logger.debug(f"cube1 reduced:\n{cube1}")
+
+    cube2 = load_collection(
+        id=collection_id,
+        spatial_extent=spatial_extent,
+        temporal_extent=temporal_extent_cube2,
+        bands=bands,
+    )
+
+    assert isinstance(cube1, xr.DataArray) and isinstance(
+        cube2, xr.DataArray
+    ), f"cube1: {type(cube1)}, cube2:{type(cube1)}"
+
+    logger.debug(f"cube2:\n{cube2}")
+
+    result = cube1 - cube2
+    logger.debug(f"result:\n{result}")
+
+    assert TIME in result.dims, "Time absent in result dimensions"
+
+    if TIME in result.dims:
+        assert len(result.coords[TIME].values) > 0
+        f"result reduced sample values: {result.isel({TIME: 0, X: [0,1], Y: [0,1]}).values}"
+
+
+"""
+### Test merge_cubes() with geodn fix and original openeo version ####
+"""
+
+
+###############################################################################
+# Parameterization of tests
+# Note: case 3 with overlaping bands B02 is failing using the geodn fix due
+# to missing resolver function
+###############################################################################
+
+# collection_id, spatial_extent, temporal_extent, bands_cube1, bands_cube2
+test_merge_cube_parameters = [
+    (
+        "ibm-eis-ga-1-esa-sentinel-2-l2a",
+        BoundingBox(west=-73.5, east=-73.4, south=44.9, north=45.0, crs="epsg:4326"),
+        MockTemporalInterval(pd.Timestamp(2023, 5, 20), pd.Timestamp(2023, 5, 25)),
+        ["B02", "B05"],
+        ["B07"],
+    ),
+    (
+        "HLSS30",
+        BoundingBox(west=-122.0, east=-120.0, south=34.0, north=36.0, crs="epsg:4326"),
+        MockTemporalInterval(pd.Timestamp(2020, 9, 1), pd.Timestamp(2020, 9, 2)),
+        ["B02"],
+        ["Fmask"],
+    ),
+    (
+        "HLSS30",
+        BoundingBox(west=-122.0, east=-120.0, south=34.0, north=36.0, crs="epsg:4326"),
+        MockTemporalInterval(pd.Timestamp(2020, 9, 1), pd.Timestamp(2020, 9, 2)),
+        ["B02", "B03", "B04"],
+        ["Fmask"],
+    ),
+    (
+        "HLSS30",
+        BoundingBox(west=-122.0, east=-120.0, south=34.0, north=36.0, crs="epsg:4326"),
+        MockTemporalInterval(pd.Timestamp(2020, 9, 1), pd.Timestamp(2020, 9, 2)),
+        ["B02", "B03", "B04"],
+        ["B02"],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "collection_id, spatial_extent, temporal_extent, bands1, bands2",
+    test_merge_cube_parameters,
+)
+def test_merge_cubes(
+    collection_id: str,
+    spatial_extent: BoundingBox,
+    temporal_extent: MockTemporalInterval,
+    bands1: List[str],
+    bands2: List[str],
+):
+    """
+    Test merge_cubes() with geodn fix and original openeo version
+    Note: there is also a unit test for merge_cubes() in  openeo_geodn_driver/tests/unit/test_processes.py
+
+    Note: The test for the original openeo version or merge_cubes won't work until the name of
+    the 'band' dimension returned in our load_collection is changed to 'bands' as
+    that is expected and hard coded in openeo's merge_cube in merge.py. We could rename the dimension
+    in the cubes in our test case I think from 'band' to 'bands' to get further.
+    Invoking the openeo_merge_cubes the error is
+    supplied_dims = ('time', 'band', 'y', 'x'), dims = ('bands', 'time', 'y', 'x'), missing_dims = 'raise'
+
+    Note: invoke from terminal with e.g. $ pytest -rpf -s -k merge_cube
+    """
+    intersect = set(bands1).intersection(set(bands2))
+    if len(intersect) >= 1:
+        pytest.skip("Skip when the intersection is not empty")
+    else:
+        # load data cube 1
+        cube1 = load_collection(
+            id=collection_id,
+            spatial_extent=spatial_extent,
+            temporal_extent=temporal_extent,
+            bands=bands1,
+        )
+        assert isinstance(
+            cube1, xr.DataArray
+        ), f"cube1 not a xr.DataArray: {type(cube1)}"
+        # check time dimension
+
+        logger.debug(f"Cube1:\n{cube1}")
+
+        # load data cube 2
+        cube2 = load_collection(
+            id=collection_id,
+            spatial_extent=spatial_extent,
+            temporal_extent=temporal_extent,
+            bands=bands2,
+        )
+        assert isinstance(
+            cube2, xr.DataArray
+        ), f"cube2 not a xr.DataArray: {type(cube2)}"
+
+        cube1_bands = set(cube1[BANDS].values)
+        cube2_bands = set(cube2[BANDS].values)
+        isect_bands = cube1_bands.intersection(cube2_bands)
+        union_bands = cube1_bands.union(cube2_bands)
+
+        assert (
+            isect_bands == set()
+        ), f"Input cubes share >= 1 common bands: {isect_bands}, requires an overlap_resolver"
+
+        result = geodn_merge_cubes(cube1, cube2)
+
+        result_bands = {x for x in result[BANDS].values}
+        assert (
+            result_bands == union_bands
+        ), f"Result bands: {result_bands} not union of input bands: {union_bands}"
+
+
+@pytest.mark.parametrize(
+    "collection_id, spatial_extent, temporal_extent, bands, projection, resolution",
+    [
+        (
+            "HLSS30",
+            [-121.9021462, 35.1330063, -120.6687854, 36.1397407],
+            [pd.Timestamp(2020, 9, 1), pd.Timestamp(2020, 9, 2)],
+            ["B02"],
+            4326,
+            0,
+        ),
+        (
+            "HLSS30",
+            [-121.9021462, 35.1330063, -120.6687854, 36.1397407],
+            [pd.Timestamp(2020, 9, 1), pd.Timestamp(2020, 9, 2)],
+            ["B02"],
+            4326,
+            30,
+        ),
+        (
+            "HLSS30",
+            [-121.9021462, 35.1330063, -120.6687854, 36.1397407],
+            [pd.Timestamp(2020, 9, 1), pd.Timestamp(2020, 9, 2)],
+            ["B02"],
+            32617,
+            30,
+        ),
+    ],
+)
+def test_resample_spatial(
+    collection_id: str,
+    spatial_extent,
+    temporal_extent,
+    bands: List[str],
+    projection: int,
+    resolution,
+):
+    bbox = BoundingBox(
+        west=spatial_extent[0],
+        east=spatial_extent[2],
+        south=spatial_extent[1],
+        north=spatial_extent[3],
+        crs="4326",
+    )
+    temp_interval = MockTemporalInterval(
+        start=temporal_extent[0], end=temporal_extent[1]
+    )
+    target_crs = CRS.from_epsg(projection)
+    data = load_collection(
+        id=collection_id,
+        spatial_extent=bbox,
+        temporal_extent=temp_interval,
+        bands=bands,
+    )
+    resampled_data = resample_spatial(
+        data=data, projection=projection, resolution=resolution
+    )
+    assert resampled_data.rio.crs is not None and resampled_data.rio.crs == target_crs
+
+
+<<<<<<< HEAD
+# @pytest.mark.parametrize(
+#     "collection_id, spatial_extent, temporal_extent, bands, period, reducer, expected_dims",
+#     [
+#         (
+#             "HLSL30",
+#             [-117.0, 33.9, -116.9, 34.0],
+#             [pd.Timestamp(2020, 7, 19), pd.Timestamp(2020, 7, 29)],
+#             ["B02", "B03"],
+#             "day",
+#             mean,
+#             [1, 2, 371, 309],
+#         ),
+#         (
+#             "HLSL30",
+#             [-117.0, 33.9, -116.9, 34.0],
+#             [pd.Timestamp(2020, 9, 1), pd.Timestamp(2020, 9, 17)],
+#             ["B02", "B03"],
+#             "month",
+#             mean,
+#             [1, 2, 371, 309],
+#         ),
+#     ],
+# )
+# def test_aggregate_temporal_period(
+#     collection_id: str,
+#     spatial_extent,
+#     temporal_extent,
+#     bands: List[str],
+#     period: str,
+#     reducer: Callable,
+#     expected_dims: List[int],
+# ):
+#     bbox = BoundingBox(
+#         west=spatial_extent[0],
+#         east=spatial_extent[2],
+#         south=spatial_extent[1],
+#         north=spatial_extent[3],
+#         crs=spatial_extent[4] if len(spatial_extent) == 5 else "4326",
+#     )
+#     temp_interval = MockTemporalInterval(
+#         start=temporal_extent[0], end=temporal_extent[1]
+#     )
+
+#     data = load_collection(
+#         id=collection_id,
+#         spatial_extent=bbox,
+#         temporal_extent=temp_interval,
+#         bands=bands,
+#     )
+
+#     aggregated_data = aggregate_temporal_period(
+#         data=data, period=period, reducer=reducer
+#     )
+
+#     assert list(aggregated_data.shape) == expected_dims
+
+TEST_AGG_TEMPORAL_PERIOD = [
+    (
+        "Global weather (ERA5)",
+        BoundingBox(west=-0.4, east=-0.3, south=53.7, north=53.8, crs="epsg:4326"),
+        MockTemporalInterval(
+            start=pd.Timestamp(2007, 1, 1), end=pd.Timestamp(2007, 1, 30)
+        ),
+        ["Total precipitation"],
+        "day",
+    ),
+    (
+        "Global weather (ERA5)",
+        BoundingBox(west=-0.4, east=-0.3, south=53.7, north=53.8, crs="epsg:4326"),
+        MockTemporalInterval(
+            start=pd.Timestamp(2007, 1, 1), end=pd.Timestamp(2007, 1, 30)
+        ),
+        ["Total precipitation"],
+        "month",
+    ),
+    (
+        "CEH gridded hourly rainfall for Great Britain",
+        BoundingBox(west=-0.48, south=53.709, east=-0.22, north=53.812),
+        MockTemporalInterval(
+            start=pd.Timestamp("2007-01-01T11:00:00Z"),
+            end=pd.Timestamp("2007-01-07T11:00:00Z"),
+        ),
+        ["CEH rainfall for Great Britain"],
+        "day",
+    ),
+    (
+        "HLSL30",
+        BoundingBox(west=-117.0, south=33.9, east=-116.9, north=34.0),
+        MockTemporalInterval(
+            start=pd.Timestamp("2020-09-01T00:00:00Z"),
+            end=pd.Timestamp("2020-10-30T00:00:00Z"),
+        ),
+        ["B02"],
+        "day",
+    ),
+    (
+        "HLSS30",
+        BoundingBox(west=-117.0, south=33.9, east=-116.9, north=34.0),
+        MockTemporalInterval(
+            start=pd.Timestamp("2020-09-01T00:00:00Z"),
+            end=pd.Timestamp("2020-10-30T00:00:00Z"),
+        ),
+        ["B02"],
+        "day",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "collection_id, spatial_extent, temporal_extent, bands, period",
+    TEST_AGG_TEMPORAL_PERIOD,
+)
+def test_aggregate_temporal_period(
+    collection_id, spatial_extent, temporal_extent, bands, period
+):
+    assert len(bands) == 1
+    data = load_collection(
+        id=collection_id,
+        spatial_extent=spatial_extent,
+        temporal_extent=temporal_extent,
+        bands=bands,
+    )
+    non_all_nan_counter = 0
+    avg_data = list()
+    for t_index in range(data[TIME].size):
+        slice_data = data.isel({TIME: t_index, BANDS: 0})
+        all_nan = np.all(np.isnan(slice_data.values))
+        if not all_nan:
+            non_all_nan_counter += 1
+            avg_data.append(np.nanmean(slice_data.values))
+    assert non_all_nan_counter >= 2
+    assert (
+        len(list(set(avg_data))) >= 2
+    ), f"Error! not enough unique stats - stats list = {avg_data}"
+    # create reducer object
+    proc = GeoDNProcessing()
+    reducer = partial(
+        proc.process_registry["mean"].implementation,
+        data=ParameterReference(from_parameter="data"),
+    )
+    # call process under test
+    agg_data = aggregate_temporal_period(data=data, reducer=reducer, period=period)
+    assert isinstance(agg_data, xr.DataArray)
+
+    # set upper bound for the size of time dimension
+    mapping_freq = {"day": "D", "month": "M"}
+    upper_bound_time_size = len(
+        pd.date_range(
+            start=temporal_extent.start,
+            end=temporal_extent.end,
+            freq=mapping_freq[period],
+        )
+    )
+    #
+    assert upper_bound_time_size >= agg_data[TIME].size > 1
+    assert agg_data[BANDS].size == 1
+    # for each timestamp, compute spatial mean and store it
+    avg_list = list()
+    for t_index in range(agg_data[TIME].size):
+        slice_data = agg_data.isel({TIME: t_index, BANDS: 0})
+        assert not np.all(
+            np.isnan(slice_data.values)
+        ), f"Error! all values are nan: band={0} timestamp={t_index}"
+        avg_list.append(float(slice_data.mean().values))
+    #
+    assert len(set(avg_list)) > 1
+=======
+@pytest.mark.parametrize(
+    "collection_id, spatial_extent, temporal_extent, source, target, dimension",
+    [
+        (
+            "HLSL30",
+            [-117.0, 33.9, -116.9, 34.0],
+            [pd.Timestamp(2020, 7, 19), pd.Timestamp(2020, 7, 29)],
+            ["B02"],
+            ["B04"],
+            "bands",
+        ),
+    ],
+)
+def test_rename_labels(
+    collection_id: str,
+    spatial_extent,
+    temporal_extent,
+    source: List[str],
+    target: List[str],
+    dimension,
+):
+    bbox = BoundingBox(
+        west=spatial_extent[0],
+        east=spatial_extent[2],
+        south=spatial_extent[1],
+        north=spatial_extent[3],
+        crs=spatial_extent[4] if len(spatial_extent) == 5 else "4326",
+    )
+    temp_interval = MockTemporalInterval(
+        start=temporal_extent[0], end=temporal_extent[1]
+    )
+
+    data = load_collection(
+        id=collection_id,
+        spatial_extent=bbox,
+        temporal_extent=temp_interval,
+        bands=source,
+    )
+
+    da = rename_labels(data=data, dimension=dimension, source=source, target=target)
+    assert list(da.coords[dimension]) == target
+>>>>>>> main
