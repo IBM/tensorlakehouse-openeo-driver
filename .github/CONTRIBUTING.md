@@ -4,17 +4,18 @@
 
 The following is a set of guidelines for contributing. These are just guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
 
-- [What Should I Know Before I Get Started?](#what-should-i-know-before-i-get-started)
-  - [Code of Conduct](#code-of-conduct)
-  - [How Do I Start Contributing?](#how-do-i-start-contributing)
-- [How Can I Contribute?](#how-can-i-contribute)
-  - [Reporting Bugs](#reporting-bugs)
-    - [How Do I Submit A (Good) Bug Report?](#how-do-i-submit-a-good-bug-report)
-  - [Suggesting Enhancements](#suggesting-enhancements)
-    - [How Do I Submit A (Good) Enhancement Suggestion?](#how-do-i-submit-a-good-enhancement-suggestion)
-- [Your First Code Contribution](#your-first-code-contribution)
-  - [How to contribute](#how-to-contribute)
-    - [Code Review](#code-review)
+- [Contributing](#contributing)
+  - [What Should I Know Before I Get Started?](#what-should-i-know-before-i-get-started)
+    - [Code of Conduct](#code-of-conduct)
+    - [How Do I Start Contributing?](#how-do-i-start-contributing)
+  - [How Can I Contribute?](#how-can-i-contribute)
+    - [Reporting Bugs](#reporting-bugs)
+      - [How Do I Submit A (Good) Bug Report?](#how-do-i-submit-a-good-bug-report)
+    - [Suggesting Enhancements](#suggesting-enhancements)
+      - [How Do I Submit A (Good) Enhancement Suggestion?](#how-do-i-submit-a-good-enhancement-suggestion)
+  - [Your First Code Contribution](#your-first-code-contribution)
+    - [How to contribute](#how-to-contribute)
+      - [Code Review](#code-review)
 
 ## What Should I Know Before I Get Started?
 
@@ -28,7 +29,7 @@ Please report unacceptable behavior to one of the [maintainers](./SUPPORT.md#mai
 
 The below workflow is designed to help you begin your first contribution journey. It will guide you through creating and picking up issues, working through them, having your work reviewed, and then merging.
 
-Help on InnerSource projects is always welcome and there is always something that can be improved. For example, documentation (like the text you are reading now) can always use improvement, code can always be clarified, variables or functions can always be renamed or commented on, and there is always a need for more test coverage. If you see something that you think should be fixed, take ownership! Here is how you get started:
+Help on open source projects is always welcome and there is always something that can be improved. For example, documentation (like the text you are reading now) can always use improvement, code can always be clarified, variables or functions can always be renamed or commented on, and there is always a need for more test coverage. If you see something that you think should be fixed, take ownership! Here is how you get started:
 
 ## How Can I Contribute?
 
@@ -69,6 +70,7 @@ Before sending pull requests, make sure your changes pass tests.
 
 Once you've [created a pull request](#how-to-contribute), maintainers will review your code and likely make suggestions to fix before merging. It will be easier for your pull request to receive reviews if you consider the criteria the reviewers follow while working. Remember to:
 
+- Check [code style guide](./CODESTYLEGUIDE.md) for this project
 - Run tests locally and ensure they pass
 - Follow the project coding conventions
 - Write detailed commit messages

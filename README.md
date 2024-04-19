@@ -25,22 +25,16 @@ Using a virtual environment for all commands in this guide is strongly recommend
 
 ## Installation
 
-tensorlakehouse backend relies on [openeo-python-driver](https://github.com/Open-EO/openeo-python-driver) to implement request handling
-
-1. Clone this repository and its submodules: `git clone --recurse-submodules https://github.com/IBM/tensorlakehouse-openeo-driver`
-2. Go to `tensorlakehouse-openeo-driver` directory
-3. Install *tensorlakehouse-openeo-driver* dependencies: `pip install -r requirements.txt`. Optionally, you can install other dependencies for development purpose: `pip install -r dev_requirements.txt`
-4. Optional, but strongly suggested: follow the step describe [here](https://w3.ibm.com/w3publisher/detect-secrets) to setup detect-secrets tool
+1. Go to `tensorlakehouse-openeo-driver` directory
+2. Install *tensorlakehouse-openeo-driver* dependencies: `pip install -r requirements.txt`. Optionally, you can install other dependencies for development purpose: `pip install -r dev_requirements.txt`
+3. Optional, but strongly suggested: follow the step describe [here](https://w3.ibm.com/w3publisher/detect-secrets) to setup detect-secrets tool
 
 ## Running locally using containers
 
 
 ### Setting environment varibles:
 
- - `PYTHONPATH` should have 3 values separated by colons. For instance, `PYTHONPATH=/Users/alice/tensorlakehouse-openeo-driver/:/Users/alice/tensorlakehouse-openeo-driver/libs/openeo-python-driver:/Users/alice/tensorlakehouse-openeo-driver/libs/dataservice_sdk/src`. This variable is composed by:
-     *. full path to `tensorlakehouse-openeo-driver` directory
-     *. full path to `openeo-python-driver` directory, which is a submodule of this repository
-     *. full path to `dataservice_sdk` directory, which is a submodules of this repository
+ - `PYTHONPATH` for instance, `PYTHONPATH=/Users/alice/tensorlakehouse-openeo-driver/`
  - `STAC_URL` URL to the STAC service that you want to connect to (e.g., `https://stac-fastapi-sqlalchemy-nasageospatial-dev.cash.sl.cloud9.ibm.com`)
  - `CREDENTIALS` is a set of credentials (encoded in base64) that allows this service to access COS S3 buckets
  - `BROKER_URL` - URL to the broker, which mediates communication between clients and workers.
