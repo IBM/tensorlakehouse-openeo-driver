@@ -77,6 +77,6 @@ Check [CONTRIBUTING.md](.github/CONTRIBUTING.md).
 
 ## Getting support
 
-Check [SUPPORT.md](.github/SUPPORT.md).
+Check [SUPPORT.md](.github/SUPPORT.md)
 
 
