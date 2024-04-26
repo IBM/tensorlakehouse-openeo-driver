@@ -81,5 +81,5 @@ Check [SUPPORT.md](.github/SUPPORT.md).
 
 ## Credits
 
-This project was created using <https://github.ibm.com/BiomedSciAI-Innersource/python-blueprint>.
+This project was created using <https://github.ibm.com/BiomedSciAI-Innersource/python-blueprint>
 
