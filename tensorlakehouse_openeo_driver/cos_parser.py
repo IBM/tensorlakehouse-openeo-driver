@@ -118,16 +118,6 @@ class COSConnector:
         temporal_dim = get_dimension_name(item=items[0], dim_type="temporal")
         x_dim = get_dimension_name(item=items[0], axis=DEFAULT_X_DIMENSION)
         y_dim = get_dimension_name(item=items[0], axis=DEFAULT_Y_DIMENSION)
-        # if (
-        #     temporal_dim is not None
-        #     and temporal_dim != TIME
-        #     and temporal_dim in data.dims
-        # ):
-        #     data = data.rename({temporal_dim: TIME})
-        # if x_dim is not None and x_dim != X and x_dim in data.dims:
-        #     data = data.rename({x_dim: X})
-        # if y_dim is not None and y_dim != Y and y_dim in data.dims:
-        #     data = data.rename({y_dim: Y})
         data = clip(data=data, bbox=bbox, y_dim=y_dim, x_dim=x_dim, crs=epsg)
 
         data = filter_by_time(data=data, timestamps=datetimes, temporal_dim=temporal_dim)

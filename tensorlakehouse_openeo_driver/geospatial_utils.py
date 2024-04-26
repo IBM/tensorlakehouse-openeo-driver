@@ -11,7 +11,7 @@ from rasterio.enums import Resampling
 
 
 def clip(
-    data: xr.DataArray, bbox: List[float], x_dim: str, y_dim: str, crs: int = 4326
+    data: xr.DataArray, bbox: Tuple[float, float, float, float], x_dim: str, y_dim: str, crs: int = 4326
 ) -> xr.DataArray:
     """filter out data that is not within bbox
 

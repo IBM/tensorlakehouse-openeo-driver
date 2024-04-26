@@ -61,16 +61,3 @@ def _open_multiple_tif(target_dir: Path) -> xr.Dataset:
     ds = ds.assign_coords({TIME: timestamps})
     return ds
 
-
-def main():
-    ds = _open_multiple_tif(
-        Path(
-            "/Users/ltizzei/Projects/Orgs/GeoDN-Discovery/openeo-geodn-driver/examples/data/f09734cc8b70488489563a5aad752513"
-        )
-    )
-    print(ds)
-    print(ds[TIME].values)
-
-
-if __name__ == "__main__":
-    main()

@@ -293,7 +293,7 @@ class TestGeneral:
     def test_capabilities_endpoints_hiding(self):
         class MyProcessing(Processing):
             @not_implemented
-            def validate(self, *args, **kwargs): ...
+            def validate(self, *args, **kwargs): ...  # noqa: E704
 
         backend_implementation = DummyBackendImplementation(processing=MyProcessing())
         api = api_from_backend_implementation(backend_implementation)

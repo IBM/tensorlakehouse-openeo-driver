@@ -2,7 +2,7 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from zipfile import ZipFile
 import matplotlib.pyplot as plt
 
@@ -53,7 +53,7 @@ BANDS_GUESSES = ["b", "bands", "band"]
 class OpenEOExtensionDa:
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-        self._spatial_dims = self._guess_dims_for_type(X_GUESSES) + self._guess_dims_for_type(
+        self._spatial_dims: List[str] = self._guess_dims_for_type(X_GUESSES) + self._guess_dims_for_type(
             Y_GUESSES
         )
         self._temporal_dims = self._guess_dims_for_type(TEMPORAL_GUESSES)
@@ -68,7 +68,7 @@ class OpenEOExtensionDa:
     def _lowercase_dims(self):
         return [str(dim).casefold() for dim in self._obj.dims]
 
-    def _guess_dims_for_type(self, guesses):
+    def _guess_dims_for_type(self, guesses: List[str]) -> List[str]:
         found_dims = []
         datacube_dims = self._lowercase_dims
         for guess in guesses:
@@ -77,7 +77,7 @@ class OpenEOExtensionDa:
                 found_dims.append(self._obj.dims[i])
         return found_dims
 
-    def _get_existing_dims_and_pop_missing(self, expected_dims):
+    def _get_existing_dims_and_pop_missing(self, expected_dims: List[str]) -> List[str]:
         existing_dims = []
         for i, dim in enumerate(expected_dims):
             if dim in self._obj.dims:
@@ -87,22 +87,22 @@ class OpenEOExtensionDa:
         return existing_dims
 
     @property
-    def spatial_dims(self) -> tuple[str]:
+    def spatial_dims(self) -> tuple[str, ...]:
         """Find and return all spatial dimensions of the datacube as a tuple."""
         return tuple(self._get_existing_dims_and_pop_missing(self._spatial_dims))
 
     @property
-    def temporal_dims(self) -> tuple[str]:
+    def temporal_dims(self) -> tuple[str, ...]:
         """Find and return all temporal dimensions of the datacube as a list."""
         return tuple(self._get_existing_dims_and_pop_missing(self._temporal_dims))
 
     @property
-    def band_dims(self) -> tuple[str]:
+    def band_dims(self) -> tuple[str, ...]:
         """Find and return all bands dimensions of the datacube as a list."""
         return tuple(self._get_existing_dims_and_pop_missing(self._bands_dims))
 
     @property
-    def other_dims(self) -> tuple[str]:
+    def other_dims(self) -> tuple[str, ...]:
         """Find and return any dimensions with type other as s list."""
         return tuple(self._get_existing_dims_and_pop_missing(self._other_dims))
 
@@ -193,8 +193,9 @@ class MockGeoDNDiscovery:
 
 def make_pystac_client_collection(collection_id: str = "fake-id") -> Collection:
     xmin, ymin, xmax, ymax = -100, 40, -90, 45
+    bboxes: list[list[Union[float, int]]] = [[xmin, ymin, xmax, ymax]]
     temporal = TemporalExtent(intervals=[[datetime(2000, 1, 1), datetime(2000, 2, 1)]])
-    spatial_extent = SpatialExtent(bboxes=[[xmin, ymin, xmax, ymax]])
+    spatial_extent = SpatialExtent(bboxes=bboxes)
     extent = Extent(spatial=spatial_extent, temporal=temporal)
     summaries = Summaries(
         summaries={

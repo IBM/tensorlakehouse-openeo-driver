@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 from openeo_driver.backend import BatchJobMetadata, BatchJobResultMetadata, BatchJobs
 from openeo_driver.errors import JobNotFinishedException, JobNotFoundException
 from openeo_driver.users.user import User
@@ -12,8 +12,8 @@ from tensorlakehouse_openeo_driver.constants import GTIFF, logger
 
 
 class GeodnBatchJobs(BatchJobs):
-    _job_registry = {}
-    _custom_job_logs = {}
+    _job_registry: Dict[str, Any] = {}
+    _custom_job_logs: Dict[str, Any] = {}
 
     def generate_job_id(self):
         return generate_unique_id(prefix="j")
@@ -73,7 +73,7 @@ class GeodnBatchJobs(BatchJobs):
         process: dict,
         api_version: str,
         metadata: dict,
-        job_options: dict = None,
+        job_options: dict = {},
     ) -> BatchJobMetadata:
         logger.debug(f"batch_jobs::create_job - process={process}")
         # set start time of this task
@@ -204,7 +204,7 @@ class GeodnBatchJobs(BatchJobs):
     def _output_root(self) -> str:
         return "/data/jobs"
 
-    def get_results(self, job_id: str, user_id: str) -> Dict[str, dict]:
+    def get_results(self, job_id: str, user_id: str) -> Dict[str, Any]:
         if self._get_job_info(job_id=job_id, user_id=user_id).status != JOB_STATUS.FINISHED:
             raise JobNotFinishedException
 

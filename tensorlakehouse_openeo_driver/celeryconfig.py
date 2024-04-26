@@ -2,7 +2,7 @@
 # U.S. Government Users Restricted Rights:  Use, duplication or disclosure restricted
 # by GSA ADP Schedule Contract with IBM Corp.
 #
-# Author: Leonardo P. Tizzei <ltizzei@br.ibm.com>
+
 from tensorlakehouse_openeo_driver.constants import (
     result_backend,
     broker_url,

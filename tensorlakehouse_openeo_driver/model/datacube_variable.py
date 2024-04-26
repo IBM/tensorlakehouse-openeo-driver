@@ -7,7 +7,7 @@ class DataCubeVariable:
     def __init__(
         self,
         dimensions: List[Dimension],
-        type: List[str],
+        type: str,
         description: Optional[str] = None,
         extent: Optional[List[Union[str, float]]] = None,
         values: Optional[List[Union[str, float]]] = None,

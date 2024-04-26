@@ -277,7 +277,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             # )
         return collection_as_dict
 
-    def _extract_cube_dimensions(self, cube_dimensions: Dict[str, Any]) -> Dict[str, Dimension]:
+    def _extract_cube_dimensions(self, cube_dimensions: Dict[str, Any]) -> List[Dimension]:
         """instantia Dimension objects based on cube:dimensions fields in dict format
 
         Args:
@@ -444,22 +444,21 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         Returns:
             str: _description_
         """
-        KM = "km"
-        M = "m"
-        DEGREE = "degrees"
+        km = "km"
+        meter = "m"
+        degree = "degrees"
         # aprox. size in meter of one degree at the equator
-        ONE_DEGREE_SIZE_EQUATOR = 111000
-        if distance.find(KM) >= 0:
-            gsd = distance.replace(KM, "")
-            gsd = float(gsd) * 1000
-            return str(gsd)
-        elif distance.find(M) >= 0:
-            gsd = distance.replace(M, "").strip()
+        one_degree_size_equator = 111000
+        if distance.find(km) >= 0:
+            gsd = distance.replace(km, "")
+            gsd = str(float(gsd) * 1000)
             return gsd
-        elif distance.find(DEGREE) >= 0 and level is not None:
-            gsd = float(distance.replace(DEGREE, "").strip())
+        elif distance.find(meter) >= 0:
+            gsd = distance.replace(meter, "").strip()
+            return gsd
+        elif distance.find(degree) >= 0 and level is not None:
             step = GeoDNCollectionCatalog._compute_step(level=level)
-            gsd = str(ONE_DEGREE_SIZE_EQUATOR * step)
+            gsd = str(one_degree_size_equator * step)
             return gsd
         return distance
 
@@ -532,7 +531,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         Returns:
             float: step in degrees
         """
-        step = (10**-6) * (2 ** (29 - level))
+        step = float((10**-6) * (2 ** (29 - level)))
         return step
 
     @staticmethod
@@ -621,7 +620,9 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             mins_index = temporal_resolution.find(mins_pattern)
             secs_index = temporal_resolution.find(secs_pattern)
             if 0 < mins_index < secs_index:
-                total_secs = float(temporal_resolution[mins_index + len(mins_pattern) : secs_index])
+                total_secs = float(
+                    temporal_resolution[mins_index + len(mins_pattern) : secs_index]  # noqa: E203
+                )
                 delta = pd.Timedelta(total_secs, unit="seconds")
                 duration = delta.isoformat()
         return duration

@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Iterable, List, Union
 from openeo_driver.utils import read_json
-from openeo_processes_dask.process_implementations.exceptions import OpenEOException
 from openeo_driver.ProcessGraphDeserializer import ConcreteProcessing
 from openeo_driver.dry_run import SourceConstraint
 from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
@@ -19,10 +18,6 @@ from tensorlakehouse_openeo_driver.get_process_implementations import get_impls
 from openeo_processes_dask.process_implementations import _max, _min
 from openeo_processes_dask.specs import _max as max_spec, _min as min_spec
 from openeo_processes_dask.process_implementations.core import process
-
-import odc.geo.xr
-from odc.geo.geobox import resolution_from_affine
-from pyproj.crs import CRS, CRSError
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
