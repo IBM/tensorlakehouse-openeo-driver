@@ -112,15 +112,23 @@ class COSConnector:
         # create S3Map object to load zarr into memory
         store = self._create_s3map(url=url)
         epsg = COSConnector._get_epsg(item=items[0])
+        assert isinstance(epsg, int), f"Error! Invalid {epsg=}"
         # open zarr as xarray.Dataset
         ds = xr.open_zarr(store)
-        data = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
+        # temporary data as it has not been clipped
+        temp_data = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
         temporal_dim = get_dimension_name(item=items[0], dim_type="temporal")
+        assert isinstance(temporal_dim, str)
+        # get name of x axis dim
         x_dim = get_dimension_name(item=items[0], axis=DEFAULT_X_DIMENSION)
+        assert isinstance(x_dim, str)
+        # get name of y axis dim
         y_dim = get_dimension_name(item=items[0], axis=DEFAULT_Y_DIMENSION)
-        data = clip(data=data, bbox=bbox, y_dim=y_dim, x_dim=x_dim, crs=epsg)
+        assert isinstance(y_dim, str)
+        # clipping data
+        temp_data = clip(data=temp_data, bbox=bbox, y_dim=y_dim, x_dim=x_dim, crs=epsg)
 
-        data = filter_by_time(data=data, timestamps=datetimes, temporal_dim=temporal_dim)
+        data = filter_by_time(data=temp_data, timestamps=datetimes, temporal_dim=temporal_dim)
         return data
 
     @staticmethod
@@ -136,6 +144,7 @@ class COSConnector:
         # the first char of the path is a slash, so we need to skip it to get the bucket name
         url_parsed = urlparse(url=url)
         if url_parsed.scheme is not None and url_parsed.scheme.lower() == "s3":
+            assert isinstance(url_parsed.hostname, str), f"Error! Unexpected hostname: {url_parsed.hostname}"
             return url_parsed.hostname
         else:
             begin_bucket_name = 1
@@ -162,21 +171,25 @@ class COSConnector:
         return object_name
 
     @staticmethod
-    def _get_epsg(item: pystac.Item) -> int:
+    def _get_epsg(item: pystac.Item) -> Optional[int]:
         item_prop = item.properties
         cube_dims: Dict[str, Any] = item_prop["cube:dimensions"]
         for value in cube_dims.values():
             if value.get("reference_system") is not None:
-                return value.get("reference_system")
+                reference_system = value.get("reference_system")
+                assert isinstance(reference_system, int)
+                return reference_system
         return None
 
     @staticmethod
-    def _get_resolution(item: pystac.Item) -> int:
+    def _get_resolution(item: pystac.Item) -> Optional[int]:
         item_prop = item.properties
         cube_dims: Dict[str, Any] = item_prop["cube:dimensions"]
         for value in cube_dims.values():
             if value.get("step") is not None:
-                return value.get("step")
+                step = value.get("step")
+                assert isinstance(step, int), f"Error! Invalid step: {step}"
+                return step
         return None
 
     def load_items_using_stackstac(

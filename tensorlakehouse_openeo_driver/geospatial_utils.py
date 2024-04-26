@@ -90,6 +90,7 @@ def filter_by_time(
 
     # Select the specific timestamps using the .sel() method
     selected_data = data.sel({temporal_dim: selected_timestamps}, method="nearest")
+    assert isinstance(selected_data, xr.DataArray), f"Error! Unexpected type: {type(selected_data)}"
     return selected_data
 
 
