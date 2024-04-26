@@ -85,14 +85,14 @@ def test_aggregate_temporal():
         num_periods=30,
     )
     time_interval = pd.date_range(start=start, end=end, freq="W")
-    datetime_format = "%Y-%m-%dT%H:%M:%SZ"
+    DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
     intervals = list()
     print(f"start={start} end={end}")
     i = 1
     while i < len(time_interval):
         s = time_interval[i - 1]
         e = time_interval[i]
-        intervals.append([s.strftime(datetime_format), e.strftime(datetime_format)])
+        intervals.append([s.strftime(DATETIME_FORMAT), e.strftime(DATETIME_FORMAT)])
         i += 1
     da = aggregate_temporal(data=array, intervals=intervals, dimension=None, reducer="mean")
     assert len(da.time) == 12

@@ -1,5 +1,6 @@
+from pystac import Collection
 from pystac_client import Client
-from tensorlakehouse_openeo_driver.tensorlakehouse_backend import GeoDNCollectionCatalog
+from tensorlakehouse_openeo_driver.geodn_backend import GeoDNCollectionCatalog
 from unittest.mock import patch
 import pytest
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (

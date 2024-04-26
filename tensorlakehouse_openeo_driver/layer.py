@@ -16,10 +16,11 @@ class LayerMetadata:
     ) -> None:
         assert layer_id is not None
         if isinstance(layer_id, int):
-            layer_id = str(layer_id)
-        assert isinstance(layer_id, str)
-        self._layer_id = layer_id
-
+            self._layer_id = str(layer_id)
+        elif isinstance(layer_id, str):
+            self._layer_id = layer_id
+        else:
+            raise ValueError(f"Unexpected layer_id type: {type(layer_id)}")
         self.description_short = description_short
         assert name is not None
         self.name = name

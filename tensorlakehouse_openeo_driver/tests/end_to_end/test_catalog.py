@@ -2,9 +2,7 @@ from typing import Dict
 import pytest
 import pandas as pd
 import requests
-from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
-    validate_OpenEO_collection,
-)
+from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import validate_OpenEO_collection
 from tensorlakehouse_openeo_driver.constants import OPENEO_URL
 import certifi
 from tensorlakehouse_openeo_driver.constants import logger

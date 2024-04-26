@@ -11,9 +11,7 @@ import pytest
 import pythonjsonlogger.jsonlogger
 
 from openeo_driver.backend import UserDefinedProcesses
-from tensorlakehouse_openeo_driver.tensorlakehouse_backend import (
-    GeoDNBackendImplementation,
-)
+from tensorlakehouse_openeo_driver.geodn_backend import GeoDNBackendImplementation
 from openeo_driver.server import build_backend_deploy_metadata
 from openeo_driver.testing import UrllibMocker
 from openeo_driver.util.logging import (

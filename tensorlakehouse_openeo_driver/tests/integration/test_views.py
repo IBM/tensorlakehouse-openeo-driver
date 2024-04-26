@@ -14,7 +14,7 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
 )
-from tensorlakehouse_openeo_driver.tensorlakehouse_backend import (
+from tensorlakehouse_openeo_driver.geodn_backend import (
     GeoDNCollectionCatalog,
 )
 from openeo.capabilities import ComparableVersion

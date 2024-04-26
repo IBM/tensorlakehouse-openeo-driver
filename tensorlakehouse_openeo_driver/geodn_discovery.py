@@ -1,6 +1,5 @@
 """
 Created Date: Thursday, January 14th 2021, 3:34:36 pm
-Author: Leonardo Pondian Tizzei
 
 Copyright (c) 2021 (C) Copyright IBM Corporation 2021
 """

@@ -3,9 +3,7 @@ from tensorlakehouse_openeo_driver.catalog import GeoDNCollectionCatalog
 import pytest
 import pandas as pd
 from tensorlakehouse_openeo_driver.constants import STAC_URL
-from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
-    validate_OpenEO_collection,
-)
+from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import validate_OpenEO_collection
 from tensorlakehouse_openeo_driver.stac import STAC
 
 COLLECTION_ID_ERA5 = "Global weather (ERA5)"

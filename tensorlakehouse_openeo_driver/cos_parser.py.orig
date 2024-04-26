@@ -1,6 +1,10 @@
+<<<<<<< HEAD
+from botocore.config import Config
+=======
 import ibm_boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
+>>>>>>> main
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -14,20 +18,25 @@ import s3fs
 from rasterio.session import AWSSession
 import logging
 import logging.config
-from tensorlakehouse_openeo_driver.constants import (
+<<<<<<< HEAD
+from openeo_geodn_driver.constants import BANDS, CREDENTIALS, TEST_DATA_ROOT, X, Y
+=======
+from openeo_geodn_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     CREDENTIALS,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
 )
+>>>>>>> main
 from boto3.session import Session
 from urllib.parse import urlparse
-from tensorlakehouse_openeo_driver.geospatial_utils import (
+from openeo_geodn_driver.geospatial_utils import (
     clip,
     filter_by_time,
     get_dimension_name,
     remove_repeated_time_coords,
 )
+import ibm_boto3
 
 
 assert os.path.isfile("logging.conf")
@@ -130,7 +139,9 @@ class COSConnector:
         #     data = data.rename({y_dim: Y})
         data = clip(data=data, bbox=bbox, y_dim=y_dim, x_dim=x_dim, crs=epsg)
 
-        data = filter_by_time(data=data, timestamps=datetimes, temporal_dim=temporal_dim)
+        data = filter_by_time(
+            data=data, timestamps=datetimes, temporal_dim=temporal_dim
+        )
         return data
 
     @staticmethod
@@ -150,7 +161,9 @@ class COSConnector:
         else:
             begin_bucket_name = 1
             end_bucket_name = url_parsed.path.find("/", begin_bucket_name)
-            assert end_bucket_name > begin_bucket_name, f"Error! Unable to find bucket name: {url}"
+            assert (
+                end_bucket_name > begin_bucket_name
+            ), f"Error! Unable to find bucket name: {url}"
             bucket = url_parsed.path[begin_bucket_name:end_bucket_name]
             return bucket
 
@@ -167,7 +180,9 @@ class COSConnector:
         begin_bucket_name = 1
         url_parsed = urlparse(url=url)
         slash_index = url_parsed.path.find("/", begin_bucket_name) + 1
-        assert slash_index > begin_bucket_name, f"Error! Unable to find object name: {url}"
+        assert (
+            slash_index > begin_bucket_name
+        ), f"Error! Unable to find object name: {url}"
         object_name = url_parsed.path[slash_index:]
         return object_name
 
@@ -233,7 +248,9 @@ class COSConnector:
             dict_item = i.to_dict()
             mydatetime = i.properties.get("datetime")
             pddt = pd.Timestamp(mydatetime)
-            dict_item["properties"]["datetime"] = pddt.isoformat(sep="T", timespec="seconds")
+            dict_item["properties"]["datetime"] = pddt.isoformat(
+                sep="T", timespec="seconds"
+            )
             dict_items.append(dict_item)
 
         # setting gdal_env param is based on this https://github.com/gjoseph92/stackstac#roadmap
@@ -246,7 +263,9 @@ class COSConnector:
             fill_value=np.nan,
             properties=["datetime"],
             assets=assets,
-            gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(always=dict(session=aws_session)),
+            gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(
+                always=dict(session=aws_session)
+            ),
             band_coords=False,
             sortby_date="asc",
         )
@@ -262,7 +281,9 @@ class COSConnector:
         for coord in list(data_array.coords.keys()):
             if coord not in [x_dim, y_dim, DEFAULT_BANDS_DIMENSION, time_dim]:
                 data_array = data_array.reset_coords(names=coord, drop=True)
-        data_array = remove_repeated_time_coords(data_array=data_array, time_dim=time_dim)
+        data_array = remove_repeated_time_coords(
+            data_array=data_array, time_dim=time_dim
+        )
 
         data_array.rio.write_crs(epsg, inplace=True)
 
@@ -316,17 +337,36 @@ class COSConnector:
         store = s3fs.S3Map(root=url, s3=fs)
         return store
 
+<<<<<<< HEAD
+    def download_file(self, bucket: str, object: str, filename: str) -> Path:
+=======
     def download_file(self, object: str, path: Path) -> None:
+>>>>>>> main
         """download file from COS
         Args:
             bucket (str): bucket
             object (str): aka key or path
+<<<<<<< HEAD
+            filename (str): filename (not the absolute path)
+        Returns:
+            str: full path
+        """
+
+        logger.debug(
+            f"Downloading from bucket={bucket} object={object} and saving as {filename}"
+        )
+        # instantiate s3 client
+        # Initialize the COS client
+        cos = ibm_boto3.client(
+=======
             path (str): full path to file
         Returns:
             None
         """
 
-        logger.debug(f"Downloading from bucket={self.bucket} object={object} and saving as {path}")
+        logger.debug(
+            f"Downloading from bucket={self.bucket} object={object} and saving as {path}"
+        )
         # instantiate s3 client
         # Initialize the COS client
         cos = self._make_ibm_boto3_client()
@@ -346,6 +386,7 @@ class COSConnector:
         """
         logger.debug(f"Upload file to COS: key={key} path={path} bucket={self.bucket}")
         s3 = ibm_boto3.resource(
+>>>>>>> main
             "s3",
             endpoint_url=f"https://{self._endpoint}",
             aws_access_key_id=self._access_key_id,
@@ -353,6 +394,31 @@ class COSConnector:
             verify=False,
             config=Config(tcp_keepalive=True),
         )
+<<<<<<< HEAD
+
+        # / is an invalid character
+        filename = filename.replace("/", "-")
+        path = TEST_DATA_ROOT / filename
+        # store into file
+        cos.download_file(bucket, object, path)
+        logger.debug(
+            f"Downloaded from bucket={bucket} object={object} and saving as {filename}"
+        )
+        return path
+
+
+def main():
+    # bucket = "sentinel2-msil1c"
+    # key = "2023/10SFH/S2B_MSIL1C_20231217T184809_N0510_R070_T10SFH_20231217T203924.SAFE/GRANULE/L1C_T10SFH_A035417_20231217T184804/IMG_DATA/T10SFH_20231217T184809_B04.jp2"
+
+    # bucket = "ibm-eis-ga-1-esa-sentinel-2-l2a"
+    key = "ds=177/dl=49360/dt=20170110/tm=000000/lvl=0/gh=0/L2A_T10SEG_20170110T185742_B04_10m.cog"
+    bucket = "ibm-eis-ga-1-esa-sentinel-2-l2a-pr-wdc"
+    key = "ds=177/dl=49680/dt=20170130/tm=000000/lvl=0/gh=0/L2A_T10SEG_20170130T185621_B02_10m.cog"
+    cos = COSConnector(bucket=bucket)
+    filename = key.split("/")[-1]
+    cos.download_file(bucket=bucket, object=key, filename=filename)
+=======
         bucket_obj = s3.Bucket(self.bucket)
         obj = bucket_obj.Object(key)
 
@@ -383,3 +449,26 @@ class COSConnector:
 
         # The response contains the presigned URL
         return response
+
+
+def main():
+    bucket = "openeo-geodn-driver-output"
+    path = Path(
+        "/Users/ltizzei/Projects/Orgs/GeoDN-Discovery/openeo-geodn-driver/examples/test/openeo_data.tif"
+    )
+    assert path.exists()
+    from datetime import datetime
+    import uuid
+
+    now = datetime.now().strftime("%Y%m%dT%H%M%S")
+    random_str = uuid.uuid4().hex
+    new_object_name = f"{now}-{random_str}-output.tif"
+    cos = COSConnector(bucket=bucket)
+    cos.upload_fileobj(key=new_object_name, path=path)
+    resp = cos.create_presigned_link(key=new_object_name)
+    print(resp)
+>>>>>>> main
+
+
+if __name__ == "__main__":
+    main()

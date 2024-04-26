@@ -1,0 +1,43 @@
+import os
+from pathlib import Path
+
+STAC_URL = os.environ["STAC_URL"]
+# "http://stac-fastapi-sqlalchemy.geodn-discovery.svc.cluster.local:8081/"
+assert STAC_URL is not None
+assert isinstance(STAC_URL, str)
+
+LOGGING_CONF_PATH = Path(__file__).parent.parent / "logging.conf"
+assert LOGGING_CONF_PATH.exists()
+
+GEODN_DISCOVERY_API_KEY = os.environ["GEODN_DISCOVERY_API_KEY"]
+assert GEODN_DISCOVERY_API_KEY is not None
+
+GEODN_DATASERVICE_ENDPOINT = "https://pairs.res.ibm.com/pairsdataservice"
+
+
+OPENEO_GEODN_DRIVER_PORT = os.getenv("OPENEO_GEODN_DRIVER_PORT", 9091)
+DASK_SCHEDULER_ADDRESS = os.getenv("DASK_SCHEDULER_ADDRESS", "http://127.0.0.1:8787")
+<<<<<<< HEAD
+TEST_DATA_ROOT = Path() / "openeo_geodn_driver" / "tests" / "unit" / "unit_test_data"
+=======
+TEST_DATA_ROOT = Path() / "openeo_geodn_driver" / "tests" / "test_data"
+>>>>>>> feature/#141-dask
+if not TEST_DATA_ROOT.exists():
+    TEST_DATA_ROOT.mkdir()
+
+# formats to save data
+NETCDF = "NETCDF"
+JSON = "JSON"
+
+# RasterCube/DataArray dimensions
+X = "x"
+Y = "y"
+TIME = "time"
+BANDS = "bands"
+
+DATA_DIR = "data"
+if not Path(DATA_DIR).exists():
+    Path(DATA_DIR).mkdir()
+
+# this env var sets the system under test
+OPENEO_URL = os.getenv("OPENEO_URL")

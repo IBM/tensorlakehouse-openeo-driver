@@ -1,6 +1,4 @@
-from tensorlakehouse_openeo_driver.tensorlakehouse_backend import (
-    GeoDNBackendImplementation,
-)
+from tensorlakehouse_openeo_driver.geodn_backend import GeoDNBackendImplementation
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     LoadCollectionFromCOS,
 )
@@ -33,9 +31,7 @@ from unittest.mock import patch
 from openeo_driver.constants import STAC_EXTENSION
 from openeo_driver.dummy import dummy_backend
 from tensorlakehouse_openeo_driver.catalog import GeoDNCollectionCatalog
-from tensorlakehouse_openeo_driver.tests.unit.unit_tests_data import (
-    FEATURE_COLLECTION_JSON,
-)
+from tensorlakehouse_openeo_driver.tests.unit.unit_tests_data import FEATURE_COLLECTION_JSON
 from openeo_driver.dummy.dummy_backend import DummyBackendImplementation
 from openeo_driver.testing import (
     ApiTester,
@@ -63,10 +59,7 @@ from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
     validate_STAC_Collection,
     MockPystacClient,
 )
-from tensorlakehouse_openeo_driver.tests.conftest import (
-    TEST_APP_CONFIG,
-    enhanced_logging,
-)
+from tensorlakehouse_openeo_driver.tests.conftest import TEST_APP_CONFIG, enhanced_logging
 from tensorlakehouse_openeo_driver.constants import (
     GEODN_DISCOVERY_CRS,
     TEST_DATA_ROOT,
@@ -247,8 +240,8 @@ class TestGeneral:
             capabilities["description"]
             == "This is a generic openEO Backend, powered by [openeo-python-driver](https://github.com/Open-EO/openeo-python-driver)."
         )
-        assert capabilities["backend_version"] == "0.96.0a1"
-        assert capabilities["id"] == "untitledopeneobackend-0.96.0a1"
+        assert capabilities["backend_version"] == "0.90.1a1"
+        assert capabilities["id"] == "untitledopeneobackend-0.90.1a1"
         assert capabilities["production"] is True
 
         def get_link(rel):
@@ -300,7 +293,7 @@ class TestGeneral:
     def test_capabilities_endpoints_hiding(self):
         class MyProcessing(Processing):
             @not_implemented
-            def validate(self, *args, **kwargs): ...  # noqa: E704
+            def validate(self, *args, **kwargs): ...
 
         backend_implementation = DummyBackendImplementation(processing=MyProcessing())
         api = api_from_backend_implementation(backend_implementation)
@@ -1986,9 +1979,7 @@ class TestBatchJobs:
                 jobs={"07024ee9-7847-4b8a-b260-6c879a2b3cdc": {"status": "finished"}}
             ),
             mock.patch.object(
-                backend_implementation.batch_jobs,
-                "get_results",
-                return_value=results_data,
+                backend_implementation.batch_jobs, "get_results", return_value=results_data
             ),
         ):
             resp = api100.get(
