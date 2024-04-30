@@ -6,9 +6,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from zipfile import ZipFile
 import matplotlib.pyplot as plt
 
-# from openeo_processes_dask.process_implementations.cubes._xr_interop import (
-#     OpenEOExtensionDa,
-# )
 import numpy as np
 import pandas as pd
 import rioxarray
@@ -30,7 +27,6 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_Y_DIMENSION,
 )
 from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
-from tensorlakehouse_openeo_driver.layer import LayerMetadata
 
 TEMPORAL_GUESSES = [
     "DATE",
@@ -53,9 +49,9 @@ BANDS_GUESSES = ["b", "bands", "band"]
 class OpenEOExtensionDa:
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-        self._spatial_dims: List[str] = self._guess_dims_for_type(X_GUESSES) + self._guess_dims_for_type(
-            Y_GUESSES
-        )
+        self._spatial_dims: List[str] = self._guess_dims_for_type(
+            X_GUESSES
+        ) + self._guess_dims_for_type(Y_GUESSES)
         self._temporal_dims = self._guess_dims_for_type(TEMPORAL_GUESSES)
         self._bands_dims = self._guess_dims_for_type(BANDS_GUESSES)
         self._other_dims = [
@@ -235,7 +231,7 @@ def make_pystac_client_collection(collection_id: str = "fake-id") -> Collection:
     )
 
 
-def get_collection_items(collection_id: str, parameters: str = None):
+def get_collection_items(collection_id: str, parameters: Optional[str] = None):
     s = {
         "type": "FeatureCollection",
         "features": [
@@ -1031,11 +1027,11 @@ def generate_xarray_datarray(
     latmin: float,
     lonmax: float,
     lonmin: float,
-    timestamps: Tuple[pd.Timestamp, pd.Timestamp],
+    timestamps: Tuple[pd.Timestamp, Optional[pd.Timestamp]],
     size_x: int = 100,
     size_y: int = 100,
     num_periods: int = 10,
-    freq: str = "D",
+    freq: Optional[str] = "D",
     crs: str = GEODN_DISCOVERY_CRS,
 ) -> xr.DataArray:
     """generate a synthetic data array for testing
@@ -1209,7 +1205,7 @@ def _validate_extent_spatial_bbox(collection: Dict):
             ), f"Error! coord is neither a float nor an int: {coord}"
 
 
-def create_dataset_metadatas(collection: str = "my-fake-dataset") -> DatasetMetadata:
+def create_dataset_metadatas(collection: str = "my-fake-dataset") -> List[DatasetMetadata]:
     collection = "my-fake-dataset"
     collection_id = "fake dataset"
     list_datasets = [
@@ -1231,21 +1227,6 @@ def create_dataset_metadatas(collection: str = "my-fake-dataset") -> DatasetMeta
         )
     ]
     return list_datasets
-
-
-def create_data_layers(dataset_id: str, num_layers: int = 1):
-    layers = list()
-    layer_id = f"layer_{uuid.uuid4().hex}"
-    for i in range(num_layers):
-        layers.append(
-            LayerMetadata(
-                layer_id=layer_id,
-                description_short="description",
-                name="layer_name",
-                dataset_id=dataset_id,
-            )
-        )
-    return layers
 
 
 def _remove_files_in_dir(dir_path: Path, prefix: str, suffix: str):
@@ -1321,7 +1302,10 @@ def open_raster(
         if "spatial_ref" in ds.variables:
             crs = CRS.from_wkt(ds["spatial_ref"].attrs["crs_wkt"])
             ds = ds.drop_vars(["spatial_ref"])
-        da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
+        da: Union[xr.DataArray, xr.Dataset, List[xr.Dataset]] = ds.to_array(
+            dim=DEFAULT_BANDS_DIMENSION
+        )
+        assert isinstance(da, xr.DataArray)
         da.rio.write_crs(crs, inplace=True)
     elif file_format.upper() == GTIFF:
         da = rioxarray.open_rasterio(path)
@@ -1348,7 +1332,7 @@ def plot_array(arr: xr.DataArray, time_index: Dict[str, int], band_index: Dict[s
     plt.show()
 
 
-def open_array(file_format: str, path: str, band_names: List[str] = []) -> xr.DataArray:
+def open_array(file_format: str, path: Path, band_names: List[str] = []) -> xr.DataArray:
     """open downloaded file(s) as xr.DataArray
 
     Args:
@@ -1373,10 +1357,13 @@ def open_array(file_format: str, path: str, band_names: List[str] = []) -> xr.Da
             assert (
                 band_name in variable_names
             ), f"Error! data variable {band_name} is missing: {variable_names}"
-        da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
+        da: Union[xr.DataArray, xr.Dataset, List[xr.Dataset]] = ds.to_array(
+            dim=DEFAULT_BANDS_DIMENSION
+        )
+        assert isinstance(da, xr.DataArray)
         da.rio.write_crs(crs, inplace=True)
     elif file_format == GTIFF:
-        da = rioxarray.open_rasterio(path)
+        da = rioxarray.open_rasterio(filename=str(path))
         assert isinstance(da, xr.DataArray), f"Error! not a DataArray: {da}"
     elif file_format == ZIP:
         test_data_dir = path.parent

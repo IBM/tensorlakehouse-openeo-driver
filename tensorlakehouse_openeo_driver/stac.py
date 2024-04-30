@@ -1,4 +1,3 @@
-import json
 from typing import Any, Dict, List, Optional
 
 import urllib.parse
@@ -158,6 +157,7 @@ class STAC:
         endpoint = urllib.parse.quote(path)
         resp = self._get(endpoint=endpoint)
         item = resp.json()
+        assert isinstance(item, dict)
         return item
 
     def list_item(self, collection_id: str, limit: int = 10) -> Dict[str, Any]:
@@ -174,6 +174,7 @@ class STAC:
         endpoint = urllib.parse.quote(path)
         resp = self._get(endpoint=endpoint, params={"limit": limit})
         item = resp.json()
+        assert isinstance(item, dict), f"Error! Unexpected type {item=}"
         return item
 
     def search(
@@ -187,20 +188,8 @@ class STAC:
         }
         resp = self._post(endpoint="/search", payload=payload)
         items = resp.json()
+        assert isinstance(items, list), f"Error! Unexpected type: {items=}"
         return items
-
-    def get_summaries(self, collection: str):
-        items = self.list_item(collection_id=collection)
-        item = items.get("features")[0]
-        cube_dims = item["properties"]["cube:dimensions"]
-        cube_vars = item["properties"]["cube:variables"]
-        band_values = list()
-        if cube_vars is not None:
-            for k, v in cube_vars.items():
-                band_values.append(k)
-        cube_dims.update({"bands": {"type": "bands", "values": band_values}})
-        c = {"cube:dimensions": cube_dims}
-        return json.dumps(c)
 
     def list_collections(self):
         resp = self._get(endpoint="/collections")
@@ -217,6 +206,7 @@ class STAC:
         resp = self._get(endpoint=f"/collections/{collection_id}")
         resp.raise_for_status()
         coll = resp.json()
+        assert isinstance(coll, dict), f"Error! Unexpected type {coll=}"
         return coll
 
     def update_collection(self, new_collection):

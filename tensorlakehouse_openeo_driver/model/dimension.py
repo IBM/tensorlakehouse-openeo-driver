@@ -94,7 +94,7 @@ class HorizontalSpatialDimension(Dimension):
         self._end = float(v)
 
     @property
-    def step(self) -> float:
+    def step(self) -> Optional[float]:
         return self._step
 
     @property
@@ -102,7 +102,7 @@ class HorizontalSpatialDimension(Dimension):
         return [self.start, self.end]
 
     @property
-    def reference_system(self) -> Optional[str]:
+    def reference_system(self) -> Optional[int]:
         return self._reference_system
 
     @reference_system.setter

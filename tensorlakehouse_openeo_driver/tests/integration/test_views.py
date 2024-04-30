@@ -113,7 +113,7 @@ def collection_items(
         _type_: _description_
     """
 
-    response = catalog.get_collection_items(collection_id=collection_id, parameters=None)
+    response = catalog.get_collection_items(collection_id=collection_id, parameters=dict())
     assert response is not None
     assert isinstance(response, dict)
     return response

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import DefaultDict, Dict, List, Optional, Tuple
 import numpy as np
 from pystac import Item
 import xarray as xr
@@ -11,7 +11,11 @@ from rasterio.enums import Resampling
 
 
 def clip(
-    data: xr.DataArray, bbox: Tuple[float, float, float, float], x_dim: str, y_dim: str, crs: int = 4326
+    data: xr.DataArray,
+    bbox: Tuple[float, float, float, float],
+    x_dim: str,
+    y_dim: str,
+    crs: int = 4326,
 ) -> xr.DataArray:
     """filter out data that is not within bbox
 
@@ -42,6 +46,17 @@ def clip(
 def get_dimension_name(
     item: Item, axis: Optional[str] = None, dim_type: Optional[str] = None
 ) -> Optional[str]:
+    """get the dimension name of a given axis (e.g., x, y) or a given dimension type
+
+    Args:
+        item (Item): STAC item
+        axis (Optional[str], optional): axis of the dimension (e.g., x, y).
+        dim_type (Optional[str], optional): dimension type (e.g., horizontal, temporal). Defaults to None.
+
+
+    Returns:
+        Optional[str]: name of the dimension
+    """
     item_properties = item.properties
     cube_dims = item_properties["cube:dimensions"]
     assert isinstance(cube_dims, dict)
@@ -59,6 +74,7 @@ def get_dimension_name(
             dimension_name = k
             found = True
     if found:
+        assert isinstance(dimension_name, str), f"Error! Unexpected type: {dimension_name=}"
         return dimension_name
     else:
         raise ValueError("Error! Unable to find axis = {}")
@@ -105,7 +121,7 @@ def remove_repeated_time_coords(
     if len(set(data_array[time_dim].values)) == len(data_array[time_dim].values):
         return data_array
     else:
-        array_by_time = defaultdict(list)
+        array_by_time: DefaultDict = defaultdict(list)
         for index, t in enumerate(data_array[time_dim].values):
             slice_array = data_array.isel({time_dim: index})
             if t in array_by_time.keys():
@@ -114,7 +130,7 @@ def remove_repeated_time_coords(
                 array_by_time[t] = slice_array
         # print('length of concat list', len(arr_timestamp_lst))
         arr = xr.concat(array_by_time.values(), dim=time_dim, compat="override", coords="minimal")
-        # print('arr.shape', arr.shape)
+        assert isinstance(arr, xr.DataArray), f"Error! Unexpected type: {arr=}"
         return arr
 
 
@@ -143,7 +159,7 @@ def reproject_cube(
     target_projection: CRS,
     resolution: Optional[float],
     resampling: Resampling,
-    shape: Tuple[int, int] = None,
+    shape: Optional[Tuple[int, int]] = None,
 ) -> xr.DataArray:
     # We collect all available dimensions
     non_spatial_dimension_names = [dim for dim in data_cube.dims if dim not in ["y", "x"]]
@@ -195,5 +211,7 @@ def reproject_cube(
     )
     # And we bring the dimensions back to the original order
     data_cube_stacked_reprojected = data_cube_stacked_reprojected.transpose(*data_cube.dims)
-
+    assert isinstance(
+        data_cube_stacked_reprojected, xr.DataArray
+    ), f"Error! Unexpected type: {data_cube_stacked_reprojected=}"
     return data_cube_stacked_reprojected

@@ -15,7 +15,7 @@ class ItemProperties:
 
     @staticmethod
     def make_item_properties(prop: Dict):
-        dimensions = list()
+        dimensions: List[Dimension] = list()
         cube_dimensions = prop["cube:dimensions"]
         for description, cube_dim in cube_dimensions.items():
             if cube_dim["type"] == "spatial":
@@ -29,14 +29,13 @@ class ItemProperties:
                     )
                 )
             elif cube_dim["type"] == "temporal":
-                dimensions.append(
-                    TemporalDimension(
-                        extent=cube_dim.get("extent"),
-                        description=description,
-                        step=cube_dim.get("step"),
-                        values=cube_dim.get("values"),
-                    )
+                temp_dim = TemporalDimension(
+                    extent=cube_dim.get("extent"),
+                    description=description,
+                    step=cube_dim.get("step"),
+                    values=cube_dim.get("values"),
                 )
+                dimensions.append(temp_dim)
         variables = list()
         cube_variables = prop["cube:variables"]
         for var_description, cube_var in cube_variables.items():
@@ -117,26 +116,32 @@ class ItemProperties:
         """
         for v in self.variables:
             if v.description == variable:
+                assert isinstance(v, DataCubeVariable), f"Error! Unexpected type: {v=}"
                 return v
         return None
 
     def to_dict(self) -> Dict[str, Any]:
-        data = dict()
+        data: Dict[str, Any] = dict()
         for var in self.variables:
             data = data | var.to_dict()
         return data
 
     def get_epsg(self) -> Optional[int]:
+        epsg = None
         for dim in self.dimensions:
             if (
                 dim.type == "spatial"
                 and hasattr(dim, "reference_system")
                 and dim.reference_system is not None
             ):
-                return int(dim.reference_system)
+                epsg = int(dim.reference_system)
+                break
+        return epsg
 
     def get_step(self) -> Optional[float]:
+        step = None
         for dim in self.dimensions:
             if dim.type == "spatial" and hasattr(dim, "step") and dim.step is not None:
-                return dim.step
-        return None
+                step = dim.step
+                break
+        return step

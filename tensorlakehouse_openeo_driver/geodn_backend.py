@@ -45,17 +45,15 @@ from openeo_driver.users import User
 from openeo_driver.utils import EvalEnv
 from tensorlakehouse_openeo_driver.batch_jobs import GeodnBatchJobs
 from tensorlakehouse_openeo_driver.catalog import GeoDNCollectionCatalog
+from tensorlakehouse_openeo_driver.constants import APPID_ISSUER
 from tensorlakehouse_openeo_driver.processing import GeoDNProcessing
-from tensorlakehouse_openeo_driver.driver_data_cube import GeoDNDataCube
-import os
 
-APPID_ISSUER = os.getenv("APPID_ISSUER")
 
 DEFAULT_DATETIME = datetime(2020, 4, 23, 16, 20, 27)
 
 # TODO: eliminate this global state with proper pytest fixture usage!
-_collections = {}
-_load_collection_calls = {}
+# _collections: set = {}
+_load_collection_calls: Dict = {}
 
 
 def utcnow() -> datetime:
@@ -64,8 +62,8 @@ def utcnow() -> datetime:
     return DEFAULT_DATETIME
 
 
-def get_collection(collection_id: str) -> "GeoDNDataCube":
-    return _collections[collection_id]
+# def get_collection(collection_id: str) -> "GeoDNDataCube":
+#     return _collections[collection_id]
 
 
 def _register_load_collection_call(collection_id: str, load_params: LoadParameters):
@@ -74,12 +72,12 @@ def _register_load_collection_call(collection_id: str, load_params: LoadParamete
     _load_collection_calls[collection_id].append(load_params.copy())
 
 
-def all_load_collection_calls(collection_id: str) -> List[LoadParameters]:
-    return _load_collection_calls[collection_id]
+# def all_load_collection_calls(collection_id: str) -> List[LoadParameters]:
+#     return _load_collection_calls[collection_id]
 
 
-def last_load_collection_call(collection_id: str) -> LoadParameters:
-    return _load_collection_calls[collection_id][-1]
+# def last_load_collection_call(collection_id: str) -> LoadParameters:
+#     return _load_collection_calls[collection_id][-1]
 
 
 def reset(backend=None):
@@ -220,7 +218,7 @@ class DummyDataCube(DriverDataCube):
         dimensions = {d.name: {"type": d.type} for d in self.metadata._dimensions}
         return {"cube:dimensions": dimensions}
 
-    def save_result(self, filename: str, format: str, format_options: dict = None) -> str:
+    def save_result(self, filename: str, format: str, format_options: Optional[dict] = None) -> str:
         # TODO: this method should be deprecated (limited to single asset) in favor of write_assets (supports multiple assets)
         if "JSON" == format.upper():
             import json
@@ -592,7 +590,7 @@ def _valid_basic_auth(username: str, password: str) -> bool:
 
 
 class GeoDNBackendImplementation(OpenEoBackendImplementation):
-    __version__ = "0.2.3"
+    __version__ = "0.0.1"
 
     vector_cube_cls = DummyVectorCube
 
@@ -603,7 +601,7 @@ class GeoDNBackendImplementation(OpenEoBackendImplementation):
             batch_jobs=GeodnBatchJobs(),
             user_defined_processes=DummyUserDefinedProcesses(),
             processing=GeoDNProcessing(),
-            config=GeoDNBackendConfig(valid_basic_auth=_valid_basic_auth),
+            config=GeoDNBackendConfig(valid_basic_auth=_valid_basic_auth),  # type: ignore
         )
 
     def oidc_providers(self) -> List[OidcProvider]:

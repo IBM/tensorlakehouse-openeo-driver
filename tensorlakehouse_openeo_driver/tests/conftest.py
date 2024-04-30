@@ -84,7 +84,7 @@ def flask_app(backend_implementation) -> flask.Flask:
         # error_handling=False,
     )
     app.config.from_mapping(TEST_APP_CONFIG)
-    return app
+    return app  # type: ignore
 
 
 @pytest.fixture

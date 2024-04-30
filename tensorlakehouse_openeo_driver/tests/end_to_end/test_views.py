@@ -47,27 +47,27 @@ def submit_post_request_load_data(payload: Dict) -> xr.DataArray:
         headers=TEST_USER_AUTH_HEADER,
         verify=False,
     )
-    if resp.status_code == 200:
-        logger.debug(f"POST /result {payload}")
-        resp = requests.post(
-            f"{OPENEO_URL}result",
-            headers=TEST_USER_AUTH_HEADER,
-            json=payload,
-            verify=False,
-            timeout=180,
-        )
-        logger.debug(f"response POST /result {resp.status_code}")
+    resp.raise_for_status()
+    logger.debug(f"POST /result {payload}")
+    resp = requests.post(
+        f"{OPENEO_URL}result",
+        headers=TEST_USER_AUTH_HEADER,
+        json=payload,
+        verify=False,
+        timeout=180,
+    )
+    logger.debug(f"response POST /result {resp.status_code}")
 
-        resp.raise_for_status()
-        # save file locally
-        file_format, path = save_openeo_response(
-            data=resp.content,
-            content_type=resp.headers["Content-type"],
-            prefix="test_openeo_",
-        )
-        # open file
-        da = open_raster(path=path, file_format=file_format)
-        return da
+    resp.raise_for_status()
+    # save file locally
+    file_format, path = save_openeo_response(
+        data=resp.content,
+        content_type=resp.headers["Content-type"],
+        prefix="test_openeo_",
+    )
+    # open file
+    da = open_raster(path=path, file_format=file_format)
+    return da
 
 
 POST_RESULT_PAYLOADS = [

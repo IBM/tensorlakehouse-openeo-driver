@@ -240,8 +240,8 @@ class TestGeneral:
             capabilities["description"]
             == "This is a generic openEO Backend, powered by [openeo-python-driver](https://github.com/Open-EO/openeo-python-driver)."
         )
-        assert capabilities["backend_version"] == "0.90.1a1"
-        assert capabilities["id"] == "untitledopeneobackend-0.90.1a1"
+        assert capabilities["backend_version"] == "0.96.0a1"
+        assert capabilities["id"] == "untitledopeneobackend-0.96.0a1"
         assert capabilities["production"] is True
 
         def get_link(rel):

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from tensorlakehouse_openeo_driver.model.dimension import Dimension
 
@@ -8,7 +8,7 @@ class DataCubeVariable:
         self,
         dimensions: List[Dimension],
         type: str,
-        description: Optional[str] = None,
+        description: str,
         extent: Optional[List[Union[str, float]]] = None,
         values: Optional[List[Union[str, float]]] = None,
         unit: Optional[str] = None,
@@ -29,13 +29,14 @@ class DataCubeVariable:
             isinstance(d, Dimension) for d in dimensions
         ), f"Error! not all items of dimensions list are instance of Dimension: {dimensions}"
         self.dimensions = dimensions
+        assert description is not None
         self.description = description
         self.extent = extent
         self.values = values
         self.unit = unit
 
-    def to_dict(self) -> Dict:
-        data = dict()
+    def to_dict(self) -> Dict[str, Any]:
+        data: Dict[str, Any] = dict()
         data[self.description] = {
             "dimensions": [d.description for d in self.dimensions],
             "type": self.type,

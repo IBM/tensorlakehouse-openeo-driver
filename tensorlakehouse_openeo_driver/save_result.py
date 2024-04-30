@@ -41,7 +41,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
 
         self.options = options
 
-    def save_result(self, filename: str) -> str:
+    def save_result(self, filename: Path) -> str:
         """save result as a file specified by filename
 
         Args:
@@ -50,7 +50,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
         Raises:
             NotImplementedError: _description_
 
-        Returns:
+        Returns:ß
             str: filename
         """
         engine = "netcdf4"
@@ -75,7 +75,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                 ds = array.to_dataset(dim=DEFAULT_BANDS_DIMENSION)
                 dimensions = ds.dims
                 logger.debug(f"DataSet dimensions {dimensions}")
-                ds.to_netcdf(path=filename, engine=engine)
+                ds.to_netcdf(path=filename, engine=engine)  # type: ignore
             except TypeError as e:
                 logger.error(
                     f"TypeError: Invalid attr. Exception handling: trying to convert invalid attrs to str: {e}"
@@ -93,16 +93,16 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                             logger.debug(f"Invalid attr: {attr_key}")
                             ds[variable].attrs[attr_key] = str(attr_value)
 
-                ds.to_netcdf(path=filename, engine=engine)  # Works as expected
+                ds.to_netcdf(path=filename, engine=engine)  # type: ignore
         else:
             raise NotImplementedError(f"Support for {format} is not implemented")
-        return filename
+        return str(filename)
 
-    def _save_as_geotiff(self, filename: str) -> str:
+    def _save_as_geotiff(self, filename: Path) -> str:
         """save files as geotiff
 
         Args:
-            filename (str): full path to the file
+            filename (Path): full path to the file
 
         Returns:
             str: full path to the file
@@ -137,7 +137,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
             path = Path(filename)
             parent_dir = path.parent
             # save as zip instead of tif
-            filename = filename.replace(".gtiff", ".zip")
+            filename = filename.with_suffix(".zip")
             self.format = "ZIP"
             geotiff_files = list()
             time_list = list(data[time_dim].values)
@@ -160,4 +160,4 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
             for geotiff_file in geotiff_files:
                 os.remove(geotiff_file)
 
-        return filename
+        return str(filename)

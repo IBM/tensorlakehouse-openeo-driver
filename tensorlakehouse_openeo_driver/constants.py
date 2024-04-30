@@ -90,3 +90,13 @@ assert result_backend is not None, "Error! RESULT_BACKEND is None"
 
 REDIS_CERT_NAME = os.getenv("REDIS_CERT_NAME")
 REDIS_CERT = os.getenv("REDIS_CERT")
+
+# URL to the authorization server, which will issue an access token if the client has been
+# authorized by the resource owner.
+APPID_ISSUER = os.getenv("APPID_ISSUER")
+# application ID and secret
+OPENEO_AUTH_CLIENT_ID = os.getenv("OPENEO_AUTH_CLIENT_ID")
+OPENEO_AUTH_CLIENT_SECRET = os.getenv("OPENEO_AUTH_CLIENT_SECRET")
+# resource owner (end-user) username and password
+APPID_PASSWORD = os.getenv("APPID_PASSWORD")
+APPID_USERNAME = os.getenv("APPID_USERNAME")

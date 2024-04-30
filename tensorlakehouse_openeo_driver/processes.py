@@ -7,6 +7,8 @@ from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     AbstractLoadCollection,
     LoadCollectionFromCOS,
+)
+from tensorlakehouse_openeo_driver.process_implementations.load_collection_hbase import (
     LoadCollectionFromHBase,
 )
 import geopandas as gpd
@@ -320,6 +322,8 @@ def load_collection(
     """
     logger.debug(f"Running load_collection process: collectiond ID={id} STAC URL={STAC_URL}")
     stac_catalog = Client.open(STAC_URL)
+    assert bands is not None
+    assert isinstance(bands, list), f"Error! Unexpected type: {bands=}"
     # extract coordinates from BoundingBox object
     try:
         collection = stac_catalog.get_collection(id)
@@ -543,9 +547,23 @@ def aggregate_temporal(
     return aggregated_data
 
 
-def _create_bins(intervals: List[str]) -> List[List[np.datetime64]]:
+def _create_bins(
+    intervals: Union[TemporalIntervals, list[TemporalInterval], list[Optional[str]]]
+) -> List[List[np.datetime64]]:
+    """create list of bins based on timestamps specified by user
+
+    Args:
+        intervals (Union[TemporalIntervals, list[TemporalInterval], list[Optional[str]]]): _description_
+
+    Returns:
+        List[List[np.datetime64]]: list of bins
+    """
     numpy_intervals = list()
+    assert isinstance(
+        intervals, list
+    ), f"Error! Only list[TemporalInterval] is supported: {intervals=}"
     for interval in intervals:
+        assert isinstance(interval, TemporalInterval)
         s = interval.start.to_numpy()
         numpy_intervals.append(s)
         e = interval.end.to_numpy()
@@ -681,7 +699,7 @@ def merge_cubes(
                 merged_cube = concat_both_cubes_rechunked
             else:
                 # Example 3.2: Elementwise operation
-                positional_parameters = {}
+                positional_parameters: Dict = {}
                 named_parameters = {
                     x_dim: cube1.data,
                     y_dim: cube2.data,
@@ -910,14 +928,14 @@ def _reproject_cube_match(
     )
     # And we bring the dimensions back to the original order
     data_cube_stacked_reprojected = data_cube_stacked_reprojected.transpose(*data_cube.dims)
-
+    assert isinstance(data_cube_stacked_reprojected, xr.DataArray)
     return data_cube_stacked_reprojected
 
 
 def resample_spatial(
     data: RasterCube,
     projection: Optional[Union[str, int]] = None,
-    resolution: int = 0,
+    resolution: Optional[int] = 0,
     method: str = "near",
     align: str = "upper-left",
 ) -> RasterCube:

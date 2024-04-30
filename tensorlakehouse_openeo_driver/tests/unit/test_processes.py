@@ -1,6 +1,6 @@
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 from functools import partial
-from typing import List
+from typing import List, Union
 
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
@@ -53,7 +53,9 @@ def test_rename_dimension(source: str, target: str):
         ),
     ],
 )
-def test_rename_labels(source: List[str], target: List[str], dimension: str):
+def test_rename_labels(
+    source: List[Union[str, int]], target: List[Union[str, int]], dimension: str
+):
     size_x = 100
     array = generate_xarray_datarray(
         timestamps=(pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)),
@@ -106,7 +108,7 @@ def test_resample_spatial(resolution: int):
         latmin=40,
         lonmax=-90,
         lonmin=-91,
-        timestamps=[pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)],
+        timestamps=(pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)),
         freq=None,
     )
     target_projection = 4236
@@ -206,6 +208,7 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
     elif period == "month":
         freq = "W"
         num_periods = 4 * expected_size
+    timestamps = (pd.Timestamp(2020, 1, 1), None)
     data = generate_xarray_datarray(
         bands=["B02"],
         latmax=41,
@@ -214,7 +217,7 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
         lonmax=-90,
         lonmin=-91,
         size_y=size_y,
-        timestamps=[pd.Timestamp(2020, 1, 1), None],
+        timestamps=timestamps,
         freq=freq,
         num_periods=num_periods,
     )

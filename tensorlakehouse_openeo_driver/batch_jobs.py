@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, List, Optional
 from openeo_driver.backend import BatchJobMetadata, BatchJobResultMetadata, BatchJobs
 from openeo_driver.errors import JobNotFinishedException, JobNotFoundException
 from openeo_driver.users.user import User

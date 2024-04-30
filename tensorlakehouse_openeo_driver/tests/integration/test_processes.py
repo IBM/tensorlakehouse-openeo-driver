@@ -1,13 +1,13 @@
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 from functools import partial
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple
 from rasterio.crs import CRS
 import pandas as pd
 import pytest
 import xarray as xr
 from openeo_pg_parser_networkx.pg_schema import BoundingBox
 import numpy as np
-from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
+from tensorlakehouse_openeo_driver.process_implementations.load_collection_hbase import (
     LoadCollectionFromHBase,
 )
 
@@ -55,7 +55,9 @@ COLLECTION_ID_SENTINEL_2_LAND_USE = "sentinel2-10m-lulc"
 BAND_SENTINEL_2_LAND_USE_LULC = "lulc"
 
 
-test_load_collection_input = [
+test_load_collection_input: List[
+    Tuple[str, BoundingBox, MockTemporalInterval, List[str], Dict[str, Any], Dict, str]
+] = [
     (
         COLLECTION_ID_ERA5,
         BoundingBox(
@@ -156,7 +158,7 @@ def test_load_collection(
     spatial_extent: BoundingBox,
     temporal_extent: MockTemporalInterval,
     bands: Optional[List[str]],
-    expected_dims: Dict[str, Dict[str, Union[int, str]]],
+    expected_dims: Dict[str, int],
     expected_attrs: Dict[str, Any],
     reference_system: str,
 ):
@@ -206,7 +208,9 @@ def test_load_collection(
             ), f"Invalid coordinate: south <= y <= north: {south- tolerance} <= {y} <= {north + tolerance}"
 
 
-test_load_collection_via_dataservice_input = [
+test_load_collection_via_dataservice_input: List[
+    Tuple[str, BoundingBox, MockTemporalInterval, List[str], Dict[str, str], Dict[str, int], Dict]
+] = [
     (
         # COLLECTION_ID_ERA5_ZARR,
         "Global weather (ERA5)",
@@ -238,7 +242,7 @@ def test_LoadCollectionFromHBase(
     collection_id: str,
     spatial_extent: BoundingBox,
     temporal_extent: MockTemporalInterval,
-    bands: Optional[List[str]],
+    bands: List[str],
     dimensions: Dict[str, str],
     expected_dims: Dict,
     expected_attrs: Dict,
@@ -257,15 +261,6 @@ def test_LoadCollectionFromHBase(
         expected_attrs=expected_attrs,
         expected_crs=GEODN_DISCOVERY_CRS,
     )
-
-
-"""
-### Test binary math ops (e.g. subtract) with broadcast ###
-
-# from tensorlakehouse_openeo_driver.processes import (
-#     subtract as norm_subtract,
-# )
-"""
 
 
 test_subtract_datacubes_parameters = [
@@ -347,7 +342,7 @@ def test_subtract_cubes(
     time_dim_name = "time"
     if time_dim_name in cube1.dims:
         if len(cube1.coords[time_dim_name].values) > 0:
-            if hints != [] and hints[0] in ["reduce", "single"]:
+            if hints is not None and hints != [] and hints[0] in ["reduce", "single"]:
                 cube1 = cube1.reduce(np.min, dim=time_dim_name)
                 # cube1 = cube1.max(dim = TIME)
                 logger.debug(f"cube1 reduced:\n{cube1}")

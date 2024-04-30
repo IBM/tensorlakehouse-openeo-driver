@@ -1,3 +1,4 @@
+from pathlib import Path
 from openeo_pg_parser_networkx import OpenEOProcessGraph
 from typing import Any, Dict
 from celery import Celery
@@ -33,13 +34,13 @@ def create_batch_jobs(
     job_options: Dict,
     title: str,
     description: Dict,
-) -> str:
+) -> Dict[str, Any]:
     job_id = self.request.id
     logger.debug(
         f"tasks::create_batch_jobs - job_id={job_id} status={status} process={process} title={title}"
     )
     # set metadata
-    metadata = {
+    metadata: Dict[str, Any] = {
         "created": created,
         "title": title,  # required by get_result_assets
         "status": status,
@@ -72,14 +73,14 @@ def create_batch_jobs(
     elif media_type.upper() == GTIFF:
         extension = "tif"
     else:
-        raise ValueError("Missing output format")
+        raise ValueError(f"Missing output format: {media_type}")
     # set filename
     now = pd.Timestamp.now().strftime("%Y%m%dT%H%M%S")
-    path = str(OPENEO_GEODN_DRIVER_DATA_DIR / f"{now}-{job_id}.{extension}")
+    filename = f"{now}-{job_id}.{extension}"
+    path: Path = OPENEO_GEODN_DRIVER_DATA_DIR / filename
     assert isinstance(datacube, GeoDNImageCollectionResult)
     # save file locally
     datacube.save_result(filename=path)
-    filename = path.split("/")[-1]
     metadata["filename"] = filename  # required by get_result_assets
     # upload file to COS
     cos.upload_fileobj(key=filename, path=path)

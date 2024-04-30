@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List, Union
 import uuid
 from zipfile import ZipFile
 import rioxarray
@@ -31,11 +32,14 @@ def open_tif_files(path: Path) -> xr.Dataset:
         # extract all
         zipfile = ZipFile(zip_path)
         zipfile.extractall(path=target_dir)
-        ds = _open_multiple_tif(target_dir=target_dir)
+        ds: Union[xr.DataArray, xr.Dataset, List[xr.Dataset]] = _open_multiple_tif(
+            target_dir=target_dir
+        )
 
     else:
         print(f"Open file: {path}")
         ds = rioxarray.open_rasterio(path)
+    assert isinstance(ds, xr.Dataset)
     return ds
 
 
@@ -46,7 +50,7 @@ def _open_multiple_tif(target_dir: Path) -> xr.Dataset:
     for index, f in enumerate(raster_files):
         if len(f.name) > 35:
             try:
-                t = datetime.strptime(f.name[15:35], "%Y-%m-%dT%H-%M-%SZ")
+                t: Union[datetime, int] = datetime.strptime(f.name[15:35], "%Y-%m-%dT%H-%M-%SZ")
             except ValueError:
                 t = index
         else:
@@ -60,4 +64,3 @@ def _open_multiple_tif(target_dir: Path) -> xr.Dataset:
     )
     ds = ds.assign_coords({TIME: timestamps})
     return ds
-

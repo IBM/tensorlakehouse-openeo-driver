@@ -18,7 +18,7 @@ class LayerMetadata:
         if isinstance(layer_id, int):
             layer_id = str(layer_id)
         self._layer_id = layer_id
-        
+
         self.description_short = description_short
         assert name is not None
         self.name = name

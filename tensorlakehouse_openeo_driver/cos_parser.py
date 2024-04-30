@@ -144,7 +144,9 @@ class COSConnector:
         # the first char of the path is a slash, so we need to skip it to get the bucket name
         url_parsed = urlparse(url=url)
         if url_parsed.scheme is not None and url_parsed.scheme.lower() == "s3":
-            assert isinstance(url_parsed.hostname, str), f"Error! Unexpected hostname: {url_parsed.hostname}"
+            assert isinstance(
+                url_parsed.hostname, str
+            ), f"Error! Unexpected hostname: {url_parsed.hostname}"
             return url_parsed.hostname
         else:
             begin_bucket_name = 1
@@ -257,6 +259,7 @@ class COSConnector:
         if "band" in data_array.dims and "band" != DEFAULT_BANDS_DIMENSION:
             data_array = data_array.rename({"band": DEFAULT_BANDS_DIMENSION})
         time_dim = get_dimension_name(item=arbitrary_item, dim_type="temporal")
+        assert isinstance(time_dim, str), f"Error! unexpected type of time_dim {time_dim}"
         x_dim = get_dimension_name(item=arbitrary_item, axis=DEFAULT_X_DIMENSION)
         y_dim = get_dimension_name(item=arbitrary_item, axis=DEFAULT_Y_DIMENSION)
         # if time_dim in data_array.dims and "time" != TIME:
@@ -385,4 +388,5 @@ class COSConnector:
             return None
 
         # The response contains the presigned URL
+        assert isinstance(response, str), f"Error! Unexpected type: {response=}"
         return response
