@@ -7,6 +7,7 @@ import logging
 import logging.config
 
 from tensorlakehouse_openeo_driver.constants import (
+    DEFAULT_Z_DIMENSION,
     LOGGING_CONF_PATH,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
@@ -123,6 +124,88 @@ class HorizontalSpatialDimension(Dimension):
 
     def merges(self, other: "HorizontalSpatialDimension"):
         assert isinstance(other, HorizontalSpatialDimension)
+
+        if self.start < other.start:
+            self.start = other.start
+        if self.end > other.end:
+            self.end = other.end
+
+
+class VerticalSpatialDimension(Dimension):
+    """A spatial raster dimension in one of the horizontal (x or y) directions."""
+
+    def __init__(
+        self,
+        axis: str,
+        description: str,
+        extent: Optional[List[float]],
+        reference_system: Optional[int] = None,
+        step: Optional[float] = None,
+        type: str = "spatial",
+    ) -> None:
+        super().__init__(description, type)
+        assert isinstance(axis, str), f"Error! not a str: {axis}"
+        assert axis in DEFAULT_Z_DIMENSION, f"Error! Invalid axis={axis}"
+        self._axis = axis
+        assert isinstance(extent, list), f"Error! not a list: {extent}"
+        assert len(extent) == 2, f"Error! Unexpected size: {extent}"
+        assert all(isinstance(x, numbers.Number) for x in extent), f"Error! Invalid type: {extent}"
+        self.start = extent[0]
+        self.end = extent[1]
+        # optional
+        self._reference_system = reference_system
+        self._step = step
+
+    @property
+    def axis(self) -> str:
+        return self._axis
+
+    @property
+    def start(self) -> float:
+        return self._start
+
+    @start.setter
+    def start(self, v: float):
+        self._start = float(v)
+
+    @property
+    def end(self):
+        return self._end
+
+    @end.setter
+    def end(self, v: float):
+        self._end = float(v)
+
+    @property
+    def step(self) -> Optional[float]:
+        return self._step
+
+    @property
+    def extent(self) -> List[float]:
+        return [self.start, self.end]
+
+    @property
+    def reference_system(self) -> Optional[int]:
+        return self._reference_system
+
+    @reference_system.setter
+    def reference_system(self, v):
+        assert isinstance(v, str), f"Error! Invalid type {v}"
+        self._reference_system = v
+
+    def to_dict(self):
+        super_d = super().to_dict()
+        d = dict()
+        d[self.description] = {"axis": self._axis, "extent": self.extent}
+
+        if self.reference_system is not None:
+            d[self.description]["reference_system"] = self.reference_system
+        # merge super dict with self dict
+        d[self.description] = super_d[self.description] | d[self.description]
+        return d
+
+    def merges(self, other: "VerticalSpatialDimension"):
+        assert isinstance(other, VerticalSpatialDimension)
 
         if self.start < other.start:
             self.start = other.start

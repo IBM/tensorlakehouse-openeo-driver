@@ -8,7 +8,7 @@ class DataCubeVariable:
         self,
         dimensions: List[Dimension],
         type: str,
-        description: str,
+        description: Optional[str] = None,
         extent: Optional[List[Union[str, float]]] = None,
         values: Optional[List[Union[str, float]]] = None,
         unit: Optional[str] = None,
@@ -22,6 +22,7 @@ class DataCubeVariable:
             values (Optional[List[Union[str, float]]], optional): An (ordered) list of all values, especially useful for nominal values.
             unit (Optional[str], optional):The unit of measurement for the data, preferably compliant to UDUNITS-2 units (singular).
         """
+        assert isinstance(type, str)
         assert type in ["data", "auxiliary"]
         self.type = type
         assert len(dimensions) > 0
@@ -29,14 +30,14 @@ class DataCubeVariable:
             isinstance(d, Dimension) for d in dimensions
         ), f"Error! not all items of dimensions list are instance of Dimension: {dimensions}"
         self.dimensions = dimensions
-        assert description is not None
         self.description = description
         self.extent = extent
         self.values = values
         self.unit = unit
 
-    def to_dict(self) -> Dict[str, Any]:
-        data: Dict[str, Any] = dict()
+    def to_dict(self) -> Dict[str, Dict[str, Any]]:
+        data: Dict[str, Dict[str, Any]] = dict()
+        assert self.description is not None
         data[self.description] = {
             "dimensions": [d.description for d in self.dimensions],
             "type": self.type,

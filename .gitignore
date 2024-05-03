@@ -82,9 +82,6 @@ setupenv.sh
 docs/_build/
 docs/api/*
 
-# podman
-podman-compose.yml
-
 # PyBuilder
 target/
 

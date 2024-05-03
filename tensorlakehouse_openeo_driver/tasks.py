@@ -6,13 +6,13 @@ from celery import states
 from tensorlakehouse_openeo_driver.constants import (
     GTIFF,
     NETCDF,
-    OPENEO_GEODN_DRIVER_DATA_DIR,
+    TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR,
     logger,
 )
 from shapely.geometry.polygon import Polygon
 from shapely.ops import unary_union
 import geopandas
-from tensorlakehouse_openeo_driver.cos_parser import COSConnector
+from tensorlakehouse_openeo_driver.s3_connections.cos_parser import COSConnector
 import pandas as pd
 
 from tensorlakehouse_openeo_driver.processing import GeoDNProcessing
@@ -64,7 +64,6 @@ def create_batch_jobs(
     # execute the process graph, i.e., traverse all nodes and execute each one of them
     datacube = pg_callable()
     # store result into COS
-    cos = COSConnector(bucket=OUTPUT_BUCKET_NAME)
     media_type = metadata["media_type"]
     assert media_type is not None, f"Error! invalid media type = {media_type}"
     assert isinstance(media_type, str), f"Error! media_type is not a str: {media_type}"
@@ -73,22 +72,26 @@ def create_batch_jobs(
     elif media_type.upper() == GTIFF:
         extension = "tif"
     else:
-        raise ValueError(f"Missing output format: {media_type}")
+        raise ValueError("Missing output format")
     # set filename
     now = pd.Timestamp.now().strftime("%Y%m%dT%H%M%S")
-    filename = f"{now}-{job_id}.{extension}"
-    path: Path = OPENEO_GEODN_DRIVER_DATA_DIR / filename
+    path = str(TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR / f"{now}-{job_id}.{extension}")
     assert isinstance(datacube, GeoDNImageCollectionResult)
     # save file locally
     datacube.save_result(filename=path)
+    filename = path.split("/")[-1]
     metadata["filename"] = filename  # required by get_result_assets
     # upload file to COS
-    cos.upload_fileobj(key=filename, path=path)
+    cos_conn = COSConnector(bucket=OUTPUT_BUCKET_NAME)
+    cos_conn.upload_fileobj(
+        key=filename,
+        path=Path(path),
+    )
     # create pre-signed url to allow users to download it
-    href = cos.create_presigned_link(key=filename)
+    href = cos_conn.create_presigned_link(key=filename)
 
     metadata["href"] = href  # required by get_result_assets
-    logger.debug("Finished")
+    logger.debug(f"{job_id=} has been successfully finished: {metadata=}")
     return metadata
 
 

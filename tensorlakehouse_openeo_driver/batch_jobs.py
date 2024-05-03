@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 from openeo_driver.backend import BatchJobMetadata, BatchJobResultMetadata, BatchJobs
 from openeo_driver.errors import JobNotFinishedException, JobNotFoundException
 from openeo_driver.users.user import User
@@ -11,9 +11,9 @@ from celery import states
 from tensorlakehouse_openeo_driver.constants import GTIFF, logger
 
 
-class GeodnBatchJobs(BatchJobs):
-    _job_registry: Dict[str, Any] = {}
-    _custom_job_logs: Dict[str, Any] = {}
+class TensorLakehouseBatchJobs(BatchJobs):
+    _job_registry: Dict[Tuple[str, str], BatchJobMetadata] = {}
+    _custom_job_logs: Dict[str, List[str]] = {}
 
     def generate_job_id(self):
         return generate_unique_id(prefix="j")
@@ -123,6 +123,7 @@ class GeodnBatchJobs(BatchJobs):
             RECEIVED: JOB_STATUS.CREATED,
         }
         try:
+            logger.debug(f"batch_jobs::get_job_info - job_id={job_id}")
             # get task state and info
             task = tasks.app.AsyncResult(job_id)
             celery_state = task.state
@@ -146,6 +147,10 @@ class GeodnBatchJobs(BatchJobs):
                       celery_state={celery_state} openeo_state={openeo_state} \
                         task_info={metadata}"
             )
+            if celery_state == states.FAILURE:
+                msg = metadata
+                logger.error(msg)
+                raise Exception(msg)
             # instantiate object that will be returned
             job_metadata = BatchJobMetadata(
                 id=job_id,

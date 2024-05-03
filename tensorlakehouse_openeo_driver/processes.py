@@ -7,8 +7,6 @@ from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     AbstractLoadCollection,
     LoadCollectionFromCOS,
-)
-from tensorlakehouse_openeo_driver.process_implementations.load_collection_hbase import (
     LoadCollectionFromHBase,
 )
 import geopandas as gpd
@@ -39,7 +37,7 @@ from openeo_processes_dask.process_implementations.math import (
 )
 
 from pyproj import Transformer
-from pystac_client import Client, exceptions
+from pystac_client import Client
 from rasterio import crs
 from shapely.geometry import shape
 from shapely.geometry.polygon import Polygon
@@ -57,7 +55,7 @@ from tensorlakehouse_openeo_driver.constants import (
     # X,
     # Y,
 )
-from tensorlakehouse_openeo_driver.driver_data_cube import GeoDNDataCube
+from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
 from tensorlakehouse_openeo_driver.geospatial_utils import reproject_cube
 
@@ -256,7 +254,7 @@ def save_result(
             time_dim = next(iter(attr.keys()))
             data.attrs["reduced_dimensions_min_values"] = pd.Timestamp(attr[time_dim]).isoformat()
         return GeoDNImageCollectionResult(
-            cube=GeoDNDataCube(data=data), format=format, options=options
+            cube=TensorLakehouseDataCube(data=data), format=format, options=options
         )
     elif format in [GTIFF, ZIP]:
         assert isinstance(data, xr.DataArray), f"Error! data is not a xarray.Dataset: {type(data)}"
@@ -266,10 +264,8 @@ def save_result(
                 attr[DEFAULT_TIME_DIMENSION]
             ).isoformat()
         return GeoDNImageCollectionResult(
-            cube=GeoDNDataCube(data=data), format=format, options=options
+            cube=TensorLakehouseDataCube(data=data), format=format, options=options
         )
-    elif format == GEOJSON:
-        return data
     else:
         raise NotImplementedError(f"Support for {format} is not implemented")
 
@@ -306,7 +302,7 @@ def load_collection(
     temporal_extent: TemporalInterval,
     bands: Optional[List[str]],
     properties=None,
-) -> RasterCube:
+) -> Union[RasterCube, VectorCube]:
     """pull data from the data source in which the collection is stored
 
     Args:
@@ -322,14 +318,14 @@ def load_collection(
     """
     logger.debug(f"Running load_collection process: collectiond ID={id} STAC URL={STAC_URL}")
     stac_catalog = Client.open(STAC_URL)
-    assert bands is not None
-    assert isinstance(bands, list), f"Error! Unexpected type: {bands=}"
     # extract coordinates from BoundingBox object
     try:
         collection = stac_catalog.get_collection(id)
-        dimension_names = _get_dimension_names(
-            cube_dimensions=collection.summaries.schemas["cube:dimensions"]
-        )
+        extra_fields = collection.extra_fields
+        cube_dimensions = extra_fields["cube:dimensions"]
+        assert isinstance(cube_dimensions, dict), f"Error! Unexpected type {cube_dimensions}"
+        assert isinstance(bands, list), f"Error! Unexpected type: {bands}"
+        dimension_names = _get_dimension_names(cube_dimensions=cube_dimensions)
         if _is_data_on_hbase(collection=collection):
             loader: AbstractLoadCollection = LoadCollectionFromHBase()
         else:
@@ -343,15 +339,17 @@ def load_collection(
             dimensions=dimension_names,
         )
         return data
-    except exceptions.APIError as e:
-        logger.warning(e)
-        return _load_collection_from_external_openeo_instance(
-            collection_id=id,
-            spatial_extent=spatial_extent,
-            temporal_extent=temporal_extent,
-            bands=bands,
-            properties=properties,
-        )
+    except Exception as e:
+        msg = f"Error! collection_id={id} spatial_extent={spatial_extent} temporal_extent={temporal_extent} msg={e}"
+        logger.error(msg=msg)
+        raise e
+        # return _load_collection_from_external_openeo_instance(
+        #     collection_id=id,
+        #     spatial_extent=spatial_extent,
+        #     temporal_extent=temporal_extent,
+        #     bands=bands,
+        #     properties=properties,
+        # )
 
 
 def _get_dimension_names(cube_dimensions: Dict[str, Any]) -> Dict[str, str]:
@@ -547,23 +545,19 @@ def aggregate_temporal(
     return aggregated_data
 
 
-def _create_bins(
-    intervals: Union[TemporalIntervals, list[TemporalInterval], list[Optional[str]]]
-) -> List[List[np.datetime64]]:
-    """create list of bins based on timestamps specified by user
+def _create_bins(intervals: List[TemporalInterval]) -> List[List[np.datetime64]]:
+    """create bins (which are represented by two numpy.datetime objects) given a list of
+    time ranges (TemporalInterval)
 
     Args:
-        intervals (Union[TemporalIntervals, list[TemporalInterval], list[Optional[str]]]): _description_
+        intervals (List[TemporalInterval]): list of time ranges
+
 
     Returns:
-        List[List[np.datetime64]]: list of bins
+        List[List[np.datetime64]]: bins
     """
     numpy_intervals = list()
-    assert isinstance(
-        intervals, list
-    ), f"Error! Only list[TemporalInterval] is supported: {intervals=}"
     for interval in intervals:
-        assert isinstance(interval, TemporalInterval)
         s = interval.start.to_numpy()
         numpy_intervals.append(s)
         e = interval.end.to_numpy()
@@ -928,8 +922,8 @@ def _reproject_cube_match(
     )
     # And we bring the dimensions back to the original order
     data_cube_stacked_reprojected = data_cube_stacked_reprojected.transpose(*data_cube.dims)
-    assert isinstance(data_cube_stacked_reprojected, xr.DataArray)
-    return data_cube_stacked_reprojected
+
+    return data_cube_stacked_reprojected  # type: ignore[no-any-return]
 
 
 def resample_spatial(
@@ -999,7 +993,7 @@ def resample_spatial(
             resolution=resolution,
             resampling=resampling,
         )
-    else:
+    elif resolution is not None and isinstance(resolution, (float, int)) and resolution > 0:
         # based on https://corteva.github.io/rioxarray/html/examples/resampling.html
         # get bounding box
         min_x, min_y, max_x, max_y = data.rio.bounds()
@@ -1013,7 +1007,9 @@ def resample_spatial(
             resampling=resampling,
             shape=(new_height, new_width),
         )
-
+    else:
+        # if target CRS is equal to source CRS and resolution is zero, do nothing
+        pass
     return data
 
 

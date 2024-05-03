@@ -1,3 +1,6 @@
+from shapely.geometry.polygon import Polygon
+from dask_geopandas import GeoDataFrame
+
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 from functools import partial
 from typing import Any, Dict, List, Optional, Tuple
@@ -7,7 +10,8 @@ import pytest
 import xarray as xr
 from openeo_pg_parser_networkx.pg_schema import BoundingBox
 import numpy as np
-from tensorlakehouse_openeo_driver.process_implementations.load_collection_hbase import (
+from tensorlakehouse_openeo_driver.geospatial_utils import convert_point_to_4326
+from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     LoadCollectionFromHBase,
 )
 
@@ -22,6 +26,7 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_TIME_DIMENSION,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
+    STAC_URL,
     logger,
 )
 from tensorlakehouse_openeo_driver.processes import (
@@ -30,6 +35,7 @@ from tensorlakehouse_openeo_driver.processes import (
     load_collection,
 )
 from tensorlakehouse_openeo_driver.processing import GeoDNProcessing
+from tensorlakehouse_openeo_driver.stac import STAC
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
     validate_raster_datacube,
     MockTemporalInterval,
@@ -56,7 +62,7 @@ BAND_SENTINEL_2_LAND_USE_LULC = "lulc"
 
 
 test_load_collection_input: List[
-    Tuple[str, BoundingBox, MockTemporalInterval, List[str], Dict[str, Any], Dict, str]
+    Tuple[str, BoundingBox, MockTemporalInterval, List[str], Dict, Dict, str]
 ] = [
     (
         COLLECTION_ID_ERA5,
@@ -67,7 +73,9 @@ test_load_collection_input: List[
             south=47,
             crs="epsg:4326",
         ),
-        MockTemporalInterval(pd.Timestamp(2021, 1, 1), pd.Timestamp(2021, 2, 1)),
+        MockTemporalInterval(
+            pd.Timestamp(2021, 1, 1, tz="UTC"), pd.Timestamp(2021, 2, 1, tz="UTC")
+        ),
         [BAND_TOTAL_PRECIPITATION],
         {
             DEFAULT_X_DIMENSION: 32,
@@ -87,7 +95,9 @@ test_load_collection_input: List[
             south=47,
             crs="epsg:4326",
         ),
-        MockTemporalInterval(pd.Timestamp(2019, 12, 31), pd.Timestamp(2021, 1, 2)),
+        MockTemporalInterval(
+            pd.Timestamp(2019, 12, 31, tz="UTC"), pd.Timestamp(2021, 1, 2, tz="UTC")
+        ),
         [BAND_CROP_30M],
         {
             "lon": 3907,
@@ -107,7 +117,9 @@ test_load_collection_input: List[
             south=47,
             crs="epsg:4326",
         ),
-        MockTemporalInterval(pd.Timestamp(2021, 1, 1), pd.Timestamp(2021, 1, 1)),
+        MockTemporalInterval(
+            pd.Timestamp(2021, 1, 1, tz="UTC"), pd.Timestamp(2021, 1, 1, tz="UTC")
+        ),
         [BAND_CROP_30M],
         {
             DEFAULT_X_DIMENSION: 3907,
@@ -121,7 +133,9 @@ test_load_collection_input: List[
     (
         COLLECTION_ID_SENTINEL_2_LAND_USE,
         BoundingBox(south=32.25, west=-114.75, north=32.75, east=-114.25),
-        MockTemporalInterval(pd.Timestamp(2021, 1, 1), pd.Timestamp(2022, 1, 1)),
+        MockTemporalInterval(
+            pd.Timestamp(2021, 1, 1, tz="UTC"), pd.Timestamp(2022, 1, 1, tz="UTC")
+        ),
         [BAND_SENTINEL_2_LAND_USE_LULC],
         {
             DEFAULT_X_DIMENSION: 7813,
@@ -135,7 +149,9 @@ test_load_collection_input: List[
     (
         COLLECTION_ID_SENTINEL_2_LAND_USE,
         BoundingBox(south=39.6279, west=-102.1014, north=39.9276, east=-101.5892),
-        MockTemporalInterval(pd.Timestamp(2022, 1, 1), pd.Timestamp(2022, 1, 1)),
+        MockTemporalInterval(
+            pd.Timestamp(2022, 1, 1, tz="UTC"), pd.Timestamp(2022, 1, 1, tz="UTC")
+        ),
         [BAND_SENTINEL_2_LAND_USE_LULC],
         {
             DEFAULT_X_DIMENSION: 8004,
@@ -145,6 +161,62 @@ test_load_collection_input: List[
         },
         {},
         CRS_EPSG_4326,
+    ),
+    (
+        "global-weather-era5",
+        BoundingBox(
+            west=-123.0,
+            east=-122.0,
+            north=48,
+            south=47,
+            crs="epsg:4326",
+        ),
+        MockTemporalInterval(
+            pd.Timestamp(2021, 1, 1, tz="UTC"), pd.Timestamp(2021, 2, 1, tz="UTC")
+        ),
+        [BAND_TOTAL_PRECIPITATION],
+        {
+            DEFAULT_X_DIMENSION: 32,
+            DEFAULT_Y_DIMENSION: 32,
+            DEFAULT_BANDS_DIMENSION: 1,
+            "time": 745,
+        },
+        {},
+        CRS_EPSG_4326,
+    ),
+    (
+        "HLSS30",
+        BoundingBox(west=-124.16, south=37.84, east=-122.87, north=38.85),
+        MockTemporalInterval(
+            start=pd.Timestamp("2020-07-01T19:13:56Z"),
+            end=pd.Timestamp("2020-07-01T19:14:00Z"),
+        ),
+        ["B02"],
+        {
+            DEFAULT_X_DIMENSION: 6034,
+            DEFAULT_Y_DIMENSION: 6024,
+            DEFAULT_BANDS_DIMENSION: 1,
+            "time": 1,
+        },
+        {},
+        "epsg:32617",
+    ),
+    (
+        "dev_ne_10m_admin_0_countries",
+        BoundingBox(west=-124.16, south=37.84, east=-122.87, north=38.85),
+        MockTemporalInterval(
+            start=pd.Timestamp("2022-05-11T00:00:00Z"),
+            end=pd.Timestamp("2022-05-13T00:00:00Z"),
+        ),
+        ["TLC", "ADMIN"],
+        {
+            DEFAULT_X_DIMENSION: 6034,
+            DEFAULT_Y_DIMENSION: 6024,
+            DEFAULT_BANDS_DIMENSION: 1,
+            "time": 1,
+        },
+        {},
+        "epsg:4326",
     ),
 ]
 
@@ -162,8 +234,11 @@ def test_load_collection(
     expected_attrs: Dict[str, Any],
     reference_system: str,
 ):
+    stac = STAC(STAC_URL)
     if collection_id == COLLECTION_ID_HISTORICAL_CROP_PLANTING_MAP:
         pytest.skip(f"Fix dimensions name: {collection_id}")
+    elif not stac.is_collection_available(collection_id=collection_id):
+        pytest.skip(f"Error! collection is not available: {collection_id}")
     else:
         data = load_collection(
             id=collection_id,
@@ -171,45 +246,64 @@ def test_load_collection(
             temporal_extent=temporal_extent,
             bands=bands,
         )
-        assert isinstance(data, xr.DataArray), f"Error! data is not a xr.DataArray: {type(data)}"
+        assert isinstance(
+            data, (xr.DataArray, GeoDataFrame)
+        ), f"Error! data is not a xr.DataArray: {type(data)}"
+        if isinstance(data, xr.DataArray):
+            validate_raster_datacube(
+                cube=data,
+                expected_dim_size=expected_dims,
+                expected_attrs=expected_attrs,
+                expected_crs=reference_system,
+            )
 
-        validate_raster_datacube(
-            cube=data,
-            expected_dim_size=expected_dims,
-            expected_attrs=expected_attrs,
-            expected_crs=reference_system,
-        )
+            temporal_dims = [
+                t for t in list(expected_dims.keys()) if t in ["time", DEFAULT_TIME_DIMENSION, "t"]
+            ]
+            assert len(temporal_dims) > 0
+            # assumption that there is only one time dimension
+            time_dim = temporal_dims[0]
 
-        temporal_dims = [
-            t for t in list(expected_dims.keys()) if t in ["time", DEFAULT_TIME_DIMENSION, "t"]
-        ]
-        assert len(temporal_dims) > 0
-        # assumption that there is only one time dimension
-        time_dim = temporal_dims[0]
+            # check time dimension
+            for time in data[time_dim].values:
+                t = pd.Timestamp(time)
+                if t.tzinfo is None:
+                    t = t.tz_localize(tz="UTC")
+                start = temporal_extent.start
+                end = temporal_extent.end
+                assert start <= t <= end, f"Error! invalid: {start} <= {t} <= {end}"
+            west, south, east, north = _get_bounding_box(spatial_extent=spatial_extent)
 
-        # check time dimension
-        for time in data[time_dim].values:
-            t = pd.Timestamp(time)
-            start = temporal_extent.start
-            end = temporal_extent.end
-            assert start <= t <= end, f"Error! invalid: {start} <= {t} <= {end}"
-        west, south, east, north = _get_bounding_box(spatial_extent=spatial_extent)
-
-        # check spatial dimension - tolerance value in degrees when validating x and y
-        tolerance = 3.0
-        for x in data.x.values:
+            # check spatial dimension - tolerance value in degrees when validating x and y
+            tolerance = 3.0
+            maxx = np.max(data.x.values)
+            maxy = np.max(data.y.values)
+            minx = np.max(data.x.values)
+            miny = np.max(data.y.values)
+            max_lon, max_lat = convert_point_to_4326(x=maxx, y=maxy, crs=reference_system)
+            min_lon, min_lat = convert_point_to_4326(x=minx, y=miny, crs=reference_system)
             assert (
-                west - tolerance <= x <= east + tolerance
-            ), f"Invalid coordinate: west <= x <= east: {west - tolerance} <= {x} <= {east + tolerance}"
-
-        for y in data.y.values:
+                west - tolerance <= min_lon <= max_lon <= east + tolerance
+            ), f"Invalid coordinate: west <= x <= east: {west - tolerance} <= {min_lon} <= {max_lon} <= {east + tolerance}"
             assert (
-                south - tolerance <= y <= north + tolerance
-            ), f"Invalid coordinate: south <= y <= north: {south- tolerance} <= {y} <= {north + tolerance}"
+                south - tolerance <= min_lat <= max_lat <= north + tolerance
+            ), f"Invalid coordinate: west <= x <= east: {west - tolerance} <= {min_lon} <= {max_lon} <= {east + tolerance}"
+        else:
+            assert "geometry" in data.columns
+            if bands is not None:
+                for band in bands:
+                    assert band in data.columns, f"Error! missing {band=} {data.columns=}"
+            xmin = spatial_extent.west
+            xmax = spatial_extent.east
+            ymin = spatial_extent.south
+            ymax = spatial_extent.north
+            mask = Polygon([[xmin, ymin], [xmin, ymax], [xmax, ymax], [xmax, ymin]])
+            for g in data["geometry"]:
+                assert mask.contains(g), f"Error! {mask.wkt} does not contain {g.wkt}"
 
 
 test_load_collection_via_dataservice_input: List[
-    Tuple[str, BoundingBox, MockTemporalInterval, List[str], Dict[str, str], Dict[str, int], Dict]
+    Tuple[str, BoundingBox, MockTemporalInterval, List[str], Dict, Dict, Dict]
 ] = [
     (
         # COLLECTION_ID_ERA5_ZARR,
@@ -217,6 +311,31 @@ test_load_collection_via_dataservice_input: List[
         BoundingBox(west=-91.0, east=-90.0, south=41.0, north=42.0, crs="epsg:4326"),
         MockTemporalInterval(pd.Timestamp(2023, 6, 20), pd.Timestamp(2023, 6, 21)),
         ["Total precipitation"],
+        {
+            DEFAULT_X_DIMENSION: DEFAULT_X_DIMENSION,
+            DEFAULT_Y_DIMENSION: DEFAULT_Y_DIMENSION,
+            DEFAULT_TIME_DIMENSION: "time",
+            DEFAULT_BANDS_DIMENSION: DEFAULT_BANDS_DIMENSION,
+        },
+        {
+            DEFAULT_X_DIMENSION: 32,
+            DEFAULT_Y_DIMENSION: 32,
+            "time": 25,
+            DEFAULT_BANDS_DIMENSION: 1,
+        },
+        {},
+    ),
+    (
+        "global-weather-era5",
+        BoundingBox(
+            west=-123.0,
+            east=-122.0,
+            north=48,
+            south=47,
+            crs="epsg:4326",
+        ),
+        MockTemporalInterval(pd.Timestamp(2021, 1, 1), pd.Timestamp(2021, 1, 2)),
+        [BAND_TOTAL_PRECIPITATION],
         {
             DEFAULT_X_DIMENSION: DEFAULT_X_DIMENSION,
             DEFAULT_Y_DIMENSION: DEFAULT_Y_DIMENSION,
@@ -247,20 +366,33 @@ def test_LoadCollectionFromHBase(
     expected_dims: Dict,
     expected_attrs: Dict,
 ):
-    loader = LoadCollectionFromHBase()
-    data = loader.load_collection(
-        id=collection_id,
-        spatial_extent=spatial_extent,
-        temporal_extent=temporal_extent,
-        bands=bands,
-        dimensions=dimensions,
-    )
-    validate_raster_datacube(
-        cube=data,
-        expected_dim_size=expected_dims,
-        expected_attrs=expected_attrs,
-        expected_crs=GEODN_DISCOVERY_CRS,
-    )
+    stac = STAC(STAC_URL)
+    if not stac.is_collection_available(collection_id=collection_id):
+        pytest.skip(f"Error! collection is not available: {collection_id}")
+    else:
+        loader = LoadCollectionFromHBase()
+        data = loader.load_collection(
+            id=collection_id,
+            spatial_extent=spatial_extent,
+            temporal_extent=temporal_extent,
+            bands=bands,
+            dimensions=dimensions,
+        )
+        validate_raster_datacube(
+            cube=data,
+            expected_dim_size=expected_dims,
+            expected_attrs=expected_attrs,
+            expected_crs=GEODN_DISCOVERY_CRS,
+        )
+
+
+"""
+### Test binary math ops (e.g. subtract) with broadcast ###
+
+# from tensorlakehouse_openeo_driver.processes import (
+#     subtract as norm_subtract,
+# )
+"""
 
 
 test_subtract_datacubes_parameters = [
@@ -318,7 +450,7 @@ def test_subtract_cubes(
     temporal_extent_cube1: MockTemporalInterval,
     temporal_extent_cube2: MockTemporalInterval,
     bands: List[str],
-    hints: Optional[List[str]],
+    hints: List[str],
 ):
     """
     Test how subtraction of DataArrays is performed within OpenEO
@@ -331,7 +463,9 @@ def test_subtract_cubes(
     This is a problem, it means operation has failed
 
     """
-
+    stac = STAC(STAC_URL)
+    if not stac.is_collection_available(collection_id=collection_id):
+        pytest.skip(f"Error! collection is not available: {collection_id}")
     cube1 = load_collection(
         id=collection_id,
         spatial_extent=spatial_extent,
@@ -342,7 +476,7 @@ def test_subtract_cubes(
     time_dim_name = "time"
     if time_dim_name in cube1.dims:
         if len(cube1.coords[time_dim_name].values) > 0:
-            if hints is not None and hints != [] and hints[0] in ["reduce", "single"]:
+            if hints != [] and hints[0] in ["reduce", "single"]:
                 cube1 = cube1.reduce(np.min, dim=time_dim_name)
                 # cube1 = cube1.max(dim = TIME)
                 logger.debug(f"cube1 reduced:\n{cube1}")
@@ -623,13 +757,13 @@ TEST_AGG_TEMPORAL_PERIOD = [
     # ),
     (
         "HLSS30",
-        BoundingBox(west=-117.0, south=33.9, east=-116.9, north=34.0),
+        BoundingBox(west=-121.5, south=44.0, east=-121.25, north=44.25),
         MockTemporalInterval(
-            start=pd.Timestamp("2020-09-01T00:00:00Z"),
-            end=pd.Timestamp("2020-11-01T00:00:00Z"),
+            start=pd.Timestamp("2022-01-02T00:00:00Z"),
+            end=pd.Timestamp("2022-01-07T23:59:59Z"),
         ),
         ["B02"],
-        "week",
+        "day",
     ),
 ]
 
@@ -639,75 +773,86 @@ TEST_AGG_TEMPORAL_PERIOD = [
     TEST_AGG_TEMPORAL_PERIOD,
 )
 def test_aggregate_temporal_period(collection_id, spatial_extent, temporal_extent, bands, period):
-    # load datacube for test
-    assert len(bands) == 1
-    data = load_collection(
-        id=collection_id,
-        spatial_extent=spatial_extent,
-        temporal_extent=temporal_extent,
-        bands=bands,
-    )
-    # assumption: two consecutive timestamps don't have the same values
-    temporal_dims = data.openeo.temporal_dims
-    time_dim = temporal_dims[0]
-    assert data[time_dim].size > 1
-
-    # collect statistics of each timestamp
-    stats_by_timestamp = list()
-    size_temporal_dim = data[time_dim].size
-    sample_size = min(size_temporal_dim, 10)
-    for t_index in range(0, sample_size):
-        slice_data = data.isel({time_dim: t_index, DEFAULT_BANDS_DIMENSION: 0})
-
-        slice_data_max = float(slice_data.max())
-        slice_data_min = float(slice_data.min())
-        slice_data_mean = float(slice_data.mean())
-        stats_by_timestamp.append(
-            {"max": slice_data_max, "min": slice_data_min, "mean": slice_data_mean}
+    stac = STAC(STAC_URL)
+    if stac.is_collection_available(collection_id=collection_id):
+        # load datacube for test
+        assert len(bands) == 1
+        data = load_collection(
+            id=collection_id,
+            spatial_extent=spatial_extent,
+            temporal_extent=temporal_extent,
+            bands=bands,
         )
+        # assumption: two consecutive timestamps don't have the same values
+        temporal_dims = data.openeo.temporal_dims
+        time_dim = temporal_dims[0]
+        assert data[time_dim].size > 1
 
-    # compare stats between consecutive timestamps
-    i = 1
-    found = False
-    while i < len(stats_by_timestamp) and not found:
-        prev = stats_by_timestamp[i - 1]
-        cur = stats_by_timestamp[i]
-        i += 1
-        # assumption: if max, min, and mean are equal between two timestamps,
-        # then both timestamps are equal
-        if prev["max"] != cur["max"] or prev["min"] != cur["min"] or prev["mean"] != cur["mean"]:
-            found = True
+        # collect statistics of each timestamp
+        stats_by_timestamp = list()
+        size_temporal_dim = data[time_dim].size
+        sample_size = min(size_temporal_dim, 10)
+        for t_index in range(0, sample_size):
+            slice_data = data.isel({time_dim: t_index, DEFAULT_BANDS_DIMENSION: 0})
 
-    # create reducer object
-    proc = GeoDNProcessing()
-    reducer = partial(
-        proc.process_registry["mean"].implementation,
-        data=ParameterReference(from_parameter="data"),
-    )
-    # call process under test
-    agg_data = aggregate_temporal_period(data=data, reducer=reducer, period=period)
-    assert isinstance(agg_data, xr.DataArray)
+            slice_data_max = float(slice_data.max())
+            slice_data_min = float(slice_data.min())
+            slice_data_mean = float(slice_data.mean())
+            stats_by_timestamp.append(
+                {"max": slice_data_max, "min": slice_data_min, "mean": slice_data_mean}
+            )
 
-    assert agg_data[DEFAULT_BANDS_DIMENSION].size == 1
-    assert agg_data[time_dim].size > 1
-
-    # collect stats of aggregated data
-    size_agg_temporal_dim = agg_data[time_dim].size
-    agg_sample_size = min(10, size_agg_temporal_dim)
-    stats_agg_data = list()
-    for t_index in range(0, agg_sample_size):
-        slice_data = agg_data.isel({time_dim: t_index, DEFAULT_BANDS_DIMENSION: 0})
-        max_cur_array = float(slice_data.max())
-        min_cur_array = float(slice_data.min())
-        mean_cur_array = float(slice_data.mean())
-        stats_agg_data.append({"max": max_cur_array, "min": min_cur_array, "mean": mean_cur_array})
-    # compare if two consecutive timestamps have different stats for aggregate data as well
-    for i in range(1, len(stats_agg_data)):
-        prev = stats_agg_data[i - 1]
-        cur = stats_agg_data[i]
-        if prev["max"] != 0 and cur["max"] != 0:
-            assert (
+        # compare stats between consecutive timestamps
+        i = 1
+        found = False
+        while i < len(stats_by_timestamp) and not found:
+            prev = stats_by_timestamp[i - 1]
+            cur = stats_by_timestamp[i]
+            i += 1
+            # assumption: if max, min, and mean are equal between two timestamps,
+            # then both timestamps are equal
+            if (
                 prev["max"] != cur["max"]
                 or prev["min"] != cur["min"]
                 or prev["mean"] != cur["mean"]
+            ):
+                found = True
+
+        # create reducer object
+        proc = GeoDNProcessing()
+        reducer = partial(
+            proc.process_registry["mean"].implementation,
+            data=ParameterReference(from_parameter="data"),
+        )
+        # call process under test
+        agg_data = aggregate_temporal_period(data=data, reducer=reducer, period=period)
+        assert isinstance(agg_data, xr.DataArray)
+
+        assert agg_data[DEFAULT_BANDS_DIMENSION].size == 1
+        assert agg_data[time_dim].size > 1
+
+        # collect stats of aggregated data
+        size_agg_temporal_dim = agg_data[time_dim].size
+        agg_sample_size = min(10, size_agg_temporal_dim)
+        stats_agg_data = list()
+        for t_index in range(0, agg_sample_size):
+            slice_data = agg_data.isel({time_dim: t_index, DEFAULT_BANDS_DIMENSION: 0})
+            max_cur_array = float(slice_data.max())
+            min_cur_array = float(slice_data.min())
+            mean_cur_array = float(slice_data.mean())
+            stats_agg_data.append(
+                {"max": max_cur_array, "min": min_cur_array, "mean": mean_cur_array}
             )
+        # compare if two consecutive timestamps have different stats for aggregate data as well
+        for i in range(1, len(stats_agg_data)):
+            prev = stats_agg_data[i - 1]
+            cur = stats_agg_data[i]
+            if prev["max"] != 0 and cur["max"] != 0:
+                assert (
+                    prev["max"] != cur["max"]
+                    or prev["min"] != cur["min"]
+                    or prev["mean"] != cur["mean"]
+                )
+
+    else:
+        pytest.skip(f"Error! {collection_id} is not available")

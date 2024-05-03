@@ -1,5 +1,5 @@
 from pystac_client import Client
-from tensorlakehouse_openeo_driver.geodn_backend import GeoDNCollectionCatalog
+from tensorlakehouse_openeo_driver.geodn_backend import TensorLakehouseCollectionCatalog
 from unittest.mock import patch
 import pytest
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
@@ -16,11 +16,11 @@ def test_get_all_metadata():
     ):
         collection_items = get_collection_items(collection_id="", parameters=None)
         with patch.object(
-            GeoDNCollectionCatalog,
+            TensorLakehouseCollectionCatalog,
             "get_collection_items",
             return_value=collection_items,
         ):
-            catalog = GeoDNCollectionCatalog()
+            catalog = TensorLakehouseCollectionCatalog()
             metadata = catalog.get_all_metadata()
             assert isinstance(metadata, list)
             assert len(metadata) > 0
@@ -36,7 +36,7 @@ def test_get_collection_metadata(collection_id: str):
         "open",
         return_value=MockPystacClient(),
     ):
-        catalog = GeoDNCollectionCatalog()
+        catalog = TensorLakehouseCollectionCatalog()
         collection_metadata = catalog.get_collection_metadata(collection_id=collection_id)
         assert isinstance(collection_metadata, dict)
         mandatory_fields = [

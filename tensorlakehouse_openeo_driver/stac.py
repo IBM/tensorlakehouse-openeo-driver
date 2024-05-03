@@ -160,7 +160,7 @@ class STAC:
         assert isinstance(item, dict)
         return item
 
-    def list_item(self, collection_id: str, limit: int = 10) -> Dict[str, Any]:
+    def list_items(self, collection_id: str, limit: int = 10) -> Dict[str, Any]:
         """make a request to get STAC item specified by collection and item ids
 
         Args:
@@ -174,7 +174,7 @@ class STAC:
         endpoint = urllib.parse.quote(path)
         resp = self._get(endpoint=endpoint, params={"limit": limit})
         item = resp.json()
-        assert isinstance(item, dict), f"Error! Unexpected type {item=}"
+        assert isinstance(item, dict)
         return item
 
     def search(
@@ -188,7 +188,7 @@ class STAC:
         }
         resp = self._post(endpoint="/search", payload=payload)
         items = resp.json()
-        assert isinstance(items, list), f"Error! Unexpected type: {items=}"
+        assert isinstance(items, list)
         return items
 
     def list_collections(self):
@@ -206,7 +206,7 @@ class STAC:
         resp = self._get(endpoint=f"/collections/{collection_id}")
         resp.raise_for_status()
         coll = resp.json()
-        assert isinstance(coll, dict), f"Error! Unexpected type {coll=}"
+        assert isinstance(coll, dict)
         return coll
 
     def update_collection(self, new_collection):

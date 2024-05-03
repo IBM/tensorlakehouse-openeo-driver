@@ -17,7 +17,7 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_TIME_DIMENSION,
 )
 from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
-from tensorlakehouse_openeo_driver.driver_data_cube import GeoDNDataCube
+from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 from tensorlakehouse_openeo_driver.geodn_discovery import GeoDNDiscovery
 from dataservice import query
 from tensorlakehouse_openeo_driver.layer import LayerMetadata
@@ -32,6 +32,7 @@ from tensorlakehouse_openeo_driver.model.dimension import (
     Dimension,
     HorizontalSpatialDimension,
     TemporalDimension,
+    VerticalSpatialDimension,
 )
 
 assert os.path.isfile("logging.conf")
@@ -39,7 +40,7 @@ logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
 
 
-class GeoDNCollectionCatalog(CollectionCatalog):
+class TensorLakehouseCollectionCatalog(CollectionCatalog):
     STAC_VERSION = "1.0.0"
 
     CUBE_VARIABLES = "cube:variables"
@@ -112,8 +113,10 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             dict: _description_
 
         """
-        logger.debug(f"GeoDNCollectionCatalog - Connecting to STAC service URL={STAC_URL}")
-        logger.debug(f"GeoDNCollectionCatalog - Searching collection: {collection_id}")
+        logger.debug(
+            f"TensorLakehouseCollectionCatalog - Connecting to STAC service URL={STAC_URL}"
+        )
+        logger.debug(f"TensorLakehouseCollectionCatalog - Searching collection: {collection_id}")
         collection = self.stac_client.get_collection(collection_id=collection_id)
         openeo_collection = self._convert_collection_client_to_openeo(
             pystac_collection=collection, full=True
@@ -136,15 +139,16 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         datetime_field = parameters.get("datetime")
 
         fields = {
-            "include": [
+            "includes": [
                 "id",
                 "bbox",
-                "datetime",
                 "properties.cube:variables",
                 "properties.cube:dimensions",
+                "properties.datetime",
             ],
-            "exclude": [],
+            "excludes": [],
         }
+
         collection_ids = [collection_id]
         logger.debug(
             f"Searching items: collections={collection_ids} bbox={bbox}\
@@ -160,7 +164,9 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         items = list()
 
         for item in result.items():
-            items.append(GeoDNCollectionCatalog._convert_item_client_to_openeo(pystac_item=item))
+            items.append(
+                TensorLakehouseCollectionCatalog._convert_item_client_to_openeo(pystac_item=item)
+            )
         response = {
             "type": "FeatureCollection",
             "features": items,
@@ -197,7 +203,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
                 a["title"] = v.title
             assets[k] = a
         item = {
-            "stac_version": GeoDNCollectionCatalog.STAC_VERSION,
+            "stac_version": TensorLakehouseCollectionCatalog.STAC_VERSION,
             "stac_extensions": pystac_item.stac_extensions,
             "type": "Feature",
             "id": pystac_item.id,
@@ -235,7 +241,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             "description": pystac_collection.description,
             "title": pystac_collection.title,
             "license": pystac_collection.license,
-            "stac_version": GeoDNCollectionCatalog.STAC_VERSION,
+            "stac_version": TensorLakehouseCollectionCatalog.STAC_VERSION,
             "stac_extensions": pystac_collection.stac_extensions,
             "type": "Collection",
             "keywords": list(),
@@ -253,28 +259,17 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             "links": [link_field.to_dict() for link_field in pystac_collection.links],
         }
         if full:
-            # feature_collection = self.get_collection_items(
-            #     collection_id=collection_client.id, parameters=None
-            # )
-            # extract cube:dimensions from items' metadata
-            summaries_dict = pystac_collection.summaries.to_dict()
+            extra_fields = pystac_collection.extra_fields
             try:
-                cube_dimensions_dict = summaries_dict["cube:dimensions"]
+                cube_dimensions_dict: Dict[str, Any] = extra_fields["cube:dimensions"]
             except KeyError as e:
-                msg = f"KeyError! summaries_dict={summaries_dict} - {e}"
+                msg = f"KeyError! extra_fields={extra_fields} - {e}"
                 logger.error(msg)
                 raise KeyError(msg)
             cube_dimensions = self._extract_cube_dimensions(cube_dimensions=cube_dimensions_dict)
-            # extract cube:variables from items' metadata
-            # cube_variables = self._extract_cube_variables(
-            #     feature_collection=feature_collection, dimensions=cube_dimensions
-            # )
             collection_as_dict["cube:dimensions"] = (
-                GeoDNCollectionCatalog._export_cube_dimensions_group(cube_dimensions)
+                TensorLakehouseCollectionCatalog._export_cube_dimensions_group(cube_dimensions)
             )
-            # collection_as_dict["cube:variables"] = (
-            #     GeoDNCollectionCatalog._export_cube_variables(cube_variables),
-            # )
         return collection_as_dict
 
     def _extract_cube_dimensions(self, cube_dimensions: Dict[str, Any]) -> List[Dimension]:
@@ -286,6 +281,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         Returns:
             Dict: Dimension objects grouped by description
         """
+        assert isinstance(cube_dimensions, dict)
         cube_dimensions_list: List[Dimension] = list()
         for name, dimension in cube_dimensions.items():
             # description cannot be none
@@ -294,11 +290,24 @@ class GeoDNCollectionCatalog(CollectionCatalog):
                 band_values = cube_dimensions["bands"]["values"]
                 cube_dimensions_list.append(BandDimension(values=band_values, description=name))
             elif dimension["type"] == "spatial":
+                # type, axis and extent keys are required by datacube extension
+                # https://github.com/stac-extensions/datacube/tree/main?tab=readme-ov-file#horizontal-spatial-raster-dimension-object
                 axis = dimension["axis"]
-                extent = dimension["extent"]
-                cube_dimensions_list.append(
-                    HorizontalSpatialDimension(axis=axis, extent=extent, description=name)
-                )
+                if axis.lower() in [DEFAULT_X_DIMENSION, DEFAULT_Y_DIMENSION]:
+                    extent = dimension["extent"]
+                    cube_dimensions_list.append(
+                        HorizontalSpatialDimension(axis=axis, extent=extent, description=name)
+                    )
+                else:
+                    if "extent" in dimension:
+                        extent = dimension["extent"]
+                    elif "values" in dimension:
+                        extent = [min(dimension["values"]), max(dimension["values"])]
+                    else:
+                        raise Exception(f"Error! Missing extent: {dimension}")
+                    cube_dimensions_list.append(
+                        VerticalSpatialDimension(axis=axis, extent=extent, description=name)
+                    )
             elif dimension["type"] == "temporal":
                 extent = dimension["extent"]
                 step = dimension.get("step")
@@ -363,7 +372,9 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         for item in items:
             properties = item["properties"]
             # get cube:variables metadata
-            cube_var: Dict[str, Dict[str, Any]] = properties[GeoDNCollectionCatalog.CUBE_VARIABLES]
+            cube_var: Dict[str, Dict[str, Any]] = properties[
+                TensorLakehouseCollectionCatalog.CUBE_VARIABLES
+            ]
             for description, cube_var_metadata in cube_var.items():
                 # variable has not been added
                 if description not in cube_variables.keys():
@@ -376,7 +387,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
                     # create DataCubeVariable
                     cube_variables[description] = DataCubeVariable(
                         dimensions=dimension_list,
-                        type=GeoDNCollectionCatalog.DATA,
+                        type=TensorLakehouseCollectionCatalog.DATA,
                         description=description,
                         values=None,
                         extent=None,
@@ -412,14 +423,14 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         }
         if dataset_metadata.spatial_resolution_of_raw_data is not None:
             # The nominal Ground Sample Distance for the data, as measured in meters on the ground.
-            gsd = GeoDNCollectionCatalog._parse_gsd(
+            gsd = TensorLakehouseCollectionCatalog._parse_gsd(
                 distance=dataset_metadata.spatial_resolution_of_raw_data,
                 level=dataset_metadata.level,
             )
             summaries["gsd"] = {"max": gsd, "min": gsd}
         if dataset_metadata.temporal_resolution is not None:
             # summaries["temporal_resolution"] = dataset_metadata.temporal_resolution
-            temp_resolution_iso8601 = GeoDNCollectionCatalog._to_iso8601_duration(
+            temp_resolution_iso8601 = TensorLakehouseCollectionCatalog._to_iso8601_duration(
                 dataset_metadata.temporal_resolution
             )
             summaries["temporal_resolution"] = {
@@ -457,7 +468,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             gsd = distance.replace(meter, "").strip()
             return gsd
         elif distance.find(degree) >= 0 and level is not None:
-            step = GeoDNCollectionCatalog._compute_step(level=level)
+            step = TensorLakehouseCollectionCatalog._compute_step(level=level)
             gsd = str(one_degree_size_equator * step)
             return gsd
         return distance
@@ -551,7 +562,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
         layer_names = list()
         for layer in layer_metadata:
             layer_names.append(layer.name)
-        step = GeoDNCollectionCatalog._compute_step(level=dataset_metadata.level)
+        step = TensorLakehouseCollectionCatalog._compute_step(level=dataset_metadata.level)
         cube_dimensions = {
             DEFAULT_X_DIMENSION: {
                 "type": "spatial",
@@ -588,7 +599,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
                         else None
                     ),
                 ],
-                "step": GeoDNCollectionCatalog._to_iso8601_duration(
+                "step": TensorLakehouseCollectionCatalog._to_iso8601_duration(
                     dataset_metadata.temporal_resolution
                 ),
             },
@@ -690,7 +701,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
 
     def load_collection(
         self, collection_id: str, load_params: LoadParameters, env: EvalEnv
-    ) -> GeoDNDataCube:
+    ) -> TensorLakehouseDataCube:
         """retrieve data from data provider
 
         Args:
@@ -699,7 +710,7 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             env (EvalEnv): _description_
 
         Returns:
-            GeoDNDataCube: _description_
+            TensorLakehouseDataCube: _description_
         """
         logger.debug(f"collection_id={collection_id}")
         metadata = self.get_collection_metadata(collection_id=collection_id)
@@ -748,4 +759,4 @@ class GeoDNCollectionCatalog(CollectionCatalog):
             arrays.append(data_array)
             # dset = data_array.to_dataset()
         dset = xr.merge(arrays)
-        return GeoDNDataCube(metadata=metadata, data=dset)
+        return TensorLakehouseDataCube(metadata=metadata, data=dset)

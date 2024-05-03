@@ -6,22 +6,19 @@ import pandas as pd
 from openeo_driver.save_result import ImageCollectionResult
 import xarray as xr
 from typing import Optional
-from tensorlakehouse_openeo_driver.driver_data_cube import GeoDNDataCube
-import json
+from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     FILE_DATETIME_FORMAT,
     GEOTIFF_PREFIX,
     GTIFF,
     NETCDF,
-    JSON,
     DEFAULT_TIME_DIMENSION,
 )
 import logging
 import logging.config
 import zipfile
 import os
-
 
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
@@ -30,7 +27,7 @@ logger = logging.getLogger("geodnLogger")
 class GeoDNImageCollectionResult(ImageCollectionResult):
     def __init__(
         self,
-        cube: GeoDNDataCube,
+        cube: TensorLakehouseDataCube,
         format: Optional[str] = None,
         options: Optional[dict] = None,
     ):
@@ -41,7 +38,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
 
         self.options = options
 
-    def save_result(self, filename: Path) -> str:
+    def save_result(self, filename: str) -> str:
         """save result as a file specified by filename
 
         Args:
@@ -50,17 +47,12 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
         Raises:
             NotImplementedError: _description_
 
-        Returns:ß
+        Returns:
             str: filename
         """
         engine = "netcdf4"
-        logger.debug(
-            f"GeoDNImageCollectionResult::save_result - filename={filename} cube.data.dims={self.cube.data.dims}"
-        )
-        if JSON == self.format.upper():
-            with open(filename, "w") as f:
-                json.dump(self._metadata_to_dict(), f, indent=2)
-        elif GTIFF == self.format.upper():
+        logger.debug(f"GeoDNImageCollectionResult::save_result - {filename=}")
+        if GTIFF == self.format.upper():
             return self._save_as_geotiff(filename=filename)
         elif NETCDF == self.format.upper():
             array = self.cube.data
@@ -75,7 +67,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                 ds = array.to_dataset(dim=DEFAULT_BANDS_DIMENSION)
                 dimensions = ds.dims
                 logger.debug(f"DataSet dimensions {dimensions}")
-                ds.to_netcdf(path=filename, engine=engine)  # type: ignore
+                ds.to_netcdf(path=filename, engine=engine)  # type: ignore[call-overload]
             except TypeError as e:
                 logger.error(
                     f"TypeError: Invalid attr. Exception handling: trying to convert invalid attrs to str: {e}"
@@ -93,16 +85,18 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                             logger.debug(f"Invalid attr: {attr_key}")
                             ds[variable].attrs[attr_key] = str(attr_value)
 
-                ds.to_netcdf(path=filename, engine=engine)  # type: ignore
+                ds.to_netcdf(path=filename, engine=engine)  # type: ignore[call-overload]
+
         else:
             raise NotImplementedError(f"Support for {format} is not implemented")
-        return str(filename)
+        logger.debug(f"save_result process: {filename=}")
+        return filename
 
-    def _save_as_geotiff(self, filename: Path) -> str:
+    def _save_as_geotiff(self, filename: str) -> str:
         """save files as geotiff
 
         Args:
-            filename (Path): full path to the file
+            filename (str): full path to the file
 
         Returns:
             str: full path to the file
@@ -137,7 +131,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
             path = Path(filename)
             parent_dir = path.parent
             # save as zip instead of tif
-            filename = filename.with_suffix(".zip")
+            filename = filename.replace(".gtiff", ".zip")
             self.format = "ZIP"
             geotiff_files = list()
             time_list = list(data[time_dim].values)
@@ -160,4 +154,4 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
             for geotiff_file in geotiff_files:
                 os.remove(geotiff_file)
 
-        return str(filename)
+        return filename

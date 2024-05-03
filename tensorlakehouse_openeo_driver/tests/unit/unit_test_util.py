@@ -1,11 +1,15 @@
+import geopandas
 import json
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 from zipfile import ZipFile
 import matplotlib.pyplot as plt
 
+# from openeo_processes_dask.process_implementations.cubes._xr_interop import (
+#     OpenEOExtensionDa,
+# )
 import numpy as np
 import pandas as pd
 import rioxarray
@@ -27,6 +31,7 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_Y_DIMENSION,
 )
 from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
+from tensorlakehouse_openeo_driver.layer import LayerMetadata
 
 TEMPORAL_GUESSES = [
     "DATE",
@@ -49,9 +54,9 @@ BANDS_GUESSES = ["b", "bands", "band"]
 class OpenEOExtensionDa:
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-        self._spatial_dims: List[str] = self._guess_dims_for_type(
-            X_GUESSES
-        ) + self._guess_dims_for_type(Y_GUESSES)
+        self._spatial_dims = self._guess_dims_for_type(X_GUESSES) + self._guess_dims_for_type(
+            Y_GUESSES
+        )
         self._temporal_dims = self._guess_dims_for_type(TEMPORAL_GUESSES)
         self._bands_dims = self._guess_dims_for_type(BANDS_GUESSES)
         self._other_dims = [
@@ -64,7 +69,7 @@ class OpenEOExtensionDa:
     def _lowercase_dims(self):
         return [str(dim).casefold() for dim in self._obj.dims]
 
-    def _guess_dims_for_type(self, guesses: List[str]) -> List[str]:
+    def _guess_dims_for_type(self, guesses) -> List[str]:
         found_dims = []
         datacube_dims = self._lowercase_dims
         for guess in guesses:
@@ -74,8 +79,10 @@ class OpenEOExtensionDa:
         return found_dims
 
     def _get_existing_dims_and_pop_missing(self, expected_dims: List[str]) -> List[str]:
-        existing_dims = []
-        for i, dim in enumerate(expected_dims):
+        existing_dims: List[str] = []
+        size_expected_dims = len(expected_dims)
+        for i in range(size_expected_dims - 1, -1, -1):
+            dim = expected_dims[i]
             if dim in self._obj.dims:
                 existing_dims.append(dim)
             else:
@@ -85,7 +92,8 @@ class OpenEOExtensionDa:
     @property
     def spatial_dims(self) -> tuple[str, ...]:
         """Find and return all spatial dimensions of the datacube as a tuple."""
-        return tuple(self._get_existing_dims_and_pop_missing(self._spatial_dims))
+        spatial_dims = tuple(self._get_existing_dims_and_pop_missing(self._spatial_dims))
+        return spatial_dims
 
     @property
     def temporal_dims(self) -> tuple[str, ...]:
@@ -189,38 +197,46 @@ class MockGeoDNDiscovery:
 
 def make_pystac_client_collection(collection_id: str = "fake-id") -> Collection:
     xmin, ymin, xmax, ymax = -100, 40, -90, 45
-    bboxes: list[list[Union[float, int]]] = [[xmin, ymin, xmax, ymax]]
-    temporal = TemporalExtent(intervals=[[datetime(2000, 1, 1), datetime(2000, 2, 1)]])
-    spatial_extent = SpatialExtent(bboxes=bboxes)
+    start = datetime(2000, 1, 1)
+    end = datetime(2000, 2, 1)
+    temporal = TemporalExtent(intervals=[[start, end]])
+
+    spatial_extent = SpatialExtent(bboxes=[[xmin, ymin, xmax, ymax]])  # type: ignore
     extent = Extent(spatial=spatial_extent, temporal=temporal)
-    summaries = Summaries(
-        summaries={
-            "cube:dimensions": {
-                "x": {
-                    "axis": "x",
-                    "step": 0.000064,
-                    "type": "spatial",
-                    "extent": [-174.230464, -167.769536],
-                    "reference_system": 4326,
-                },
-                "y": {
-                    "axis": "y",
-                    "step": 0.000064,
-                    "type": "spatial",
-                    "extent": [32.035456, 23.970688],
-                    "reference_system": 4326,
-                },
-                "time": {
-                    "type": "temporal",
-                    "extent": [
-                        "2022-01-01T00:00:00+00:00",
-                        "2022-01-01T00:00:00+00:00",
-                    ],
-                },
-                "bands": {"type": "bands", "values": ["lulc"]},
-            }
+    cube_dimensions = {
+        "cube:dimensions": {
+            DEFAULT_X_DIMENSION: {
+                "axis": "x",
+                "step": 0.000064,
+                "type": "spatial",
+                "extent": [xmin, xmax],
+                "reference_system": 4326,
+            },
+            DEFAULT_Y_DIMENSION: {
+                "axis": "y",
+                "step": 0.000064,
+                "type": "spatial",
+                "extent": [ymin, ymax],
+                "reference_system": 4326,
+            },
+            DEFAULT_TIME_DIMENSION: {
+                "type": "temporal",
+                "extent": [
+                    start.isoformat(sep="T"),
+                    end.isoformat(sep="T"),
+                ],
+            },
+            DEFAULT_BANDS_DIMENSION: {"type": "bands", "values": ["lulc"]},
         }
-    )
+    }
+    summaries_dict = {
+        "datetime": {
+            "minimum": start.isoformat(sep="T"),
+            "maximum": end.isoformat(sep="T"),
+        }
+    }
+    summaries = Summaries(summaries=summaries_dict)
+
     return Collection(
         id=collection_id,
         description="description",
@@ -228,6 +244,7 @@ def make_pystac_client_collection(collection_id: str = "fake-id") -> Collection:
         title="title",
         href="https://fake-cos-cloud.com",
         summaries=summaries,
+        extra_fields=cube_dimensions,
     )
 
 
@@ -1012,7 +1029,7 @@ class MockPystacClient:
         return [make_pystac_client_collection(collection_id=self._collection_id)]
 
     def get_collection(self, collection_id):
-        return make_pystac_client_collection(collection_id=self._collection_id)
+        return make_pystac_client_collection(collection_id=collection_id)
 
 
 class MockSTACClient:
@@ -1027,7 +1044,7 @@ def generate_xarray_datarray(
     latmin: float,
     lonmax: float,
     lonmin: float,
-    timestamps: Tuple[pd.Timestamp, Optional[pd.Timestamp]],
+    timestamps: Tuple[pd.Timestamp, pd.Timestamp],
     size_x: int = 100,
     size_y: int = 100,
     num_periods: int = 10,
@@ -1205,7 +1222,9 @@ def _validate_extent_spatial_bbox(collection: Dict):
             ), f"Error! coord is neither a float nor an int: {coord}"
 
 
-def create_dataset_metadatas(collection: str = "my-fake-dataset") -> List[DatasetMetadata]:
+def create_dataset_metadatas(
+    collection: str = "my-fake-dataset",
+) -> List[DatasetMetadata]:
     collection = "my-fake-dataset"
     collection_id = "fake dataset"
     list_datasets = [
@@ -1227,6 +1246,21 @@ def create_dataset_metadatas(collection: str = "my-fake-dataset") -> List[Datase
         )
     ]
     return list_datasets
+
+
+def create_data_layers(dataset_id: str, num_layers: int = 1):
+    layers = list()
+    layer_id = f"layer_{uuid.uuid4().hex}"
+    for i in range(num_layers):
+        layers.append(
+            LayerMetadata(
+                layer_id=layer_id,
+                description_short="description",
+                name="layer_name",
+                dataset_id=dataset_id,
+            )
+        )
+    return layers
 
 
 def _remove_files_in_dir(dir_path: Path, prefix: str, suffix: str):
@@ -1271,10 +1305,11 @@ def save_openeo_response(prefix: str, data: bytes, content_type: str) -> Tuple[s
         file_format = NETCDF
         path = test_data_dir / f"{prefix}{uuid.uuid4().hex}.nc"
 
-    else:
+    elif "zip" in content_type.lower():
         file_format = ZIP
         path = test_data_dir / f"{prefix}{uuid.uuid4().hex}.zip"
-
+    else:
+        raise ValueError(f"Error! content type {content_type} is not supported")
     with open(path, "wb") as s:
         s.write(data)
     assert path.exists(), f"Error! unable to save file {path}"
@@ -1302,13 +1337,10 @@ def open_raster(
         if "spatial_ref" in ds.variables:
             crs = CRS.from_wkt(ds["spatial_ref"].attrs["crs_wkt"])
             ds = ds.drop_vars(["spatial_ref"])
-        da: Union[xr.DataArray, xr.Dataset, List[xr.Dataset]] = ds.to_array(
-            dim=DEFAULT_BANDS_DIMENSION
-        )
-        assert isinstance(da, xr.DataArray)
+        da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
         da.rio.write_crs(crs, inplace=True)
     elif file_format.upper() == GTIFF:
-        da = rioxarray.open_rasterio(path)
+        da = rioxarray.open_rasterio(path)  # type: ignore
         assert isinstance(da, xr.DataArray), f"Error! not a DataArray: {da}"
     elif file_format.upper() == ZIP:
         test_data_dir = path.parent
@@ -1357,13 +1389,10 @@ def open_array(file_format: str, path: Path, band_names: List[str] = []) -> xr.D
             assert (
                 band_name in variable_names
             ), f"Error! data variable {band_name} is missing: {variable_names}"
-        da: Union[xr.DataArray, xr.Dataset, List[xr.Dataset]] = ds.to_array(
-            dim=DEFAULT_BANDS_DIMENSION
-        )
-        assert isinstance(da, xr.DataArray)
+        da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
         da.rio.write_crs(crs, inplace=True)
     elif file_format == GTIFF:
-        da = rioxarray.open_rasterio(filename=str(path))
+        da = rioxarray.open_rasterio(path)  # type: ignore
         assert isinstance(da, xr.DataArray), f"Error! not a DataArray: {da}"
     elif file_format == ZIP:
         test_data_dir = path.parent
@@ -1398,6 +1427,7 @@ def validate_downloaded_file(
         path (Path): full path to netcdf file
         expected_dims (Dict[str, int]): expected dimensions and size
     """
+
     da = open_array(file_format=file_format, path=path, band_names=band_names)
     validate_raster_datacube(
         cube=da,
@@ -1405,6 +1435,12 @@ def validate_downloaded_file(
         expected_attrs={},
         expected_crs=expected_crs,
     )
+
+
+def validate_vector_datacube(cube: geopandas.GeoDataFrame, band_names: List[str]):
+    columns = band_names + ["timestamp", "geometry"]
+    for col in columns:
+        assert col in cube.columns, f"Error! {col=} is not in {cube.columns}"
 
 
 def validate_raster_datacube(

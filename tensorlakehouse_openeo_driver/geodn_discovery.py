@@ -1,5 +1,6 @@
 """
 Created Date: Thursday, January 14th 2021, 3:34:36 pm
+Author: Leonardo Pondian Tizzei
 
 Copyright (c) 2021 (C) Copyright IBM Corporation 2021
 """
@@ -210,7 +211,7 @@ class GeoDNDiscovery:
         Returns:
             List: _description_
         """
-        datasets: DataSets = catalog.get_data_sets(client=self.pairs_client)
+        datasets: DataSets = catalog.get_data_sets(client=self.pairs_client, verify=True)
 
         dataset_metadata = list()
         for d in datasets.get_data_sets():

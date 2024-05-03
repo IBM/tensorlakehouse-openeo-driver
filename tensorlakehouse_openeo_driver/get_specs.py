@@ -1,6 +1,6 @@
 before = dir()
 
-from openeo_processes_dask.specs import *  # noqa: F403 F401 E402
+from openeo_processes_dask.specs import *  # noqa: F403, F401, E402
 
 after = dir()
 process_names = [x for x in after if x not in before]

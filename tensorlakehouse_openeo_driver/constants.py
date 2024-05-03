@@ -16,9 +16,9 @@ logger = logging.getLogger("geodnLogger")
 
 # aka PAIRS API key
 # GEODN_DISCOVERY_API_KEY = os.getenv("GEODN_DISCOVERY_API_KEY", None)
-GEODN_DISCOVERY_PASSWORD = os.getenv("GEODN_DISCOVERY_PASSWORD", None)
+GEODN_DISCOVERY_PASSWORD = os.environ["GEODN_DISCOVERY_PASSWORD"]
 # assert GEODN_DISCOVERY_PASSWORD is not None
-GEODN_DISCOVERY_USERNAME = os.getenv("GEODN_DISCOVERY_USERNAME", None)
+GEODN_DISCOVERY_USERNAME = os.environ["GEODN_DISCOVERY_USERNAME"]
 # aka DATASERVICE endpoint
 GEODN_DATASERVICE_ENDPOINT_DEFAULT = "https://pairs.res.ibm.com/pairsdataservice"
 GEODN_DATASERVICE_ENDPOINT = os.getenv(
@@ -27,27 +27,35 @@ GEODN_DATASERVICE_ENDPOINT = os.getenv(
 GEODN_DATASERVICE_USER = os.getenv("GEODN_DATASERVICE_USER", "")
 GEODN_DATASERVICE_PASSWORD = os.getenv("GEODN_DATASERVICE_PASSWORD", "")
 
+# appId credentials
+APPID_ISSUER = os.getenv("APPID_ISSUER")
+OPENEO_AUTH_CLIENT_ID = os.getenv("OPENEO_AUTH_CLIENT_ID")
+OPENEO_AUTH_CLIENT_SECRET = os.getenv("OPENEO_AUTH_CLIENT_SECRET")
+APPID_USERNAME = os.getenv("APPID_USERNAME")
+APPID_PASSWORD = os.getenv("APPID_PASSWORD")
 
-OPENEO_GEODN_DRIVER_PORT = os.getenv("OPENEO_GEODN_DRIVER_PORT", 9091)
+
+TENSORLAKEHOUSE_OPENEO_DRIVER_PORT = os.getenv("OPENEO_GEODN_DRIVER_PORT", 9091)
 DASK_SCHEDULER_ADDRESS = os.getenv("DASK_SCHEDULER_ADDRESS", "http://127.0.0.1:8787")
 
-OPENEO_GEODN_DRIVER_ROOT_DIR = Path(__file__).parent.parent.resolve()
+TENSORLAKEHOUSE_OPENEO_DRIVER_ROOT_DIR = Path(__file__).parent.parent.resolve()
 TEST_DATA_ROOT = (
-    OPENEO_GEODN_DRIVER_ROOT_DIR / "tensorlakehouse_openeo_driver" / "tests" / "test_data"
+    TENSORLAKEHOUSE_OPENEO_DRIVER_ROOT_DIR / "tensorlakehouse_openeo_driver" / "tests" / "test_data"
 )
 if not TEST_DATA_ROOT.exists():
     TEST_DATA_ROOT.mkdir()
 
 
-OPENEO_GEODN_DRIVER_DATA_DIR = OPENEO_GEODN_DRIVER_ROOT_DIR / "data"
-if not OPENEO_GEODN_DRIVER_DATA_DIR.exists():
-    OPENEO_GEODN_DRIVER_DATA_DIR.mkdir()
+TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR = TENSORLAKEHOUSE_OPENEO_DRIVER_ROOT_DIR / "data"
+if not TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR.exists():
+    TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR.mkdir()
 
 
 # RasterCube/DataArray dimensions
 # how stackstac name these dimensions https://stackstac.readthedocs.io/en/latest/api/main/stackstac.stack.html#stackstac.stack
 DEFAULT_X_DIMENSION = "x"
 DEFAULT_Y_DIMENSION = "y"
+DEFAULT_Z_DIMENSION = "z"
 DEFAULT_TIME_DIMENSION = "t"
 DEFAULT_BANDS_DIMENSION = "bands"
 STACKSTAC_TIME = "time"
@@ -68,6 +76,7 @@ CREDENTIALS = decode_credential(os.environ["CREDENTIALS"])
 # https://github.com/radiantearth/stac-spec/blob/master/best-practices.md#working-with-media-types
 ZIP_ZARR_MEDIA_TYPE = "application/zip+zarr"
 COG_MEDIA_TYPE = "image/tiff; application=geotiff; profile=cloud-optimized"
+JPG2000_MEDIA_TYPE = "image/jp2"
 GEOTIFF_MEDIA_TYPE = "image/tiff; application=geotiff"
 
 # default reference system
@@ -76,11 +85,11 @@ GEODN_DISCOVERY_CRS = "EPSG:4326"
 # internal names of formats to save data
 NETCDF = "NETCDF"
 JSON = "JSON"
+GEOJSON = "GEOJSON"
 GTIFF = "GTIFF"
 ZIP = "ZIP"
 GEOTIFF_PREFIX = "openeo_output_"
 FILE_DATETIME_FORMAT = "%Y-%m-%dT%H-%M-%SZ"
-
 
 broker_url = os.getenv("BROKER_URL", "redis://:@0.0.0.0:6379/")
 result_backend = os.getenv("RESULT_BACKEND", "redis://:@0.0.0.0:6379/")
@@ -90,13 +99,3 @@ assert result_backend is not None, "Error! RESULT_BACKEND is None"
 
 REDIS_CERT_NAME = os.getenv("REDIS_CERT_NAME")
 REDIS_CERT = os.getenv("REDIS_CERT")
-
-# URL to the authorization server, which will issue an access token if the client has been
-# authorized by the resource owner.
-APPID_ISSUER = os.getenv("APPID_ISSUER")
-# application ID and secret
-OPENEO_AUTH_CLIENT_ID = os.getenv("OPENEO_AUTH_CLIENT_ID")
-OPENEO_AUTH_CLIENT_SECRET = os.getenv("OPENEO_AUTH_CLIENT_SECRET")
-# resource owner (end-user) username and password
-APPID_PASSWORD = os.getenv("APPID_PASSWORD")
-APPID_USERNAME = os.getenv("APPID_USERNAME")

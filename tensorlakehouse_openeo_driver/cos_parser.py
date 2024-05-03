@@ -111,19 +111,21 @@ class COSConnector:
         url = urls.pop()
         # create S3Map object to load zarr into memory
         store = self._create_s3map(url=url)
-        epsg = COSConnector._get_epsg(item=items[0])
+        item = items[0]
+        assert isinstance(item, dict)
+        epsg = COSConnector._get_epsg(item=item)
         assert isinstance(epsg, int), f"Error! Invalid {epsg=}"
         # open zarr as xarray.Dataset
         ds = xr.open_zarr(store)
         # temporary data as it has not been clipped
         temp_data = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
-        temporal_dim = get_dimension_name(item=items[0], dim_type="temporal")
+        temporal_dim = get_dimension_name(item=item, dim_type="temporal")
         assert isinstance(temporal_dim, str)
         # get name of x axis dim
-        x_dim = get_dimension_name(item=items[0], axis=DEFAULT_X_DIMENSION)
+        x_dim = get_dimension_name(item=item, axis=DEFAULT_X_DIMENSION)
         assert isinstance(x_dim, str)
         # get name of y axis dim
-        y_dim = get_dimension_name(item=items[0], axis=DEFAULT_Y_DIMENSION)
+        y_dim = get_dimension_name(item=item, axis=DEFAULT_Y_DIMENSION)
         assert isinstance(y_dim, str)
         # clipping data
         temp_data = clip(data=temp_data, bbox=bbox, y_dim=y_dim, x_dim=x_dim, crs=epsg)

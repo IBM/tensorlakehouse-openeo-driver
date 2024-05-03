@@ -15,9 +15,7 @@ from shapely.geometry.collection import GeometryCollection
 
 from openeo.internal.process_graph_visitor import ProcessGraphVisitor
 from openeo.metadata import CollectionMetadata
-from tensorlakehouse_openeo_driver.config.geodn_config import (
-    OpenEoBackendConfig as GeoDNBackendConfig,
-)
+from openeo_driver.config import OpenEoBackendConfig
 from openeo_driver.ProcessGraphDeserializer import ConcreteProcessing
 from openeo_driver.backend import (
     SecondaryServices,
@@ -43,17 +41,22 @@ from openeo_driver.save_result import (
 )
 from openeo_driver.users import User
 from openeo_driver.utils import EvalEnv
-from tensorlakehouse_openeo_driver.batch_jobs import GeodnBatchJobs
-from tensorlakehouse_openeo_driver.catalog import GeoDNCollectionCatalog
-from tensorlakehouse_openeo_driver.constants import APPID_ISSUER
+from tensorlakehouse_openeo_driver.batch_jobs import TensorLakehouseBatchJobs
+from tensorlakehouse_openeo_driver.catalog import TensorLakehouseCollectionCatalog
+from tensorlakehouse_openeo_driver.constants import (
+    OPENEO_AUTH_CLIENT_ID,
+    OPENEO_AUTH_CLIENT_SECRET,
+    APPID_ISSUER,
+)
 from tensorlakehouse_openeo_driver.processing import GeoDNProcessing
+from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 
 
 DEFAULT_DATETIME = datetime(2020, 4, 23, 16, 20, 27)
 
 # TODO: eliminate this global state with proper pytest fixture usage!
-# _collections: set = {}
-_load_collection_calls: Dict = {}
+_collections: Dict[str, TensorLakehouseDataCube] = {}
+_load_collection_calls: Dict[str, List[LoadParameters]] = {}
 
 
 def utcnow() -> datetime:
@@ -62,8 +65,8 @@ def utcnow() -> datetime:
     return DEFAULT_DATETIME
 
 
-# def get_collection(collection_id: str) -> "GeoDNDataCube":
-#     return _collections[collection_id]
+def get_collection(collection_id: str) -> "TensorLakehouseDataCube":
+    return _collections[collection_id]
 
 
 def _register_load_collection_call(collection_id: str, load_params: LoadParameters):
@@ -72,12 +75,12 @@ def _register_load_collection_call(collection_id: str, load_params: LoadParamete
     _load_collection_calls[collection_id].append(load_params.copy())
 
 
-# def all_load_collection_calls(collection_id: str) -> List[LoadParameters]:
-#     return _load_collection_calls[collection_id]
+def all_load_collection_calls(collection_id: str) -> List[LoadParameters]:
+    return _load_collection_calls[collection_id]
 
 
-# def last_load_collection_call(collection_id: str) -> LoadParameters:
-#     return _load_collection_calls[collection_id][-1]
+def last_load_collection_call(collection_id: str) -> LoadParameters:
+    return _load_collection_calls[collection_id][-1]
 
 
 def reset(backend=None):
@@ -218,7 +221,7 @@ class DummyDataCube(DriverDataCube):
         dimensions = {d.name: {"type": d.type} for d in self.metadata._dimensions}
         return {"cube:dimensions": dimensions}
 
-    def save_result(self, filename: str, format: str, format_options: Optional[dict] = None) -> str:
+    def save_result(self, filename: str, format: str, format_options: dict = {}) -> str:
         # TODO: this method should be deprecated (limited to single asset) in favor of write_assets (supports multiple assets)
         if "JSON" == format.upper():
             import json
@@ -313,8 +316,8 @@ class DummyAggregatePolygonSpatialResult(AggregatePolygonSpatialResult):
     def fit_class_random_forest(
         self,
         target: dict,
-        num_trees: int = 100,
         max_variables: Optional[Union[int, str]] = None,
+        num_trees: int = 100,
         seed: Optional[int] = None,
     ) -> DriverMlModel:
         # Fake ML training: just store inputs
@@ -380,184 +383,6 @@ class DummyProcessing(ConcreteProcessing):
                     }
 
 
-# class GeodnBatchJobs(BatchJobs):
-#     _job_registry = {}
-#     _custom_job_logs = {}
-
-#     def generate_job_id(self):
-#         return generate_unique_id(prefix="j")
-
-#     def get_result_metadata(self, job_id: str, user_id: str) -> BatchJobResultMetadata:
-#         """
-#         Get job result metadata
-
-#         https://openeo.org/documentation/1.0/developers/api/reference.html#tag/Batch-Jobs/operation/list-results
-#         """
-#         # Default implementation, based on existing components
-#         return BatchJobResultMetadata(
-#             assets=self.get_result_assets(job_id=job_id, user_id=user_id),
-#             links=[],
-#             providers=self._get_providers(job_id=job_id, user_id=user_id),
-#         )
-
-#     def create_job(
-#         self,
-#         user_id: str,
-#         process: dict,
-#         api_version: str,
-#         metadata: dict,
-#         job_options: dict = None,
-#     ) -> BatchJobMetadata:
-#         # job_id = self.generate_job_id()
-
-#         logger.debug(f"create_job - {process}")
-#         created = utcnow()
-#         task_info = tasks.create_batch_jobs.delay(
-#             job_id="job-id",
-#             status=JOB_STATUS.CREATED,
-#             process=process,
-#             created=created,
-#             job_options=job_options,
-#             title=metadata.get("title"),
-#             description=metadata.get("description"),
-#         )
-#         job_id = task_info.id
-#         logger.debug(f"task_info={task_info}")
-#         job_info = BatchJobMetadata(
-#             id=job_id,
-#             status=JOB_STATUS.CREATED,
-#             process=process,
-#             created=created,
-#             job_options=job_options,
-#             title=metadata.get("title"),
-#             description=metadata.get("description"),
-#         )
-#         self._job_registry[(user_id, job_id)] = job_info
-#         return job_info
-
-#     def get_job_info(self, job_id: str, user_id: str) -> BatchJobMetadata:
-#         return self._get_job_info(job_id=job_id, user_id=user_id)
-
-#     def _get_job_info(self, job_id: str, user_id: str) -> BatchJobMetadata:
-#         mapping_states = {
-#             STARTED: JOB_STATUS.CREATED,
-#             SUCCESS: JOB_STATUS.FINISHED,
-#             FAILURE: JOB_STATUS.ERROR,
-#             PENDING: JOB_STATUS.QUEUED,
-#             "PROGRESS": JOB_STATUS.RUNNING,
-#         }
-#         try:
-#             task = tasks.app.AsyncResult(job_id)
-#             logger.debug(f"task id={task.id} state={task.state} task_info={task.info}")
-#             celery_state = task.state
-#             openeo_state = mapping_states[celery_state]
-
-#             job_metadata = BatchJobMetadata(
-#                 id=job_id, status=openeo_state, created=datetime(2023, 12, 26)
-#             )
-#             return job_metadata
-#             # return self._job_registry[(user_id, job_id)]
-#         except KeyError:
-#             raise JobNotFoundException(job_id)
-
-#     def get_user_jobs(self, user_id: str) -> List[BatchJobMetadata]:
-#         return [v for (k, v) in self._job_registry.items() if k[0] == user_id]
-
-#     @classmethod
-#     def _update_status(cls, job_id: str, user_id: str, status: str):
-#         try:
-#             cls._job_registry[(user_id, job_id)] = cls._job_registry[
-#                 (user_id, job_id)
-#             ]._replace(status=status)
-#         except KeyError:
-#             raise JobNotFoundException(job_id)
-
-#     def start_job(self, job_id: str, user: User):
-#         self._update_status(
-#             job_id=job_id, user_id=user.user_id, status=JOB_STATUS.RUNNING
-#         )
-
-#     def _output_root(self) -> str:
-#         return "/data/jobs"
-
-#     def get_results(self, job_id: str, user_id: str) -> Dict[str, dict]:
-#         if (
-#             self._get_job_info(job_id=job_id, user_id=user_id).status
-#             != JOB_STATUS.FINISHED
-#         ):
-#             raise JobNotFinishedException
-
-#         return {
-#             "stac_version": "1.0.0",
-#             "stac_extensions": [
-#                 "https://openeo.example/stac/custom-extemsion/v1.0.0/schema.json"
-#             ],
-#             "id": job_id,
-#             "type": "Feature",
-#             "bbox": [-180, -90, 180, 90],
-#             "geometry": {
-#                 "type": "Polygon",
-#                 "coordinates": [
-#                     [[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]
-#                 ],
-#             },
-#             "properties": {
-#                 "datetime": "2019-08-24T14:15:22Z",
-#                 "start_datetime": "2019-08-24T14:15:22Z",
-#                 "end_datetime": "2019-08-24T14:15:22Z",
-#                 "title": "NDVI based on Sentinel 2",
-#                 "description": "Deriving minimum NDVI measurements over pixel time series of Sentinel 2",
-#                 "license": "Apache-2.0",
-#                 "providers": [
-#                     {
-#                         "name": "Example Cloud Corp.",
-#                         "description": "No further processing applied.",
-#                         "roles": ["producer", "licensor", "host"],
-#                         "url": "https://cloud.example",
-#                     }
-#                 ],
-#                 "created": "2017-01-01T09:32:12Z",
-#                 "updated": "2017-01-01T09:36:18Z",
-#                 "expires": "2020-11-01T00:00:00Z",
-#                 "openeo:status": "running",
-#             },
-#             "assets": {
-#                 "preview.png": {
-#                     "href": "https://openeo.example/api/v1/download/583fba8b2ce583fba8b2ce/preview.png",
-#                     "type": "image/png",
-#                     "title": "Thumbnail",
-#                     "roles": ["thumbnail"],
-#                 }
-#             },
-#             "links": [
-#                 {
-#                     "rel": "canonical",
-#                     "type": "application/geo+json",
-#                     "href": "https://openeo.example/api/v1/download/583fba8b2ce583fba8b2ce/item.json",
-#                 }
-#             ],
-#         }
-
-#     def get_log_entries(
-#         self, job_id: str, user_id: str, offset: Optional[str] = None
-#     ) -> Iterable[dict]:
-#         self._get_job_info(job_id=job_id, user_id=user_id)
-#         default_logs = [{"id": "1", "level": "info", "message": "hello world"}]
-#         for log in self._custom_job_logs.get(job_id, default_logs):
-#             if isinstance(log, dict):
-#                 yield log
-#             elif isinstance(log, Exception):
-#                 raise log
-#             else:
-#                 raise ValueError(log)
-
-#     def cancel_job(self, job_id: str, user_id: str):
-#         self._get_job_info(job_id=job_id, user_id=user_id)
-
-#     def delete_job(self, job_id: str, user_id: str):
-#         self.cancel_job(job_id, user_id)
-
-
 class DummyUserDefinedProcesses(UserDefinedProcesses):
     def __init__(self):
         super().__init__()
@@ -590,57 +415,54 @@ def _valid_basic_auth(username: str, password: str) -> bool:
 
 
 class GeoDNBackendImplementation(OpenEoBackendImplementation):
-    __version__ = "0.0.1"
+    __version__ = "0.2.13"
 
     vector_cube_cls = DummyVectorCube
 
     def __init__(self, processing: Optional[Processing] = None):
+        oidc_prov = OidcProvider(
+            id="app_id",
+            issuer=APPID_ISSUER,
+            scopes=["openid", "users"],
+            title="tensorlakehouse-openeo-driver",
+            service_account=(OPENEO_AUTH_CLIENT_ID, OPENEO_AUTH_CLIENT_SECRET),
+            default_clients=[
+                {
+                    "id": OPENEO_AUTH_CLIENT_ID,
+                    "grant_types": [
+                        "client_credentials",
+                        "authorization_code",
+                        "authorization_code+pkce",
+                        "urn:ietf:params:oauth:grant-type:device_code",
+                        "urn:ietf:params:oauth:grant-type:device_code+pkce",
+                        "refresh_token",
+                        "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                    ],
+                }
+            ],
+        )
+
+        self._oidc_providers = list()
+        self._oidc_providers.append(oidc_prov)
+        config = OpenEoBackendConfig(
+            oidc_providers=self.oidc_providers,
+            capabilities_title="tensorlakehouse openEO Backend",
+            capabilities_description="This is the tensorlakehouse openEO Backend",
+            capabilities_backend_version="0.2.13",
+            enable_basic_auth=True,
+        )
+
         super(GeoDNBackendImplementation, self).__init__(
             secondary_services=DummySecondaryServices(),
-            catalog=GeoDNCollectionCatalog(),
-            batch_jobs=GeodnBatchJobs(),
+            catalog=TensorLakehouseCollectionCatalog(),
+            batch_jobs=TensorLakehouseBatchJobs(),
             user_defined_processes=DummyUserDefinedProcesses(),
             processing=GeoDNProcessing(),
-            config=GeoDNBackendConfig(valid_basic_auth=_valid_basic_auth),  # type: ignore
+            config=config,
         )
 
     def oidc_providers(self) -> List[OidcProvider]:
-        return [
-            OidcProvider(
-                id="app_id",
-                issuer=APPID_ISSUER,
-                scopes=["openid", "users"],
-                title="geolab-backend",
-            ),
-            OidcProvider(
-                id="testprovider",
-                issuer="https://oidc.test",
-                scopes=["openid"],
-                title="Test",
-            ),
-            OidcProvider(
-                id="eoidc",
-                issuer="https://eoidc.test",
-                scopes=["openid"],
-                title="e-OIDC",
-                default_clients=[
-                    {
-                        "id": "badcafef00d",
-                        "grant_types": [
-                            "urn:ietf:params:oauth:grant-type:device_code+pkce",
-                            "refresh_token",
-                        ],
-                    }
-                ],
-            ),
-            # Allow testing with Keycloak setup running in docker on localhost.
-            OidcProvider(
-                id="local",
-                title="Local Keycloak",
-                issuer="http://localhost:9090/auth/realms/master",
-                scopes=["openid"],
-            ),
-        ]
+        return self._oidc_providers
 
     def file_formats(self) -> dict:
         return {

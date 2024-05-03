@@ -15,7 +15,7 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_Y_DIMENSION,
 )
 from tensorlakehouse_openeo_driver.geodn_backend import (
-    GeoDNCollectionCatalog,
+    TensorLakehouseCollectionCatalog,
 )
 from openeo.capabilities import ComparableVersion
 from tensorlakehouse_openeo_driver.stac import STAC
@@ -74,11 +74,13 @@ def api110(geodn_client) -> ApiTester:
     return ApiTester(api_version="1.1.0", client=geodn_client, data_root=TEST_DATA_ROOT)
 
 
-def collections(catalog: GeoDNCollectionCatalog, api_version: ComparableVersion) -> Dict[str, List]:
+def collections(
+    catalog: TensorLakehouseCollectionCatalog, api_version: ComparableVersion
+) -> Dict[str, List]:
     """this is adapted from views.py module in order to mimic the way the response is built
 
     Args:
-        catalog (GeoDNCollectionCatalog): _description_
+        catalog (TensorLakehouseCollectionCatalog): _description_
         api_version (ComparableVersion): _description_
 
     Returns:
@@ -92,7 +94,7 @@ def collections(catalog: GeoDNCollectionCatalog, api_version: ComparableVersion)
 
 
 def collection_by_id(
-    catalog: GeoDNCollectionCatalog, api_version: ComparableVersion, collection_id: str
+    catalog: TensorLakehouseCollectionCatalog, api_version: ComparableVersion, collection_id: str
 ):
     metadata = catalog.get_collection_metadata(collection_id=collection_id)
     metadata = _normalize_collection_metadata(metadata=metadata, api_version=api_version, full=True)
@@ -100,12 +102,12 @@ def collection_by_id(
 
 
 def collection_items(
-    catalog: GeoDNCollectionCatalog, api_version: ComparableVersion, collection_id: str
+    catalog: TensorLakehouseCollectionCatalog, api_version: ComparableVersion, collection_id: str
 ) -> Dict:
     """this method mimics the implementation of views.py::collection_items
 
     Args:
-        catalog (GeoDNCollectionCatalog): _description_
+        catalog (TensorLakehouseCollectionCatalog): _description_
         api_version (ComparableVersion): _description_
         collection_id (str): _description_
 
@@ -113,7 +115,7 @@ def collection_items(
         _type_: _description_
     """
 
-    response = catalog.get_collection_items(collection_id=collection_id, parameters=dict())
+    response = catalog.get_collection_items(collection_id=collection_id)
     assert response is not None
     assert isinstance(response, dict)
     return response
@@ -223,7 +225,7 @@ def test_get_collections_by_id(collection_id, expected_bands):
     """
     stac = STAC(STAC_URL)
     if stac.is_collection_available(collection_id=collection_id):
-        cat = GeoDNCollectionCatalog()
+        cat = TensorLakehouseCollectionCatalog()
         collection = collection_by_id(
             catalog=cat,
             api_version=ComparableVersion("1.1.0"),
@@ -250,7 +252,7 @@ def test_get_collections_by_id(collection_id, expected_bands):
     ],
 )
 def test_get_collections_items(collection_id):
-    cat = GeoDNCollectionCatalog()
+    cat = TensorLakehouseCollectionCatalog()
     stac = STAC(STAC_URL)
     if stac.is_collection_available(collection_id=collection_id):
         items = collection_items(
@@ -265,7 +267,7 @@ def test_get_collections_items(collection_id):
 
 
 def test_get_collections():
-    cat = GeoDNCollectionCatalog()
+    cat = TensorLakehouseCollectionCatalog()
     collection_metadata = collections(catalog=cat, api_version=ComparableVersion("1.1.0"))
     for collection in collection_metadata["collections"]:
         basic_keys = [
@@ -687,26 +689,70 @@ POST_RESULT_PAYLOADS = [
                     "loadcollection1": {
                         "process_id": "load_collection",
                         "arguments": {
-                            "bands": ["B02"],
-                            "id": "HLSS30",
+                            "bands": ["Temperature", "Dewpoint"],
+                            "id": "Global weather (ERA5)",
                             "spatial_extent": {
-                                "west": -121.5,
-                                "south": 44.0,
-                                "east": -121.25,
-                                "north": 44.25,
+                                "west": -76,
+                                "south": 42,
+                                "east": -72,
+                                "north": 46,
                             },
                             "temporal_extent": [
-                                "2022-01-02T00:00:00Z",
-                                "2022-01-02T23:59:59Z",
+                                "2015-01-01T00:00:00Z",
+                                "2015-01-03T00:00:00Z",
                             ],
                         },
                     },
-                    "saveresult1": {
-                        "process_id": "save_result",
+                    "aggregatespatial1": {
+                        "process_id": "aggregate_spatial",
                         "arguments": {
                             "data": {"from_node": "loadcollection1"},
-                            "format": "netCDF",
-                            "options": {},
+                            "geometries": {
+                                "type": "FeatureCollection",
+                                "features": [
+                                    {
+                                        "type": "Feature",
+                                        "properties": {},
+                                        "geometry": {
+                                            "type": "Polygon",
+                                            "coordinates": [
+                                                [
+                                                    [-75, 43],
+                                                    [-73, 43],
+                                                    [-73, 45],
+                                                    [-75, 45],
+                                                    [-75, 43],
+                                                ]
+                                            ],
+                                        },
+                                    },
+                                    {
+                                        "type": "Feature",
+                                        "properties": {},
+                                        "geometry": {
+                                            "type": "Polygon",
+                                            "coordinates": [
+                                                [
+                                                    [-74.5, 43.5],
+                                                    [-73.5, 43.5],
+                                                    [-73.5, 44.5],
+                                                    [-74.5, 44.5],
+                                                    [-74.5, 43.5],
+                                                ]
+                                            ],
+                                        },
+                                    },
+                                ],
+                            },
+                            "reducer": {
+                                "process_graph": {
+                                    "mean1": {
+                                        "process_id": "mean",
+                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "result": True,
+                                    }
+                                }
+                            },
                         },
                         "result": True,
                     },
@@ -720,65 +766,6 @@ POST_RESULT_PAYLOADS = [
         },
         ["B02"],
         32617,
-    ),
-]
-
-
-POST_RESULT_PAYLOADS_ISSUE_324_MAX_TIME = [
-    (
-        # Issue 324 datacube.max_time() fails on era5 as dim 'time' not found in cube dims(t,x,y)
-        "api110",
-        {
-            "process": {
-                "process_graph": {
-                    "loadcollection1": {
-                        "process_id": "load_collection",
-                        "arguments": {
-                            "bands": ["Total precipitation"],
-                            "id": "Global weather (ERA5)",
-                            "spatial_extent": {
-                                "west": -70,
-                                "south": -10,
-                                "east": -60,
-                                "north": 0,
-                            },
-                            "temporal_extent": [
-                                "2015-01-01T00:00:00Z",
-                                "2015-02-03T00:00:00Z",
-                            ],
-                        },
-                    },
-                    "reducedimension1": {
-                        "process_id": "reduce_dimension",
-                        "arguments": {
-                            "data": {"from_node": "loadcollection1"},
-                            "dimension": "time",
-                            "reducer": {
-                                "process_graph": {
-                                    "max1": {
-                                        "process_id": "max",
-                                        "arguments": {"data": {"from_parameter": "data"}},
-                                        "result": True,
-                                    }
-                                }
-                            },
-                        },
-                    },
-                    "saveresult1": {
-                        "process_id": "save_result",
-                        "arguments": {
-                            "data": {"from_node": "reducedimension1"},
-                            "format": "netCDF",
-                            "options": {},
-                        },
-                        "result": True,
-                    },
-                }
-            }
-        },
-        {DEFAULT_Y_DIMENSION: 96, DEFAULT_X_DIMENSION: 96, DEFAULT_BANDS_DIMENSION: 1},
-        ["Total precipitation"],
-        4326,
     ),
 ]
 

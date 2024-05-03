@@ -1,4 +1,6 @@
+from pathlib import Path
 from typing import Iterable, List, Union
+from openeo_driver.utils import read_json
 from openeo_driver.ProcessGraphDeserializer import ConcreteProcessing
 from openeo_driver.dry_run import SourceConstraint
 from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
@@ -17,6 +19,7 @@ from openeo_processes_dask.process_implementations import _max, _min
 from openeo_processes_dask.specs import _max as max_spec, _min as min_spec
 from openeo_processes_dask.process_implementations.core import process
 
+
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
@@ -29,24 +32,15 @@ class GeoDNProcessing(ConcreteProcessing):
         self.process_registry = GeodnProcessRegistry(wrap_funcs=[process])
 
         process_names = get_process_names()
-        # TODO investigate how to address this issue given current implementation of openeo-processes-dask
         # explicit reading rename dimension and rename labels processes specification
         # because they're not part of openeo-process-dask lib
-        # openeo_1x_path = (
-        #     Path()
-        #     / "libs"
-        #     / "openeo-python-driver"
-        #     / "openeo_driver"
-        #     / "specs"
-        #     / "openeo-processes"
-        #     / "1.x"
-        # )
-        # for proc_name in ["rename_dimension", "rename_labels"]:
-        #     proc_path = openeo_1x_path / f"{proc_name}.json"
+        openeo_process_specs = Path() / "tensorlakehouse_openeo_driver" / "process_specifications"
+        for proc_name in ["rename_dimension", "rename_labels"]:
+            proc_path = openeo_process_specs / f"{proc_name}.json"
 
-        #     assert proc_path.exists()
-        #     proc_spec = read_json(proc_path)
-        #     process_names.append(proc_spec["id"])
+            assert proc_path.exists()
+            proc_spec = read_json(proc_path)
+            process_names.append(proc_spec["id"])
 
         openeo_impls = get_openeo_impls()
         geodn_impls = get_impls()
@@ -83,11 +77,10 @@ class GeoDNProcessing(ConcreteProcessing):
                 specsmod = __import__("openeo_processes_dask.specs", fromlist=[item])
                 itemspec = getattr(specsmod, item)
             except AttributeError as e:
-                raise e
-                # proc_path = openeo_1x_path / f"{item}.json"
+                proc_path = openeo_process_specs / f"{item}.json"
 
-                # assert proc_path.exists()
-                # itemspec = read_json(proc_path)
+                assert proc_path.exists()
+                itemspec = read_json(proc_path)
 
             # import its implementation
             implmod = __import__("tensorlakehouse_openeo_driver.processes", fromlist=[item])

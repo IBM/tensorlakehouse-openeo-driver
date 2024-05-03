@@ -29,13 +29,14 @@ class ItemProperties:
                     )
                 )
             elif cube_dim["type"] == "temporal":
-                temp_dim = TemporalDimension(
-                    extent=cube_dim.get("extent"),
-                    description=description,
-                    step=cube_dim.get("step"),
-                    values=cube_dim.get("values"),
+                dimensions.append(
+                    TemporalDimension(
+                        extent=cube_dim.get("extent"),
+                        description=description,
+                        step=cube_dim.get("step"),
+                        values=cube_dim.get("values"),
+                    )
                 )
-                dimensions.append(temp_dim)
         variables = list()
         cube_variables = prop["cube:variables"]
         for var_description, cube_var in cube_variables.items():
@@ -116,7 +117,7 @@ class ItemProperties:
         """
         for v in self.variables:
             if v.description == variable:
-                assert isinstance(v, DataCubeVariable), f"Error! Unexpected type: {v=}"
+                assert isinstance(v, DataCubeVariable)
                 return v
         return None
 
@@ -127,21 +128,24 @@ class ItemProperties:
         return data
 
     def get_epsg(self) -> Optional[int]:
-        epsg = None
         for dim in self.dimensions:
             if (
                 dim.type == "spatial"
                 and hasattr(dim, "reference_system")
                 and dim.reference_system is not None
             ):
-                epsg = int(dim.reference_system)
-                break
-        return epsg
+                return int(dim.reference_system)
+
+        return None
 
     def get_step(self) -> Optional[float]:
-        step = None
         for dim in self.dimensions:
-            if dim.type == "spatial" and hasattr(dim, "step") and dim.step is not None:
-                step = dim.step
-                break
-        return step
+            if (
+                dim.type == "spatial"
+                and hasattr(dim, "step")
+                and dim.step is not None
+                and isinstance(dim.step, float)
+            ):
+                assert isinstance(dim.step, float)
+                return dim.step
+        return None

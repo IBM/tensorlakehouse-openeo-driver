@@ -2,7 +2,7 @@
 integration tests
 """
 
-from tensorlakehouse_openeo_driver.geodn_backend import GeoDNCollectionCatalog
+from tensorlakehouse_openeo_driver.geodn_backend import TensorLakehouseCollectionCatalog
 import pytest
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import validate_STAC_Collection
 
@@ -10,7 +10,7 @@ from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import validate_STA
 @pytest.mark.skip("Test case is broken. It should validate intermediary metadata dict")
 @pytest.mark.parametrize("collection_id", ["177"])
 def test_get_collection_metadata(collection_id: str):
-    catalog = GeoDNCollectionCatalog()
+    catalog = TensorLakehouseCollectionCatalog()
     metadata = catalog.get_collection_metadata(collection_id=collection_id)
     assert isinstance(metadata, dict)
     validate_STAC_Collection(collection=metadata)
@@ -18,7 +18,7 @@ def test_get_collection_metadata(collection_id: str):
 
 @pytest.mark.skip("Test case is broken. It should validate intermediary metadata dict")
 def test_get_all_metadata():
-    catalog = GeoDNCollectionCatalog()
+    catalog = TensorLakehouseCollectionCatalog()
     metadata = catalog.get_all_metadata()
     assert isinstance(metadata, list)
     assert len(metadata) > 0

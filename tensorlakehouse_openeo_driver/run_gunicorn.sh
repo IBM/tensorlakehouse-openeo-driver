@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# gunicorn --config openeo_geodn_driver/gunicorn.conf.py 'openeo_geodn_driver.local_app:create_app()'
-# gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b "0.0.0.0:$OPENEO_GEODN_DRIVER_PORT" 'openeo_geodn_driver.local_app:app'
-# gunicorn 'openeo_geodn_driver.local_app:create_app()' --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 127.0.0.1:9091
+# gunicorn --config tensorlakehouse_openeo_driver/gunicorn.conf.py 'tensorlakehouse_openeo_driver.local_app:create_app()'
+# gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b "0.0.0.0:$tensorlakehouse_openeo_driver_PORT" 'tensorlakehouse_openeo_driver.local_app:app'
+# gunicorn 'tensorlakehouse_openeo_driver.local_app:create_app()' --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 127.0.0.1:9091
 
-gunicorn 'openeo_geodn_driver.local_app:create_app()' --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:9091
+gunicorn 'tensorlakehouse_openeo_driver.local_app:create_app()' --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:9091

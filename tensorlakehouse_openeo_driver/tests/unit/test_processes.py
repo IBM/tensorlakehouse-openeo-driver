@@ -87,14 +87,14 @@ def test_aggregate_temporal():
         num_periods=30,
     )
     time_interval = pd.date_range(start=start, end=end, freq="W")
-    DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+    datetime_format = "%Y-%m-%dT%H:%M:%SZ"
     intervals = list()
     print(f"start={start} end={end}")
     i = 1
     while i < len(time_interval):
         s = time_interval[i - 1]
         e = time_interval[i]
-        intervals.append([s.strftime(DATETIME_FORMAT), e.strftime(DATETIME_FORMAT)])
+        intervals.append([s.strftime(datetime_format), e.strftime(datetime_format)])
         i += 1
     da = aggregate_temporal(data=array, intervals=intervals, dimension=None, reducer="mean")
     assert len(da.time) == 12
@@ -208,7 +208,6 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
     elif period == "month":
         freq = "W"
         num_periods = 4 * expected_size
-    timestamps = (pd.Timestamp(2020, 1, 1), None)
     data = generate_xarray_datarray(
         bands=["B02"],
         latmax=41,
@@ -217,7 +216,7 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
         lonmax=-90,
         lonmin=-91,
         size_y=size_y,
-        timestamps=timestamps,
+        timestamps=(pd.Timestamp(2020, 1, 1), None),
         freq=freq,
         num_periods=num_periods,
     )

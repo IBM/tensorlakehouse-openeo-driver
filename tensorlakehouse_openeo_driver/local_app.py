@@ -16,7 +16,7 @@ from openeo_driver.util.logging import get_logging_config, setup_logging, show_l
 from openeo_driver.views import OpenEoApiApp, build_app
 from tensorlakehouse_openeo_driver.constants import (
     DASK_SCHEDULER_ADDRESS,
-    OPENEO_GEODN_DRIVER_PORT,
+    TENSORLAKEHOUSE_OPENEO_DRIVER_PORT,
     STAC_URL,
 )
 
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     app = create_app(environment="dev")
     show_log_level(app.logger)
     host = "0.0.0.0"
-    port = int(OPENEO_GEODN_DRIVER_PORT)
+    port = int(TENSORLAKEHOUSE_OPENEO_DRIVER_PORT)
     debug = os.getenv("FLASK_DEBUG", False)
     app.run(host=host, port=port, debug=debug)
     # print(f"Running gunicorn {host}:{port}")

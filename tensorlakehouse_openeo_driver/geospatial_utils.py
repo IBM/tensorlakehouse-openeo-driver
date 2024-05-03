@@ -1,8 +1,8 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union, DefaultDict
 import numpy as np
-from pystac import Item
+import pyproj
 import xarray as xr
 import pandas as pd
 from rasterio.crs import CRS
@@ -15,7 +15,7 @@ def clip(
     bbox: Tuple[float, float, float, float],
     x_dim: str,
     y_dim: str,
-    crs: int = 4326,
+    crs: Optional[int] = 4326,
 ) -> xr.DataArray:
     """filter out data that is not within bbox
 
@@ -44,25 +44,32 @@ def clip(
 
 
 def get_dimension_name(
-    item: Item, axis: Optional[str] = None, dim_type: Optional[str] = None
-) -> Optional[str]:
-    """get the dimension name of a given axis (e.g., x, y) or a given dimension type
+    item: Dict[str, Any], axis: Optional[str] = None, dim_type: Optional[str] = None
+) -> str:
+    """get dimension name of the specified axis or the specified dim_type. Otherwise, it throws an
+    exception
 
     Args:
-        item (Item): STAC item
-        axis (Optional[str], optional): axis of the dimension (e.g., x, y).
-        dim_type (Optional[str], optional): dimension type (e.g., horizontal, temporal). Defaults to None.
+        item (Dict[str, Any]): STAC item
+        axis (Optional[str], optional): axis name (e.g., x, y)
+        dim_type (Optional[str], optional): dimension type
 
+    Raises:
+        ValueError: _description_
+        ValueError: _description_
+        ValueError: _description_
 
     Returns:
-        Optional[str]: name of the dimension
+        str: dimension name
     """
-    item_properties = item.properties
+    item_properties = item["properties"]
     cube_dims = item_properties["cube:dimensions"]
-    assert isinstance(cube_dims, dict)
+    assert isinstance(cube_dims, dict), f"Error! Unexpected type: {cube_dims}"
+    assert axis is not None or dim_type is not None
     found = None
     i = 0
     dim_list = list(cube_dims.items())
+    dimension_name = None
     while i < len(dim_list) and not found:
         k, v = dim_list[i]
         i += 1
@@ -73,11 +80,10 @@ def get_dimension_name(
         if dim_type is not None and v.get("type") is not None and v.get("type") == dim_type:
             dimension_name = k
             found = True
-    if found:
-        assert isinstance(dimension_name, str), f"Error! Unexpected type: {dimension_name=}"
+    if found and isinstance(dimension_name, str):
         return dimension_name
     else:
-        raise ValueError("Error! Unable to find axis = {}")
+        raise ValueError(f"Error! Unable to dimension name - axis={axis} dim_type={dim_type}")
 
 
 def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):
@@ -106,7 +112,6 @@ def filter_by_time(
 
     # Select the specific timestamps using the .sel() method
     selected_data = data.sel({temporal_dim: selected_timestamps}, method="nearest")
-    assert isinstance(selected_data, xr.DataArray), f"Error! Unexpected type: {type(selected_data)}"
     return selected_data
 
 
@@ -129,12 +134,14 @@ def remove_repeated_time_coords(
             else:
                 array_by_time[t] = slice_array
         # print('length of concat list', len(arr_timestamp_lst))
-        arr = xr.concat(array_by_time.values(), dim=time_dim, compat="override", coords="minimal")
-        assert isinstance(arr, xr.DataArray), f"Error! Unexpected type: {arr=}"
+        arr: xr.DataArray = xr.concat(
+            array_by_time.values(), dim=time_dim, compat="override", coords="minimal"
+        )
+
         return arr
 
 
-def _remove_files_in_dir(dir_path: Path, prefix: str, suffix: str):
+def remove_files_in_dir(dir_path: Path, prefix: str, suffix: str):
     files = _find_files_in_dir(dir_path=dir_path, prefix=prefix, suffix=suffix)
     for f in files:
         f.unlink()
@@ -186,7 +193,7 @@ def reproject_cube(
     assert data_cube_stacked.rio.nodata is not None
 
     # So we can finally reproject
-    data_cube_stacked_reprojected = data_cube_stacked.transpose(
+    data_cube_stacked_reprojected: xr.DataArray = data_cube_stacked.transpose(
         "__unified_non_spatial_dimension__", "y", "x"
     ).rio.reproject(
         dst_crs=target_projection,
@@ -211,7 +218,15 @@ def reproject_cube(
     )
     # And we bring the dimensions back to the original order
     data_cube_stacked_reprojected = data_cube_stacked_reprojected.transpose(*data_cube.dims)
-    assert isinstance(
-        data_cube_stacked_reprojected, xr.DataArray
-    ), f"Error! Unexpected type: {data_cube_stacked_reprojected=}"
+
     return data_cube_stacked_reprojected
+
+
+def convert_point_to_4326(x: float, y: float, crs: Union[int, str]) -> Tuple[float, float]:
+    epsg4326 = pyproj.CRS.from_epsg(4326)
+    if isinstance(crs, str):
+        crs = int(crs.split(":")[1])
+    crs_from = pyproj.CRS.from_epsg(crs)
+    transformer = pyproj.Transformer.from_crs(crs_from=crs_from, crs_to=epsg4326, always_xy=True)
+    new_x, new_y = transformer.transform(x, y)
+    return new_x, new_y
