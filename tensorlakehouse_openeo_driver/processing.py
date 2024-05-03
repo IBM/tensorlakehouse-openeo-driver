@@ -76,7 +76,7 @@ class GeoDNProcessing(ConcreteProcessing):
             try:
                 specsmod = __import__("openeo_processes_dask.specs", fromlist=[item])
                 itemspec = getattr(specsmod, item)
-            except AttributeError as e:
+            except AttributeError:
                 proc_path = openeo_process_specs / f"{item}.json"
 
                 assert proc_path.exists()
