@@ -7,7 +7,6 @@ from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     AbstractLoadCollection,
     LoadCollectionFromCOS,
-    LoadCollectionFromHBase,
 )
 import geopandas as gpd
 import numpy as np
@@ -326,10 +325,7 @@ def load_collection(
         assert isinstance(cube_dimensions, dict), f"Error! Unexpected type {cube_dimensions}"
         assert isinstance(bands, list), f"Error! Unexpected type: {bands}"
         dimension_names = _get_dimension_names(cube_dimensions=cube_dimensions)
-        if _is_data_on_hbase(collection=collection):
-            loader: AbstractLoadCollection = LoadCollectionFromHBase()
-        else:
-            loader = LoadCollectionFromCOS()
+        loader = LoadCollectionFromCOS()
         data = loader.load_collection(
             id=id,
             spatial_extent=spatial_extent,

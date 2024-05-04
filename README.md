@@ -13,7 +13,6 @@ The Tensorlakehouse openEO driver is a backend implementation of the [openEO API
     - [Building and running container images](#building-and-running-container-images)
   - [Contributing](#contributing)
   - [Getting support](#getting-support)
-  - [Credits](#credits)
 
 ## User guide
 
@@ -52,23 +51,55 @@ flask run
 
 ### Building and running container images
 
-Prerequisites: STAC service and Redis DB are up and running. If you want to use Dask Scheduler, then it must also be up and running.
+Prerequisites: 
+- docker or podman-compose installed
+- 
 
 Podman is a drop-in replacement for Docker. If you are a Docker user, just replace `podman` by `docker` and you will be fine. 
 
 ```shell
-podman build -t tensorlakehouse-openeo-driver .
+podman-compose -f podman-compose.yml --env-file /Users/alice/tensorlakehouse-openeo-driver/.env up
 ```
 
-Run openEO webserver
+Create `.env` file
 
-```shell
-podman run --rm -p 9091:9091 -e GEODN_DISCOVERY_USERNAME=$GEODN_DISCOVERY_USERNAME -e GEODN_DISCOVERY_PASSWORD=$GEODN_DISCOVERY_PASSWORD -e STAC_URL=$STAC_URL -e OPENEO_URL=$OPENEO_URL -e CREDENTIALS=$CREDENTIALS -e BROKER_URL=$BROKER_URL -e RESULT_BACKEND=$RESULT_BACKEND tensorlakehouse-openeo-driver
 ```
 
-Run openEO celery worker
-```shell
-podman run --rm -e GEODN_DISCOVERY_USERNAME=$GEODN_DISCOVERY_USERNAME -e GEODN_DISCOVERY_PASSWORD=$GEODN_DISCOVERY_PASSWORD -e STAC_URL=$STAC_URL -e OPENEO_URL=$OPENEO_URL -e CREDENTIALS=$CREDENTIALS -e BROKER_URL=$BROKER_URL -e RESULT_BACKEND=$RESULT_BACKEND tensorlakehouse-openeo-driver
+PYTHONPATH=/Users/alice/tensorlakehouse-openeo-driver/
+
+# RIS3 account - App ID-geodn instance - resource group foc-cimf
+APPID_ISSUER=<authorization server url>
+APPID_USERNAME=<username>
+APPID_PASSWORD=<password>
+OPENEO_AUTH_CLIENT_ID=<client id>
+OPENEO_AUTH_CLIENT_SECRET=<client secret>
+
+
+TENSORLAKEHOUSE_OPENEO_DRIVER_PORT=9091
+
+
+GEODN_DISCOVERY_PASSWORD=<geodn-discovery-password>
+GEODN_DISCOVERY_USERNAME=<geodn-discovery-username>
+
+
+DASK_SCHEDULER_ADDRESS=http://127.0.0.1:8787
+
+
+STAC_URL=https://stac-fastapi-pgstac-geospatial-be-staging.apps.fmaas-backend.fmaas.res.ibm.com/
+OPENEO_URL=https://openeo-geodn-driver-pgstac-geospatial-be-staging.apps.fmaas-backend.fmaas.res.ibm.com/openeo/1.1.0/
+
+OPENEO_USERNAME=john
+
+OPENEO_PASSWORD=john123
+
+CREDENTIALS=
+
+BROKER_URL=<
+RESULT_BACKEND=
+
+
+
+# NUMEXPR_MAX_THREADS=8
 ```
 
 ## Contributing

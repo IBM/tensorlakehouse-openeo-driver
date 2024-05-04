@@ -19,7 +19,6 @@ from tensorlakehouse_openeo_driver.constants import (
 from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
 from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 from tensorlakehouse_openeo_driver.geodn_discovery import GeoDNDiscovery
-from dataservice import query
 from tensorlakehouse_openeo_driver.layer import LayerMetadata
 from datetime import datetime
 import pandas as pd

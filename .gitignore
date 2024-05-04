@@ -92,9 +92,6 @@ target/
 profile_default/
 ipython_config.py
 
-# podman-compose
-podman-compose.yml
-
 # pyenv
 .python-version
 

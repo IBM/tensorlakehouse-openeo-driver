@@ -1,0 +1,61 @@
+version: '3.7'
+services:
+    webserver:
+      image: tensorlakehouse-openeo-driver:latest
+      container_name: webserver
+      networks:
+        - neta
+      command: bash tensorlakehouse_openeo_driver/run_gunicorn.sh
+      environment:
+        - BROKER_URL=${BROKER_URL}
+        - RESULT_BACKEND=${RESULT_BACKEND}
+        - CREDENTIALS=${CREDENTIALS}
+        - GEODN_DISCOVERY_PASSWORD=${GEODN_DISCOVERY_PASSWORD}
+        - GEODN_DISCOVERY_USERNAME=${GEODN_DISCOVERY_USERNAME}
+        - DASK_SCHEDULER_ADDRESS=${DASK_SCHEDULER_ADDRESS}
+        - STAC_URL=http://stac:8080/
+      ports:
+        - "9092:9091"
+      restart: always
+      depends_on:
+        - stac
+        - worker
+    worker:
+      image: tensorlakehouse-openeo-driver:latest
+      container_name: worker
+      command: celery -A tensorlakehouse_openeo_driver.tasks worker -s /opt/app-root/src/tensorlakehouse-openeo-driver/celerybeat-schedule --concurrency 2 --prefetch-multiplier 1 -Ofair -B  -Q openeo-pgstac-queue --loglevel=info
+      environment:
+        - BROKER_URL=${BROKER_URL}
+        - RESULT_BACKEND=${RESULT_BACKEND}
+        - CREDENTIALS=${CREDENTIALS}
+        - GEODN_DISCOVERY_PASSWORD=${GEODN_DISCOVERY_PASSWORD}
+        - GEODN_DISCOVERY_USERNAME=${GEODN_DISCOVERY_USERNAME}
+        - DASK_SCHEDULER_ADDRESS=${DASK_SCHEDULER_ADDRESS}
+        - STAC_URL=http://stac:8080/
+      restart: always
+    stac:
+      image: ghcr.io/stac-utils/pgstac@sha256:a11765b63688c95d1eb588b1a0bf76c3012b44bf23e2844e3953661785b6b9d3
+      container_name: stac
+      networks:
+        - neta
+      ports:
+        - "8080:8080"
+      environment:
+        - APP_HOST=0.0.0.0
+        - APP_PORT=8080
+        - ENVIRONMENT=local
+        - WEBCONCURRENCY=2
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASS=${POSTGRES_PASS}
+        - POSTGRES_DBNAME=${POSTGRES_DBNAME}
+        - POSTGRES_HOST=${POSTGRES_HOST}
+        - POSTGRES_HOST_READER=${POSTGRES_HOST_READER}
+        - POSTGRES_HOST_WRITER=${POSTGRES_HOST_WRITER}
+        - POSTGRES_PORT=31136
+      restart: always
+networks:
+  neta:
+    driver: bridge
+
+
+

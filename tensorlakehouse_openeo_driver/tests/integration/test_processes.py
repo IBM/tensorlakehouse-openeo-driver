@@ -11,9 +11,6 @@ import xarray as xr
 from openeo_pg_parser_networkx.pg_schema import BoundingBox
 import numpy as np
 from tensorlakehouse_openeo_driver.geospatial_utils import convert_point_to_4326
-from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
-    LoadCollectionFromHBase,
-)
 
 from tensorlakehouse_openeo_driver.processes import (
     resample_spatial,
@@ -258,7 +255,9 @@ def test_load_collection(
             )
 
             temporal_dims = [
-                t for t in list(expected_dims.keys()) if t in ["time", DEFAULT_TIME_DIMENSION, "t"]
+                t
+                for t in list(expected_dims.keys())
+                if t in ["time", DEFAULT_TIME_DIMENSION, "t"]
             ]
             assert len(temporal_dims) > 0
             # assumption that there is only one time dimension
@@ -280,8 +279,12 @@ def test_load_collection(
             maxy = np.max(data.y.values)
             minx = np.max(data.x.values)
             miny = np.max(data.y.values)
-            max_lon, max_lat = convert_point_to_4326(x=maxx, y=maxy, crs=reference_system)
-            min_lon, min_lat = convert_point_to_4326(x=minx, y=miny, crs=reference_system)
+            max_lon, max_lat = convert_point_to_4326(
+                x=maxx, y=maxy, crs=reference_system
+            )
+            min_lon, min_lat = convert_point_to_4326(
+                x=minx, y=miny, crs=reference_system
+            )
             assert (
                 west - tolerance <= min_lon <= max_lon <= east + tolerance
             ), f"Invalid coordinate: west <= x <= east: {west - tolerance} <= {min_lon} <= {max_lon} <= {east + tolerance}"
@@ -292,7 +295,9 @@ def test_load_collection(
             assert "geometry" in data.columns
             if bands is not None:
                 for band in bands:
-                    assert band in data.columns, f"Error! missing {band=} {data.columns=}"
+                    assert (
+                        band in data.columns
+                    ), f"Error! missing {band=} {data.columns=}"
             xmin = spatial_extent.west
             xmax = spatial_extent.east
             ymin = spatial_extent.south
@@ -351,39 +356,6 @@ test_load_collection_via_dataservice_input: List[
         {},
     ),
 ]
-
-
-@pytest.mark.parametrize(
-    "collection_id, spatial_extent, temporal_extent, bands, dimensions, expected_dims, expected_attrs",
-    test_load_collection_via_dataservice_input,
-)
-def test_LoadCollectionFromHBase(
-    collection_id: str,
-    spatial_extent: BoundingBox,
-    temporal_extent: MockTemporalInterval,
-    bands: List[str],
-    dimensions: Dict[str, str],
-    expected_dims: Dict,
-    expected_attrs: Dict,
-):
-    stac = STAC(STAC_URL)
-    if not stac.is_collection_available(collection_id=collection_id):
-        pytest.skip(f"Error! collection is not available: {collection_id}")
-    else:
-        loader = LoadCollectionFromHBase()
-        data = loader.load_collection(
-            id=collection_id,
-            spatial_extent=spatial_extent,
-            temporal_extent=temporal_extent,
-            bands=bands,
-            dimensions=dimensions,
-        )
-        validate_raster_datacube(
-            cube=data,
-            expected_dim_size=expected_dims,
-            expected_attrs=expected_attrs,
-            expected_crs=GEODN_DISCOVERY_CRS,
-        )
 
 
 """
@@ -584,7 +556,9 @@ def test_merge_cubes(
             temporal_extent=temporal_extent,
             bands=bands1,
         )
-        assert isinstance(cube1, xr.DataArray), f"cube1 not a xr.DataArray: {type(cube1)}"
+        assert isinstance(
+            cube1, xr.DataArray
+        ), f"cube1 not a xr.DataArray: {type(cube1)}"
         # check time dimension
 
         logger.debug(f"Cube1:\n{cube1}")
@@ -596,7 +570,9 @@ def test_merge_cubes(
             temporal_extent=temporal_extent,
             bands=bands2,
         )
-        assert isinstance(cube2, xr.DataArray), f"cube2 not a xr.DataArray: {type(cube2)}"
+        assert isinstance(
+            cube2, xr.DataArray
+        ), f"cube2 not a xr.DataArray: {type(cube2)}"
 
         cube1_bands = set(cube1[DEFAULT_BANDS_DIMENSION].values)
         cube2_bands = set(cube2[DEFAULT_BANDS_DIMENSION].values)
@@ -659,7 +635,9 @@ def test_resample_spatial(
         north=spatial_extent[3],
         crs="4326",
     )
-    temp_interval = MockTemporalInterval(start=temporal_extent[0], end=temporal_extent[1])
+    temp_interval = MockTemporalInterval(
+        start=temporal_extent[0], end=temporal_extent[1]
+    )
     target_crs = CRS.from_epsg(projection)
     data = load_collection(
         id=collection_id,
@@ -667,7 +645,9 @@ def test_resample_spatial(
         temporal_extent=temp_interval,
         bands=bands,
     )
-    resampled_data = resample_spatial(data=data, projection=projection, resolution=resolution)
+    resampled_data = resample_spatial(
+        data=data, projection=projection, resolution=resolution
+    )
     assert resampled_data.rio.crs is not None and resampled_data.rio.crs == target_crs
 
 
@@ -731,7 +711,9 @@ TEST_AGG_TEMPORAL_PERIOD = [
     (
         "Global weather (ERA5)",
         BoundingBox(west=-0.400, east=-0.39, south=53.79, north=53.80, crs="epsg:4326"),
-        MockTemporalInterval(start=pd.Timestamp(2007, 1, 1), end=pd.Timestamp(2007, 1, 3)),
+        MockTemporalInterval(
+            start=pd.Timestamp(2007, 1, 1), end=pd.Timestamp(2007, 1, 3)
+        ),
         ["Temperature"],
         "day",
     ),
@@ -772,7 +754,9 @@ TEST_AGG_TEMPORAL_PERIOD = [
     "collection_id, spatial_extent, temporal_extent, bands, period",
     TEST_AGG_TEMPORAL_PERIOD,
 )
-def test_aggregate_temporal_period(collection_id, spatial_extent, temporal_extent, bands, period):
+def test_aggregate_temporal_period(
+    collection_id, spatial_extent, temporal_extent, bands, period
+):
     stac = STAC(STAC_URL)
     if stac.is_collection_available(collection_id=collection_id):
         # load datacube for test

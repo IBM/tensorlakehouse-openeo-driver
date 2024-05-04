@@ -9,13 +9,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tensorlakehouse_openeo_driver"
-description = "TensorLakeHouse backend implementation of the OpenEO API"
+description = "TensorLakehouse backend implementation of the OpenEO API"
 authors = [
     { name = "Leonardo Tizzei", email = "ltizzei@br.ibm.com" },
+    { name = "Norman Bobroff", email = "bobroff@ibm.com" },
+    { name = "Romeo Kienzler", email = "romeo.kienzler1@ibm.com" },
 ]
 readme = "README.md"
 # due to how PEP 440 defines version matching, prefer [incl, excl) definitions like below:
-requires-python = ">=3.9, <3.11"
+requires-python = ">=3.7, <3.11"
 dependencies = ["click"]
 dynamic = ["version"]
 
@@ -42,11 +44,8 @@ dev = [
 [tool.setuptools_scm]
 version_scheme = "post-release"
 
-[tool.setuptools]
-py-modules = []
-
 [project.scripts]
-salutation = "tensorlakehouse_openeo_driver.complex_module.core:formal_introduction"
+salutation = "openeo_geodn_driver.complex_module.core:formal_introduction"
 
 [project.urls]
 repository = "https://github.com/IBM/tensorlakehouse-openeo-driver"
@@ -55,7 +54,7 @@ repository = "https://github.com/IBM/tensorlakehouse-openeo-driver"
 # for default values check:
 # https://github.com/relekang/python-semantic-release/blob/master/semantic_release/defaults.cfg
 
-version_source = "tag_only"
+version_source = "0.0.1"
 branch = "main"
 
 # configure types which should trigger minor and patch version bumps respectively
@@ -72,11 +71,13 @@ github_token_var="GITHUB_TOKEN"
 
 upload_to_pypi = false
 
+hvcs_domain="github.ibm.com"
+hvcs_api_domain="github.ibm.com/api/v3"  # see https://ibm-analytics.slack.com/archives/C3SSJ6CSE/p1660313562338669?thread_ts=1660300230.162449&cid=C3SSJ6CSE
 
 [tool.black]
-line-length = 100
+line-length = 88
 skip-string-normalization = false
-target-version = ['py39']
+target-version = ['py37']
 
 [tool.isort]
 multi_line_output = 3
@@ -84,7 +85,7 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
-line_length = 100
+line_length = 88
 force_to_top = ["rdkit", "scikit-learn"]
 
 [tool.mypy]
