@@ -7,6 +7,7 @@ services:
         - neta
       command: bash tensorlakehouse_openeo_driver/run_gunicorn.sh
       environment:
+        - PYTHONPATH=${PYTHONPATH}
         - BROKER_URL=${BROKER_URL}
         - RESULT_BACKEND=${RESULT_BACKEND}
         - CREDENTIALS=${CREDENTIALS}
@@ -25,6 +26,7 @@ services:
       container_name: worker
       command: celery -A tensorlakehouse_openeo_driver.tasks worker -s /opt/app-root/src/tensorlakehouse-openeo-driver/celerybeat-schedule --concurrency 2 --prefetch-multiplier 1 -Ofair -B  -Q openeo-pgstac-queue --loglevel=info
       environment:
+        - PYTHONPATH=${PYTHONPATH}
         - BROKER_URL=${BROKER_URL}
         - RESULT_BACKEND=${RESULT_BACKEND}
         - CREDENTIALS=${CREDENTIALS}
@@ -34,7 +36,7 @@ services:
         - STAC_URL=http://stac:8080/
       restart: always
     stac:
-      image: ghcr.io/stac-utils/pgstac@sha256:a11765b63688c95d1eb588b1a0bf76c3012b44bf23e2844e3953661785b6b9d3
+      image: localhost/stac-fastapi-pgstac
       container_name: stac
       networks:
         - neta
@@ -51,7 +53,7 @@ services:
         - POSTGRES_HOST=${POSTGRES_HOST}
         - POSTGRES_HOST_READER=${POSTGRES_HOST_READER}
         - POSTGRES_HOST_WRITER=${POSTGRES_HOST_WRITER}
-        - POSTGRES_PORT=31136
+        - POSTGRES_PORT=${POSTGRES_PORT}
       restart: always
 networks:
   neta:

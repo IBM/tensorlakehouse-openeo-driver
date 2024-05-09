@@ -21,6 +21,7 @@ from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
 app = Celery("tasks")
 
 app.config_from_object("tensorlakehouse_openeo_driver.celeryconfig")
+# TODO replace this by environment variable
 OUTPUT_BUCKET_NAME = "openeo-geodn-driver-output"
 
 
