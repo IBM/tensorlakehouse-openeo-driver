@@ -14,10 +14,8 @@ ENV TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR=${TENSORLAKEHOUSE_OPENEO_DRIVER_DIR}/
 # set path to dataservice-sdk
 ENV DATASERVICE_PATH=${TENSORLAKEHOUSE_OPENEO_DRIVER_DIR}/libs/dataservice_sdk/src
 
-# set path to openeo-python-driver
-ENV OPENEO_PYTHON_DRIVER=${TENSORLAKEHOUSE_OPENEO_DRIVER_DIR}/libs/openeo-python-driver
-# set pythonpath that includes openeo-python-driver and dataservice_sdk
-ENV PYTHONPATH=${TENSORLAKEHOUSE_OPENEO_DRIVER_DIR}:${DATASERVICE_PATH}:${OPENEO_PYTHON_DRIVER}
+# set pythonpath that includes dataservice_sdk
+ENV PYTHONPATH=${TENSORLAKEHOUSE_OPENEO_DRIVER_DIR}:${DATASERVICE_PATH}
 
 RUN echo ${PYTHONPATH}
 
