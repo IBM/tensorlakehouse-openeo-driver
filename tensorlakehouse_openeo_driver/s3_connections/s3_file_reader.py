@@ -11,7 +11,7 @@ from tensorlakehouse_openeo_driver.constants import (
 )
 from boto3.session import Session
 from urllib.parse import urlparse
-
+from datetime import datetime
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
@@ -26,14 +26,15 @@ class S3FileReader:
         items: List[Dict[str, Any]],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
+        temporal_extent: Tuple[datetime, datetime]
     ) -> None:
         """
 
         Args:
             items (List[Dict[str, Any]]): items that match the criteria set by the user and grouped by the media type
             bands (List[str]): bands specified by the user
-            bbox (Tuple[float, float, float, float]): bounding box specified by the user
-
+            bbox (Tuple[float, float, float, float]): bounding box specified by the user (west, south, north, east)
+            temporal_extent (Tuple[datetime, datetime]): start and end. 
         Returns:
             S3FileReader: S3FileReader instance
         """
@@ -42,6 +43,15 @@ class S3FileReader:
         self.items = items
         self.bbox = bbox
         self.bands = bands
+        if temporal_extent is not None and len(temporal_extent) > 0:
+            # if temporal_extent is not empty tuple, then the first item cannot be None
+            assert isinstance(temporal_extent[0], datetime)
+            # the second item can be None for open intervals
+            if temporal_extent[1] is not None:
+                assert isinstance(temporal_extent[1], datetime)
+                assert temporal_extent[0] <= temporal_extent[1]
+        self.temporal_extent = temporal_extent
+
         assets: Dict = items[0]["assets"]
         asset_values = next(iter(assets.values()))
         href = asset_values["href"]
