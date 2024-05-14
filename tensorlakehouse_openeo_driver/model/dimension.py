@@ -67,7 +67,9 @@ class HorizontalSpatialDimension(Dimension):
         self._axis = axis
         assert isinstance(extent, list), f"Error! not a list: {extent}"
         assert len(extent) == 2, f"Error! Unexpected size: {extent}"
-        assert all(isinstance(x, numbers.Number) for x in extent), f"Error! Invalid type: {extent}"
+        assert all(
+            isinstance(x, numbers.Number) for x in extent
+        ), f"Error! Invalid type: {extent}"
         self.start = extent[0]
         self.end = extent[1]
         # optional
@@ -149,7 +151,9 @@ class VerticalSpatialDimension(Dimension):
         self._axis = axis
         assert isinstance(extent, list), f"Error! not a list: {extent}"
         assert len(extent) == 2, f"Error! Unexpected size: {extent}"
-        assert all(isinstance(x, numbers.Number) for x in extent), f"Error! Invalid type: {extent}"
+        assert all(
+            isinstance(x, numbers.Number) for x in extent
+        ), f"Error! Invalid type: {extent}"
         self.start = extent[0]
         self.end = extent[1]
         # optional
@@ -306,7 +310,9 @@ class TemporalDimension(Dimension):
 
 
 class BandDimension(Dimension):
-    def __init__(self, description: str, values: List[str], type: str = "bands") -> None:
+    def __init__(
+        self, description: str, values: List[str], type: str = "bands"
+    ) -> None:
         """
         https://github.com/stac-extensions/datacube/blob/9e74fa706c9bdd971e01739cf18dcc53bdd3dd4f/examples/collection.json#L59
         Args:

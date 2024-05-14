@@ -211,7 +211,9 @@ class GeoDNDiscovery:
         Returns:
             List: _description_
         """
-        datasets: DataSets = catalog.get_data_sets(client=self.pairs_client, verify=True)
+        datasets: DataSets = catalog.get_data_sets(
+            client=self.pairs_client, verify=True
+        )
 
         dataset_metadata = list()
         for d in datasets.get_data_sets():

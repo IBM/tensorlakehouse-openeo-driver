@@ -21,7 +21,9 @@ class STAC:
         }
         return headers
 
-    def _get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> requests.Response:
+    def _get(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> requests.Response:
         """this method makes all GET requests to the Discovery
 
         Args:
@@ -63,7 +65,9 @@ class STAC:
                 logger.error(e)
                 raise e
 
-    def _post(self, endpoint: str, payload: Optional[Dict[str, Any]] = None) -> requests.Response:
+    def _post(
+        self, endpoint: str, payload: Optional[Dict[str, Any]] = None
+    ) -> requests.Response:
         """this method makes all GET requests to the Discovery
 
         Args:
@@ -105,7 +109,9 @@ class STAC:
                 logger.error(e)
                 raise e
 
-    def _put(self, endpoint: str, payload: Optional[Dict[str, Any]] = None) -> requests.Response:
+    def _put(
+        self, endpoint: str, payload: Optional[Dict[str, Any]] = None
+    ) -> requests.Response:
         """this method makes all GET requests to the Discovery
 
         Args:

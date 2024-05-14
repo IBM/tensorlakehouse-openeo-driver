@@ -24,7 +24,9 @@ from tensorlakehouse_openeo_driver.constants import OPENEO_URL
 from tensorlakehouse_openeo_driver.constants import logger
 
 TEST_USER = "Mr.Test"
-TEST_USER_BEARER_TOKEN = "basic//" + HttpAuthHandler.build_basic_access_token(user_id=TEST_USER)
+TEST_USER_BEARER_TOKEN = "basic//" + HttpAuthHandler.build_basic_access_token(
+    user_id=TEST_USER
+)
 TEST_USER_AUTH_HEADER = {"Authorization": "Bearer " + TEST_USER_BEARER_TOKEN}
 HIGH_RES_SENTINEL_2 = "High res  imagery (ESA Sentinel 2)"
 
@@ -39,7 +41,9 @@ BAND_SENTINEL_2_LAND_USE_LULC = "lulc"
 
 
 def submit_post_request_load_data(payload: Dict) -> xr.DataArray:
-    collection_id = payload["process"]["process_graph"]["loadcollection1"]["arguments"]["id"]
+    collection_id = payload["process"]["process_graph"]["loadcollection1"]["arguments"][
+        "id"
+    ]
 
     # make sure that the collection exists
     resp = requests.get(
@@ -259,7 +263,9 @@ POST_RESULT_PAYLOADS = [
                                 "process_graph": {
                                     "min1": {
                                         "process_id": "min",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -492,7 +498,9 @@ POST_RESULT_PAYLOADS = [
                                 "process_graph": {
                                     "mean1": {
                                         "process_id": "mean",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -532,12 +540,16 @@ POST_RESULT_PAYLOADS = [
     "payload, expected_dims, expected_epsg, expected_variables",
     POST_RESULT_PAYLOADS,
 )
-def test_post_result(payload, expected_dims, expected_epsg: int, expected_variables: List[str]):
-    collection_id = payload["process"]["process_graph"]["loadcollection1"]["arguments"]["id"]
+def test_post_result(
+    payload, expected_dims, expected_epsg: int, expected_variables: List[str]
+):
+    collection_id = payload["process"]["process_graph"]["loadcollection1"]["arguments"][
+        "id"
+    ]
     if len(expected_variables) == 0:
-        expected_variables = payload["process"]["process_graph"]["loadcollection1"]["arguments"][
-            "bands"
-        ]
+        expected_variables = payload["process"]["process_graph"]["loadcollection1"][
+            "arguments"
+        ]["bands"]
     resp = requests.get(
         f"{OPENEO_URL}collections/{collection_id}",
         headers=TEST_USER_AUTH_HEADER,
@@ -560,7 +572,9 @@ def test_post_result(payload, expected_dims, expected_epsg: int, expected_variab
             prefix="test_openeo_",
         )
         expected_crs = CRS.from_epsg(expected_epsg)
-        da = open_array(file_format=file_format, path=path, band_names=expected_variables)
+        da = open_array(
+            file_format=file_format, path=path, band_names=expected_variables
+        )
         validate_raster_datacube(
             cube=da,
             expected_dim_size=expected_dims,
@@ -708,7 +722,9 @@ def test_create_jobs(
     job_id = resp.headers["OpenEO-Identifier"]
     time.sleep(2)
     print(f"Job_id={job_id}")
-    resp = requests.get(f"{OPENEO_URL}jobs/{job_id}", headers=TEST_USER_AUTH_HEADER, verify=False)
+    resp = requests.get(
+        f"{OPENEO_URL}jobs/{job_id}", headers=TEST_USER_AUTH_HEADER, verify=False
+    )
     resp.raise_for_status()
     response = resp.json()
     status = response.get("status")
@@ -738,7 +754,9 @@ def test_create_jobs(
             for chunk in response.iter_content(chunk_size=10 * 1024):
                 f.write(chunk)
 
-            file_format = payload["process"]["process_graph"]["saveresult1"]["arguments"]["format"]
+            file_format = payload["process"]["process_graph"]["saveresult1"][
+                "arguments"
+            ]["format"]
             cube = open_raster(path=path, file_format=file_format)
             validate_raster_datacube(
                 cube=cube,
@@ -779,7 +797,9 @@ TEST_AGGREGATE_TEMPORAL_PERIOD_INPUT: List[Tuple[Dict, Dict, int, List]] = [
                                 "process_graph": {
                                     "mean1": {
                                         "process_id": "mean",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -897,7 +917,9 @@ TEST_AGGREGATE_TEMPORAL_PERIOD_INPUT: List[Tuple[Dict, Dict, int, List]] = [
                                 "process_graph": {
                                     "mean1": {
                                         "process_id": "mean",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -948,9 +970,9 @@ def test_aggregate_temporal_period(
     """
 
     if len(expected_variables) == 0:
-        expected_variables = payload["process"]["process_graph"]["loadcollection1"]["arguments"][
-            "bands"
-        ]
+        expected_variables = payload["process"]["process_graph"]["loadcollection1"][
+            "arguments"
+        ]["bands"]
     # make sure that the collection exists
     da = submit_post_request_load_data(payload=payload)
 
@@ -964,7 +986,9 @@ def test_aggregate_temporal_period(
         expected_crs=expected_crs,
     )
     # assumption: all inputs generate datacubes that have at least two timestamps
-    temporal_dims = [t for t in expected_dims.keys() if t in ["time", "t", DEFAULT_TIME_DIMENSION]]
+    temporal_dims = [
+        t for t in expected_dims.keys() if t in ["time", "t", DEFAULT_TIME_DIMENSION]
+    ]
     time_dim = temporal_dims[0]
     assert da[time_dim].size > 2
     for time_index in range(da[time_dim].size - 1):
@@ -1032,7 +1056,9 @@ TEST_AGGREGATE_SPATIAL: List[Tuple[Dict, Dict, int, List]] = [
                                 "process_graph": {
                                     "mean1": {
                                         "process_id": "mean",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }

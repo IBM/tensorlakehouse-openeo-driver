@@ -63,10 +63,14 @@ def test_load_collection(setup):
         time.sleep(600)
 
 
-def simple_pipeline(inference_dict: Dict, inputs_folder: Path, unique_id, logger) -> List[Path]:
+def simple_pipeline(
+    inference_dict: Dict, inputs_folder: Path, unique_id, logger
+) -> List[Path]:
     logger.debug(f"openeo request {unique_id}")
 
-    start_date_obj = datetime.datetime.strptime(inference_dict["start_date"], "%Y-%m-%d")
+    start_date_obj = datetime.datetime.strptime(
+        inference_dict["start_date"], "%Y-%m-%d"
+    )
     end_date_obj = datetime.datetime.combine(
         datetime.datetime.strptime(inference_dict["end_date"], "%Y-%m-%d"),
         datetime.time(23, 59, 59),
@@ -132,7 +136,9 @@ def load_openeo(inference_dict):
     start = time.time()
     file_paths = list()
     try:
-        file_paths = simple_pipeline(inference_dict, TIMEOUT_TEST_DIR, unique_id, logger)
+        file_paths = simple_pipeline(
+            inference_dict, TIMEOUT_TEST_DIR, unique_id, logger
+        )
         logger.debug(f"Took {round(time.time() - start)} seconds")
         output_files = glob.glob(TIMEOUT_TEST_DIR + "*.tif")
         logger.debug(f"Files: {output_files}")

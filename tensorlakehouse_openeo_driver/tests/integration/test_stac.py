@@ -102,7 +102,9 @@ def test_search(
                 for key in fields["includes"]:
                     if key is not None and isinstance(key, str) and "." in key:
                         key = key.split(".")[0]
-                    assert item.get(key) is not None, f"Error! {key} field is not available"
+                    assert (
+                        item.get(key) is not None
+                    ), f"Error! {key} field is not available"
 
         assert item_id in items_ids, f"Error! Missing item={item_id}"
 
@@ -187,21 +189,27 @@ def test_validate_items_using_jsonschema(collection_id: str, item_id: str):
             "tensorlakehouse_openeo_driver/tests/schemas/item-spec/json-schema/item.json"
         )
         assert item_schema_path.exists()
-        validate_stac_object_against_schema(stac_object=item, schema_path=item_schema_path)
+        validate_stac_object_against_schema(
+            stac_object=item, schema_path=item_schema_path
+        )
 
         if any("projection" in ext for ext in stac_extensions):
             project_schema_path = Path(
                 "tensorlakehouse_openeo_driver/tests/schemas/projection/schema.json"
             )
             assert project_schema_path.exists()
-            validate_stac_object_against_schema(stac_object=item, schema_path=project_schema_path)
+            validate_stac_object_against_schema(
+                stac_object=item, schema_path=project_schema_path
+            )
 
         if any("datacube" in ext for ext in stac_extensions):
             datacube_schema_path = Path(
                 "tensorlakehouse_openeo_driver/tests/schemas/datacube/schema.json"
             )
             assert datacube_schema_path.exists()
-            validate_stac_object_against_schema(stac_object=item, schema_path=datacube_schema_path)
+            validate_stac_object_against_schema(
+                stac_object=item, schema_path=datacube_schema_path
+            )
 
 
 @pytest.mark.parametrize(

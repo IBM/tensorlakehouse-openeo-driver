@@ -54,9 +54,9 @@ BANDS_GUESSES = ["b", "bands", "band"]
 class OpenEOExtensionDa:
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-        self._spatial_dims = self._guess_dims_for_type(X_GUESSES) + self._guess_dims_for_type(
-            Y_GUESSES
-        )
+        self._spatial_dims = self._guess_dims_for_type(
+            X_GUESSES
+        ) + self._guess_dims_for_type(Y_GUESSES)
         self._temporal_dims = self._guess_dims_for_type(TEMPORAL_GUESSES)
         self._bands_dims = self._guess_dims_for_type(BANDS_GUESSES)
         self._other_dims = [
@@ -92,7 +92,9 @@ class OpenEOExtensionDa:
     @property
     def spatial_dims(self) -> tuple[str, ...]:
         """Find and return all spatial dimensions of the datacube as a tuple."""
-        spatial_dims = tuple(self._get_existing_dims_and_pop_missing(self._spatial_dims))
+        spatial_dims = tuple(
+            self._get_existing_dims_and_pop_missing(self._spatial_dims)
+        )
         return spatial_dims
 
     @property
@@ -1138,7 +1140,9 @@ def validate_OpenEO_collection(collection: Dict, full: bool = False) -> None:
     assert isinstance(
         collection["description"], str
     ), f"Error! description is not a str: {collection}"
-    assert isinstance(collection["license"], str), f"Error! license is not a str: {collection}"
+    assert isinstance(
+        collection["license"], str
+    ), f"Error! license is not a str: {collection}"
     # full is a flag that indicates that this collection has full metadata
     if full:
         assert isinstance(
@@ -1197,7 +1201,9 @@ def validate_STAC_Collection(collection: Dict[str, Any]) -> None:
     assert isinstance(
         collection["description"], str
     ), f"Error! description is not a str: {collection}"
-    assert isinstance(collection["license"], str), f"Error! license is not a str: {collection}"
+    assert isinstance(
+        collection["license"], str
+    ), f"Error! license is not a str: {collection}"
 
 
 def _validate_extent_temporal_interval(collection: Dict):
@@ -1215,7 +1221,9 @@ def _validate_extent_spatial_bbox(collection: Dict):
     assert isinstance(bbox, list), f"Error! bbox is not a list: {bbox}"
 
     for bbox_item in bbox:
-        assert isinstance(bbox_item, list), f"Error! bbox item is not a list: {bbox_item}"
+        assert isinstance(
+            bbox_item, list
+        ), f"Error! bbox item is not a list: {bbox_item}"
         for coord in bbox_item:
             assert isinstance(coord, float) or isinstance(
                 coord, int
@@ -1283,7 +1291,9 @@ def _find_files_in_dir(dir_path: Path, prefix: str, suffix: str) -> List[Path]:
     return file_list
 
 
-def save_openeo_response(prefix: str, data: bytes, content_type: str) -> Tuple[str, Path]:
+def save_openeo_response(
+    prefix: str, data: bytes, content_type: str
+) -> Tuple[str, Path]:
     """save openeo response based on the file format specified in the headers
 
     Args:
@@ -1344,27 +1354,35 @@ def open_raster(
         assert isinstance(da, xr.DataArray), f"Error! not a DataArray: {da}"
     elif file_format.upper() == ZIP:
         test_data_dir = path.parent
-        _remove_files_in_dir(dir_path=test_data_dir, prefix=GEOTIFF_PREFIX, suffix="tif")
+        _remove_files_in_dir(
+            dir_path=test_data_dir, prefix=GEOTIFF_PREFIX, suffix="tif"
+        )
         zipfile = ZipFile(path)
         zipfile.extractall(path=test_data_dir)
         raster_files = _find_files_in_dir(
             dir_path=test_data_dir, prefix=GEOTIFF_PREFIX, suffix="tif"
         )
         assert len(raster_files) > 0
-        ds = xr.open_mfdataset(raster_files, concat_dim=DEFAULT_TIME_DIMENSION, combine="nested")
+        ds = xr.open_mfdataset(
+            raster_files, concat_dim=DEFAULT_TIME_DIMENSION, combine="nested"
+        )
         da = ds["band_data"]
     else:
         raise ValueError(f"Error! Unsupported type: {file_format}")
     return da
 
 
-def plot_array(arr: xr.DataArray, time_index: Dict[str, int], band_index: Dict[str, int]):
+def plot_array(
+    arr: xr.DataArray, time_index: Dict[str, int], band_index: Dict[str, int]
+):
     arr.isel(time_index.update(band_index)).plot()
     # slice_arr.plot()
     plt.show()
 
 
-def open_array(file_format: str, path: Path, band_names: List[str] = []) -> xr.DataArray:
+def open_array(
+    file_format: str, path: Path, band_names: List[str] = []
+) -> xr.DataArray:
     """open downloaded file(s) as xr.DataArray
 
     Args:
@@ -1396,14 +1414,18 @@ def open_array(file_format: str, path: Path, band_names: List[str] = []) -> xr.D
         assert isinstance(da, xr.DataArray), f"Error! not a DataArray: {da}"
     elif file_format == ZIP:
         test_data_dir = path.parent
-        _remove_files_in_dir(dir_path=test_data_dir, prefix=GEOTIFF_PREFIX, suffix="tif")
+        _remove_files_in_dir(
+            dir_path=test_data_dir, prefix=GEOTIFF_PREFIX, suffix="tif"
+        )
         zipfile = ZipFile(path)
         zipfile.extractall(path=test_data_dir)
         raster_files = _find_files_in_dir(
             dir_path=test_data_dir, prefix=GEOTIFF_PREFIX, suffix="tif"
         )
         assert len(raster_files) > 0
-        ds = xr.open_mfdataset(raster_files, concat_dim=DEFAULT_TIME_DIMENSION, combine="nested")
+        ds = xr.open_mfdataset(
+            raster_files, concat_dim=DEFAULT_TIME_DIMENSION, combine="nested"
+        )
         da = ds["band_data"]
         da = da.rename({"band": DEFAULT_BANDS_DIMENSION})
     else:
@@ -1458,7 +1480,9 @@ def validate_raster_datacube(
         expected_attrs (Dict[str, str]): exptected attributes key and values
         expected_crs (str): expected reference system
     """
-    assert isinstance(cube, xr.DataArray), f"Error! {type(cube)} is not a xarray.DataArray"
+    assert isinstance(
+        cube, xr.DataArray
+    ), f"Error! {type(cube)} is not a xarray.DataArray"
     # validate dimensions label and size
     for name, size in expected_dim_size.items():
         if size >= 0:

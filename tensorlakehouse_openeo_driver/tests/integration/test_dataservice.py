@@ -1,10 +1,3 @@
-from tensorlakehouse_openeo_driver.constants import (
-    DEFAULT_BANDS_DIMENSION,
-    DEFAULT_TIME_DIMENSION,
-    DEFAULT_X_DIMENSION,
-    DEFAULT_Y_DIMENSION,
-)
-import pytest
 from openeo_pg_parser_networkx.pg_schema import (
     BoundingBox,
 )

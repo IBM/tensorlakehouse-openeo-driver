@@ -130,7 +130,9 @@ class COSConnector:
         # clipping data
         temp_data = clip(data=temp_data, bbox=bbox, y_dim=y_dim, x_dim=x_dim, crs=epsg)
 
-        data = filter_by_time(data=temp_data, timestamps=datetimes, temporal_dim=temporal_dim)
+        data = filter_by_time(
+            data=temp_data, timestamps=datetimes, temporal_dim=temporal_dim
+        )
         return data
 
     @staticmethod
@@ -153,7 +155,9 @@ class COSConnector:
         else:
             begin_bucket_name = 1
             end_bucket_name = url_parsed.path.find("/", begin_bucket_name)
-            assert end_bucket_name > begin_bucket_name, f"Error! Unable to find bucket name: {url}"
+            assert (
+                end_bucket_name > begin_bucket_name
+            ), f"Error! Unable to find bucket name: {url}"
             bucket = url_parsed.path[begin_bucket_name:end_bucket_name]
             return bucket
 
@@ -170,7 +174,9 @@ class COSConnector:
         begin_bucket_name = 1
         url_parsed = urlparse(url=url)
         slash_index = url_parsed.path.find("/", begin_bucket_name) + 1
-        assert slash_index > begin_bucket_name, f"Error! Unable to find object name: {url}"
+        assert (
+            slash_index > begin_bucket_name
+        ), f"Error! Unable to find object name: {url}"
         object_name = url_parsed.path[slash_index:]
         return object_name
 
@@ -241,7 +247,9 @@ class COSConnector:
             dict_item = i.to_dict()
             mydatetime = i.properties.get("datetime")
             pddt = pd.Timestamp(mydatetime)
-            dict_item["properties"]["datetime"] = pddt.isoformat(sep="T", timespec="seconds")
+            dict_item["properties"]["datetime"] = pddt.isoformat(
+                sep="T", timespec="seconds"
+            )
             dict_items.append(dict_item)
 
         # setting gdal_env param is based on this https://github.com/gjoseph92/stackstac#roadmap
@@ -254,7 +262,9 @@ class COSConnector:
             fill_value=np.nan,
             properties=["datetime"],
             assets=assets,
-            gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(always=dict(session=aws_session)),
+            gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(
+                always=dict(session=aws_session)
+            ),
             band_coords=False,
             sortby_date="asc",
         )
@@ -262,7 +272,9 @@ class COSConnector:
         if "band" in data_array.dims and "band" != DEFAULT_BANDS_DIMENSION:
             data_array = data_array.rename({"band": DEFAULT_BANDS_DIMENSION})
         time_dim = get_dimension_name(item=arbitrary_item, dim_type="temporal")
-        assert isinstance(time_dim, str), f"Error! unexpected type of time_dim {time_dim}"
+        assert isinstance(
+            time_dim, str
+        ), f"Error! unexpected type of time_dim {time_dim}"
         x_dim = get_dimension_name(item=arbitrary_item, axis=DEFAULT_X_DIMENSION)
         y_dim = get_dimension_name(item=arbitrary_item, axis=DEFAULT_Y_DIMENSION)
         # if time_dim in data_array.dims and "time" != TIME:
@@ -271,7 +283,9 @@ class COSConnector:
         for coord in list(data_array.coords.keys()):
             if coord not in [x_dim, y_dim, DEFAULT_BANDS_DIMENSION, time_dim]:
                 data_array = data_array.reset_coords(names=coord, drop=True)
-        data_array = remove_repeated_time_coords(data_array=data_array, time_dim=time_dim)
+        data_array = remove_repeated_time_coords(
+            data_array=data_array, time_dim=time_dim
+        )
 
         data_array.rio.write_crs(epsg, inplace=True)
 
@@ -335,7 +349,9 @@ class COSConnector:
             None
         """
 
-        logger.debug(f"Downloading from bucket={self.bucket} object={object} and saving as {path}")
+        logger.debug(
+            f"Downloading from bucket={self.bucket} object={object} and saving as {path}"
+        )
         # instantiate s3 client
         # Initialize the COS client
         cos = self._make_ibm_boto3_client()

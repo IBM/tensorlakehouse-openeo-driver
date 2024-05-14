@@ -37,7 +37,9 @@ def simple_pipeline(inference_dict, inputs_folder, unique_id, logger):
         "OPENEO_URL"
     ]  # "http://openeo-geodn-driver-nasageospatial-dev.cash.sl.cloud9.ibm.com/openeo/1.1.0/"
 
-    start_date_obj = datetime.datetime.strptime(inference_dict["start_date"], "%Y-%m-%d")
+    start_date_obj = datetime.datetime.strptime(
+        inference_dict["start_date"], "%Y-%m-%d"
+    )
     end_date_obj = datetime.datetime.combine(
         datetime.datetime.strptime(inference_dict["end_date"], "%Y-%m-%d"),
         datetime.time(23, 59, 59),
@@ -51,7 +53,9 @@ def simple_pipeline(inference_dict, inputs_folder, unique_id, logger):
         collections = ["HLSS30"]
 
     # Pull from OpenEO
-    geodn = openeo.connect(openeo_url, default_timeout=240).authenticate_basic(username, password)
+    geodn = openeo.connect(openeo_url, default_timeout=240).authenticate_basic(
+        username, password
+    )
     logger.debug("Connected to OpenEO")
     for collection in collections:
         if collection == "HLSS30":
@@ -137,7 +141,9 @@ if __name__ == "__main__":
 
     os.environ["OPENEO_USERNAME"] = "john"
     os.environ["OPENEO_PASSWORD"] = "john123"
-    os.environ["OPENEO_URL"] = "https://openeo-geodn-nasageospatial-dev.cash.sl.cloud9.ibm.com"
+    os.environ["OPENEO_URL"] = (
+        "https://openeo-geodn-nasageospatial-dev.cash.sl.cloud9.ibm.com"
+    )
 
     while True:
         load_openeo(inference_hls_3)

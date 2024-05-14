@@ -365,5 +365,3 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
         for description, cube_var in cube_variables.items():
             variables[description] = cube_var.to_dict()
         return variables
-
-

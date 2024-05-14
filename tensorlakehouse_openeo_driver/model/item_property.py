@@ -9,7 +9,9 @@ from tensorlakehouse_openeo_driver.model.dimension import (
 
 
 class ItemProperties:
-    def __init__(self, variables: List[DataCubeVariable], dimensions: List[Dimension]) -> None:
+    def __init__(
+        self, variables: List[DataCubeVariable], dimensions: List[Dimension]
+    ) -> None:
         self._variables = variables
         self._dimensions = dimensions
 

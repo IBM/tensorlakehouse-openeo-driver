@@ -4,7 +4,9 @@ integration tests
 
 from tensorlakehouse_openeo_driver.geodn_backend import TensorLakehouseCollectionCatalog
 import pytest
-from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import validate_STAC_Collection
+from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
+    validate_STAC_Collection,
+)
 
 
 @pytest.mark.skip("Test case is broken. It should validate intermediary metadata dict")

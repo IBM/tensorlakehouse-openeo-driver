@@ -2,7 +2,9 @@ from typing import Dict
 import pytest
 import pandas as pd
 import requests
-from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import validate_OpenEO_collection
+from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
+    validate_OpenEO_collection,
+)
 from tensorlakehouse_openeo_driver.constants import OPENEO_URL
 import certifi
 from tensorlakehouse_openeo_driver.constants import logger
@@ -78,7 +80,8 @@ def test_get_collection_items(collection_id: str, params: Dict[str, int]):
         properties = item.get("properties")
         assert isinstance(properties, dict), f"not a dict {properties}"
         assert all(
-            f in properties.keys() for f in ["cube:dimensions", "cube:variables", "datetime"]
+            f in properties.keys()
+            for f in ["cube:dimensions", "cube:variables", "datetime"]
         )
         datetime = properties.get("datetime")
         assert isinstance(datetime, str), f"Error! not a str {datetime}"

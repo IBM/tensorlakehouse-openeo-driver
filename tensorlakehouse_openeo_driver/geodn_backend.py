@@ -97,7 +97,9 @@ class DummyVisitor(ProcessGraphVisitor):
         super(DummyVisitor, self).__init__()
         self.processes = []
 
-    def enterProcess(self, process_id: str, arguments: dict, namespace: Union[str, None]):
+    def enterProcess(
+        self, process_id: str, arguments: dict, namespace: Union[str, None]
+    ):
         self.processes.append((process_id, arguments, namespace))
 
     def constantArgument(self, argument_id: str, value):
@@ -186,16 +188,24 @@ class DummyDataCube(DriverDataCube):
 
         # TODO can we get rid of these non-standard "apply_tiles" processes?
         self.apply_tiles = Mock(name="apply_tiles", return_value=self)
-        self.apply_tiles_spatiotemporal = Mock(name="apply_tiles_spatiotemporal", return_value=self)
+        self.apply_tiles_spatiotemporal = Mock(
+            name="apply_tiles_spatiotemporal", return_value=self
+        )
 
         # Create mock methods for remaining data cube methods that are not yet defined
         already_defined = set(DummyDataCube.__dict__.keys()).union(self.__dict__.keys())
         for name, method in DriverDataCube.__dict__.items():
-            if not name.startswith("_") and name not in already_defined and callable(method):
+            if (
+                not name.startswith("_")
+                and name not in already_defined
+                and callable(method)
+            ):
                 setattr(self, name, Mock(name=name, return_value=self))
 
         for name in [
-            n for n, m in DummyDataCube.__dict__.items() if getattr(m, "_mock_side_effect", False)
+            n
+            for n, m in DummyDataCube.__dict__.items()
+            if getattr(m, "_mock_side_effect", False)
         ]:
             setattr(self, name, Mock(side_effect=getattr(self, name)))
 
@@ -207,7 +217,9 @@ class DummyDataCube(DriverDataCube):
 
     @mock_side_effect
     def add_dimension(self, name: str, label, type: str = "other") -> "DummyDataCube":
-        return DummyDataCube(self.metadata.add_dimension(name=name, label=label, type=type))
+        return DummyDataCube(
+            self.metadata.add_dimension(name=name, label=label, type=type)
+        )
 
     @mock_side_effect
     def drop_dimension(self, name: str) -> "DriverDataCube":
@@ -244,7 +256,9 @@ class DummyDataCube(DriverDataCube):
         reducer = next(iter(reducer.values()))["process_id"]
         assert reducer == "mean" or reducer == "avg"
 
-        def assert_polygon_sequence(geometries: Union[Sequence, BaseMultipartGeometry]) -> int:
+        def assert_polygon_sequence(
+            geometries: Union[Sequence, BaseMultipartGeometry]
+        ) -> int:
             n_geometries = len(geometries)
 
             assert n_geometries > 0
@@ -308,7 +322,9 @@ class DummyAggregatePolygonSpatialResult(AggregatePolygonSpatialResult):
         super().__init__(csv_dir="/dev/null", regions=geometries)
         bands = len(cube.metadata.bands)
         # Dummy data: #geometries rows x #bands columns
-        self.data = [[100 + g + 0.1 * b for b in range(bands)] for g in range(len(self._regions))]
+        self.data = [
+            [100 + g + 0.1 * b for b in range(bands)] for g in range(len(self._regions))
+        ]
 
     def prepare_for_json(self):
         return self.data
@@ -359,7 +375,9 @@ class DummyMlModel(DriverMlModel):
     ) -> Dict[str, StacAsset]:
         path = Path(directory) / "mlmodel.json"
         with path.open("w") as f:
-            json.dump({"type": type(self).__name__, "creation_data": self.creation_data}, f)
+            json.dump(
+                {"type": type(self).__name__, "creation_data": self.creation_data}, f
+            )
         return {path.name: {"href": str(path), "path": str(path)}}
 
 
@@ -391,14 +409,18 @@ class DummyUserDefinedProcesses(UserDefinedProcesses):
     def reset(self, db: Dict[Tuple[str, str], UserDefinedProcessMetadata]):
         self._processes = db
 
-    def get(self, user_id: str, process_id: str) -> Union[UserDefinedProcessMetadata, None]:
+    def get(
+        self, user_id: str, process_id: str
+    ) -> Union[UserDefinedProcessMetadata, None]:
         return self._processes.get((user_id, process_id))
 
     def get_for_user(self, user_id: str) -> List[UserDefinedProcessMetadata]:
         return [udp for key, udp in self._processes.items() if key[0] == user_id]
 
     def save(self, user_id: str, process_id: str, spec: dict) -> None:
-        self._processes[user_id, process_id] = UserDefinedProcessMetadata.from_dict(spec)
+        self._processes[user_id, process_id] = UserDefinedProcessMetadata.from_dict(
+            spec
+        )
 
     def delete(self, user_id: str, process_id: str) -> None:
         try:

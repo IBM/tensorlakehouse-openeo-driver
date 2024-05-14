@@ -33,7 +33,9 @@ def test_list_datasets(geodn_data: GeoDNDiscovery):
         assert isinstance(d, DatasetMetadata)
 
 
-@pytest.mark.parametrize("dataset_id, geodn_data", [("177", "geodn_data")], indirect=["geodn_data"])
+@pytest.mark.parametrize(
+    "dataset_id, geodn_data", [("177", "geodn_data")], indirect=["geodn_data"]
+)
 def test_list_datalayers_from_dataset(dataset_id: str, geodn_data: GeoDNDiscovery):
     data = geodn_data.list_datalayers_from_dataset(dataset_id=dataset_id)
     assert isinstance(data, list)

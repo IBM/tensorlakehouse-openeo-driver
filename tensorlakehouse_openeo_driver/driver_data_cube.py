@@ -18,13 +18,17 @@ class TensorLakehouseDataCube(DriverDataCube):
     ):
         super().__init__(metadata)
         if data is not None:
-            assert isinstance(data, (DataArray, GeoDataFrame, dask_geopandas.GeoDataFrame))
+            assert isinstance(
+                data, (DataArray, GeoDataFrame, dask_geopandas.GeoDataFrame)
+            )
         self.data = data
 
     def reduce_dimension(
         self, reducer, dimension: str, context: Any, env: EvalEnv
     ) -> "TensorLakehouseDataCube":
-        assert isinstance(self.data, xr.DataArray), f"Error! {type(self.data)} is not a DataArray"
+        assert isinstance(
+            self.data, xr.DataArray
+        ), f"Error! {type(self.data)} is not a DataArray"
         raster_cube = self.data.to_array()
         data = reduce_dimension(
             data=raster_cube, reducer=reducer, context=context, dimension=dimension

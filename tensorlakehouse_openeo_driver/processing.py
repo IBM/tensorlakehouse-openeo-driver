@@ -13,7 +13,9 @@ import logging
 from openeo.capabilities import ComparableVersion
 
 from tensorlakehouse_openeo_driver.get_specs import get_process_names
-from tensorlakehouse_openeo_driver.get_openeo_process_implementations import get_openeo_impls
+from tensorlakehouse_openeo_driver.get_openeo_process_implementations import (
+    get_openeo_impls,
+)
 from tensorlakehouse_openeo_driver.get_process_implementations import get_impls
 from openeo_processes_dask.process_implementations import _max, _min
 from openeo_processes_dask.specs import _max as max_spec, _min as min_spec
@@ -34,7 +36,9 @@ class GeoDNProcessing(ConcreteProcessing):
         process_names = get_process_names()
         # explicit reading rename dimension and rename labels processes specification
         # because they're not part of openeo-process-dask lib
-        openeo_process_specs = Path() / "tensorlakehouse_openeo_driver" / "process_specifications"
+        openeo_process_specs = (
+            Path() / "tensorlakehouse_openeo_driver" / "process_specifications"
+        )
         for proc_name in ["rename_dimension", "rename_labels"]:
             proc_path = openeo_process_specs / f"{proc_name}.json"
 
@@ -83,7 +87,9 @@ class GeoDNProcessing(ConcreteProcessing):
                 itemspec = read_json(proc_path)
 
             # import its implementation
-            implmod = __import__("tensorlakehouse_openeo_driver.processes", fromlist=[item])
+            implmod = __import__(
+                "tensorlakehouse_openeo_driver.processes", fromlist=[item]
+            )
             itemimpl = getattr(implmod, item)
 
             proc_data.append({"name": item, "spec": itemspec, "impl": itemimpl})
@@ -92,9 +98,13 @@ class GeoDNProcessing(ConcreteProcessing):
         proc_data.append({"name": "min", "spec": min_spec, "impl": _min})
 
         for p in proc_data:
-            self.process_registry[p["name"]] = Process(spec=p["spec"], implementation=p["impl"])
+            self.process_registry[p["name"]] = Process(
+                spec=p["spec"], implementation=p["impl"]
+            )
 
-    def get_process_registry(self, api_version: Union[str, ComparableVersion]) -> ProcessRegistry:
+    def get_process_registry(
+        self, api_version: Union[str, ComparableVersion]
+    ) -> ProcessRegistry:
         return self.process_registry
 
     def evaluate(self, process_graph: dict, env: EvalEnv = None):

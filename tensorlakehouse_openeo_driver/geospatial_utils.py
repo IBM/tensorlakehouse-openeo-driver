@@ -77,13 +77,19 @@ def get_dimension_name(
         if axis is not None and original_axis is not None and original_axis == axis:
             dimension_name = k
             found = True
-        if dim_type is not None and v.get("type") is not None and v.get("type") == dim_type:
+        if (
+            dim_type is not None
+            and v.get("type") is not None
+            and v.get("type") == dim_type
+        ):
             dimension_name = k
             found = True
     if found and isinstance(dimension_name, str):
         return dimension_name
     else:
-        raise ValueError(f"Error! Unable to dimension name - axis={axis} dim_type={dim_type}")
+        raise ValueError(
+            f"Error! Unable to dimension name - axis={axis} dim_type={dim_type}"
+        )
 
 
 def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):
@@ -169,7 +175,9 @@ def reproject_cube(
     shape: Optional[Tuple[int, int]] = None,
 ) -> xr.DataArray:
     # We collect all available dimensions
-    non_spatial_dimension_names = [dim for dim in data_cube.dims if dim not in ["y", "x"]]
+    non_spatial_dimension_names = [
+        dim for dim in data_cube.dims if dim not in ["y", "x"]
+    ]
     # This code assumes that all dimensions have coordinates.
     # I'm not aware of a use case we have where they not.
     # So we raise an exception if this fails.
@@ -217,16 +225,22 @@ def reproject_cube(
         "__unified_non_spatial_dimension__"
     )
     # And we bring the dimensions back to the original order
-    data_cube_stacked_reprojected = data_cube_stacked_reprojected.transpose(*data_cube.dims)
+    data_cube_stacked_reprojected = data_cube_stacked_reprojected.transpose(
+        *data_cube.dims
+    )
 
     return data_cube_stacked_reprojected
 
 
-def convert_point_to_4326(x: float, y: float, crs: Union[int, str]) -> Tuple[float, float]:
+def convert_point_to_4326(
+    x: float, y: float, crs: Union[int, str]
+) -> Tuple[float, float]:
     epsg4326 = pyproj.CRS.from_epsg(4326)
     if isinstance(crs, str):
         crs = int(crs.split(":")[1])
     crs_from = pyproj.CRS.from_epsg(crs)
-    transformer = pyproj.Transformer.from_crs(crs_from=crs_from, crs_to=epsg4326, always_xy=True)
+    transformer = pyproj.Transformer.from_crs(
+        crs_from=crs_from, crs_to=epsg4326, always_xy=True
+    )
     new_x, new_y = transformer.transform(x, y)
     return new_x, new_y

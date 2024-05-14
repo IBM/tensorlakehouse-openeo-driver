@@ -79,7 +79,9 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         # convert TemporalInterval to Tuple[datetime, Optional[datetime]]
         start: datetime = pd.Timestamp(temporal_extent.start.to_numpy()).to_pydatetime()
         if temporal_extent.end is not None:
-            end: Optional[datetime] = pd.Timestamp(temporal_extent.end.to_numpy()).to_pydatetime()
+            end: Optional[datetime] = pd.Timestamp(
+                temporal_extent.end.to_numpy()
+            ).to_pydatetime()
         else:
             end = None
         temporal_ext = (start, end)

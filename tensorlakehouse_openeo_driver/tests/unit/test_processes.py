@@ -96,7 +96,9 @@ def test_aggregate_temporal():
         e = time_interval[i]
         intervals.append([s.strftime(datetime_format), e.strftime(datetime_format)])
         i += 1
-    da = aggregate_temporal(data=array, intervals=intervals, dimension=None, reducer="mean")
+    da = aggregate_temporal(
+        data=array, intervals=intervals, dimension=None, reducer="mean"
+    )
     assert len(da.time) == 12
 
 
@@ -178,7 +180,9 @@ def test_merge_cubes(
         freq=None,
     )
     merged_cube = merge_cubes(cube1=cube1, cube2=cube2)
-    assert sorted(merged_cube[DEFAULT_BANDS_DIMENSION].values) == sorted(set(bands_1 + bands_2))
+    assert sorted(merged_cube[DEFAULT_BANDS_DIMENSION].values) == sorted(
+        set(bands_1 + bands_2)
+    )
     for dim_name, dim_size in expected_dim_size.items():
         actual_size = merged_cube[dim_name].size
         assert (
@@ -226,7 +230,9 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
         proc.process_registry["mean"].implementation,
         data=ParameterReference(from_parameter="data"),
     )
-    aggregated_data = aggregate_temporal_period(data=data, reducer=reducer, period=period)
+    aggregated_data = aggregate_temporal_period(
+        data=data, reducer=reducer, period=period
+    )
     validate_raster_datacube(
         cube=aggregated_data,
         expected_dim_size={

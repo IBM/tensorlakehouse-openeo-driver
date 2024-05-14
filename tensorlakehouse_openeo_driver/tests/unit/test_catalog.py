@@ -37,7 +37,9 @@ def test_get_collection_metadata(collection_id: str):
         return_value=MockPystacClient(),
     ):
         catalog = TensorLakehouseCollectionCatalog()
-        collection_metadata = catalog.get_collection_metadata(collection_id=collection_id)
+        collection_metadata = catalog.get_collection_metadata(
+            collection_id=collection_id
+        )
         assert isinstance(collection_metadata, dict)
         mandatory_fields = [
             "id",

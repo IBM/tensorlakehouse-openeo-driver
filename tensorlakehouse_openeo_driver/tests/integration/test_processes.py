@@ -19,7 +19,6 @@ from tensorlakehouse_openeo_driver.processes import (
 )
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
-    GEODN_DISCOVERY_CRS,
     DEFAULT_TIME_DIMENSION,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,

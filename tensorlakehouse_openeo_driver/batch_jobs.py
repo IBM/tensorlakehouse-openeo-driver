@@ -180,7 +180,9 @@ class TensorLakehouseBatchJobs(BatchJobs):
         try:
             result = tasks.app.AsyncResult(job_id)
             metadata = result.info
-            logger.debug(f"batch_jobs.py::_update_status state={result.state} metadata={metadata}")
+            logger.debug(
+                f"batch_jobs.py::_update_status state={result.state} metadata={metadata}"
+            )
             if metadata is None:
                 metadata = dict()
             # mapping openeo states to celery states
@@ -193,7 +195,9 @@ class TensorLakehouseBatchJobs(BatchJobs):
             }
             new_state = mapping_states.get(status, STARTED)
             # update task metadata by setting state to created and also its metadata
-            logger.debug(f"batch_jobs.py::_update_status new_state={new_state} metadata={metadata}")
+            logger.debug(
+                f"batch_jobs.py::_update_status new_state={new_state} metadata={metadata}"
+            )
             # allow user to update only tasks that are in progress because it does not
             # make sense to set the state of a task to 'running' if it has finished
             if result.state not in states.READY_STATES:
@@ -204,24 +208,33 @@ class TensorLakehouseBatchJobs(BatchJobs):
             raise JobNotFoundException(job_id)
 
     def start_job(self, job_id: str, user: User):
-        self._update_status(job_id=job_id, user_id=user.user_id, status=JOB_STATUS.RUNNING)
+        self._update_status(
+            job_id=job_id, user_id=user.user_id, status=JOB_STATUS.RUNNING
+        )
 
     def _output_root(self) -> str:
         return "/data/jobs"
 
     def get_results(self, job_id: str, user_id: str) -> Dict[str, Any]:
-        if self._get_job_info(job_id=job_id, user_id=user_id).status != JOB_STATUS.FINISHED:
+        if (
+            self._get_job_info(job_id=job_id, user_id=user_id).status
+            != JOB_STATUS.FINISHED
+        ):
             raise JobNotFinishedException
 
         return {
             "stac_version": "1.0.0",
-            "stac_extensions": ["https://openeo.example/stac/custom-extemsion/v1.0.0/schema.json"],
+            "stac_extensions": [
+                "https://openeo.example/stac/custom-extemsion/v1.0.0/schema.json"
+            ],
             "id": job_id,
             "type": "Feature",
             "bbox": [-180, -90, 180, 90],
             "geometry": {
                 "type": "Polygon",
-                "coordinates": [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]],
+                "coordinates": [
+                    [[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]
+                ],
             },
             "properties": {
                 "datetime": "2019-08-24T14:15:22Z",

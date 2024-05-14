@@ -50,7 +50,9 @@ def _open_multiple_tif(target_dir: Path) -> xr.Dataset:
     for index, f in enumerate(raster_files):
         if len(f.name) > 35:
             try:
-                t: Union[datetime, int] = datetime.strptime(f.name[15:35], "%Y-%m-%dT%H-%M-%SZ")
+                t: Union[datetime, int] = datetime.strptime(
+                    f.name[15:35], "%Y-%m-%dT%H-%M-%SZ"
+                )
             except ValueError:
                 t = index
         else:

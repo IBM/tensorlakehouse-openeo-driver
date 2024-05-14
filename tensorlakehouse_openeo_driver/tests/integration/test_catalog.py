@@ -3,7 +3,9 @@ from tensorlakehouse_openeo_driver.catalog import TensorLakehouseCollectionCatal
 import pytest
 import pandas as pd
 from tensorlakehouse_openeo_driver.constants import STAC_URL
-from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import validate_OpenEO_collection
+from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
+    validate_OpenEO_collection,
+)
 from tensorlakehouse_openeo_driver.stac import STAC
 from stac_validator import stac_validator
 
@@ -66,7 +68,9 @@ def test_get_all_metadata(catalog: TensorLakehouseCollectionCatalog):
     indirect=["catalog"],
 )
 def test_get_collection_items(
-    collection_id: str, params: Dict[str, Any], catalog: TensorLakehouseCollectionCatalog
+    collection_id: str,
+    params: Dict[str, Any],
+    catalog: TensorLakehouseCollectionCatalog,
 ):
     stac = STAC(STAC_URL)
     if stac.is_collection_available(collection_id=collection_id):
@@ -97,7 +101,9 @@ def test_get_collection_items(
                 pd.Timestamp(dt_str)
             else:
                 start_datetime_str = properties.get("start_datetime")
-                assert isinstance(start_datetime_str, str), f"Error! not a str {start_datetime_str}"
+                assert isinstance(
+                    start_datetime_str, str
+                ), f"Error! not a str {start_datetime_str}"
                 pd.Timestamp(start_datetime_str)
     else:
         pytest.skip(f"Warning! {collection_id} collection is not available")

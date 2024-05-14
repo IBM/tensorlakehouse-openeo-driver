@@ -75,13 +75,17 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                 valid_types = (str, Number, np.ndarray, np.number, list, tuple)
                 # convert attributes of the xarray.Dataset
                 for attr_key, attr_value in ds.attrs.items():
-                    if not isinstance(attr_value, valid_types) or isinstance(attr_value, bool):
+                    if not isinstance(attr_value, valid_types) or isinstance(
+                        attr_value, bool
+                    ):
                         logger.debug(f"Invalid attr: {attr_key}")
                         ds.attrs[attr_key] = str(attr_value)
                 # convert attributes of the variables
                 for variable in list(ds):
                     for attr_key, attr_value in ds[variable].attrs.items():
-                        if not isinstance(attr_value, valid_types) or isinstance(attr_value, bool):
+                        if not isinstance(attr_value, valid_types) or isinstance(
+                            attr_value, bool
+                        ):
                             logger.debug(f"Invalid attr: {attr_key}")
                             ds[variable].attrs[attr_key] = str(attr_value)
 
@@ -104,7 +108,9 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
         driver = "COG"
         data = self.cube.data
 
-        assert isinstance(data, xr.DataArray), f"Error! Not a xr.DataArray: {type(self.cube.data)}"
+        assert isinstance(
+            data, xr.DataArray
+        ), f"Error! Not a xr.DataArray: {type(self.cube.data)}"
 
         # Save each slice of the DataArray as a separate GeoTIFF file
         if data.openeo is not None and data.openeo.temporal_dims is not None:
@@ -141,7 +147,9 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                 timestamp = pd.Timestamp(t)
                 timestamp_str = timestamp.strftime(FILE_DATETIME_FORMAT)
                 unique_id = uuid.uuid4().hex
-                output_filename = parent_dir / f"{GEOTIFF_PREFIX}_{timestamp_str}_{unique_id}.tif"
+                output_filename = (
+                    parent_dir / f"{GEOTIFF_PREFIX}_{timestamp_str}_{unique_id}.tif"
+                )
                 slice_array = data.isel({time_dim: index})
                 if not np.isnan(slice_array.data).all():
                     slice_array.rio.to_raster(output_filename)

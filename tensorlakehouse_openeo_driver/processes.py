@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
-    AbstractLoadCollection,
     LoadCollectionFromCOS,
 )
 import geopandas as gpd

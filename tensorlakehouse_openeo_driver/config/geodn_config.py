@@ -27,7 +27,9 @@ class OpenEoBackendConfig:
 
     # Generic indicator describing the environment the code is deployed in
     # (e.g. "prod", "dev", "staging", "test", "integration", ...)
-    deploy_env: str = os.environ.get("OPENEO_DEPLOY_ENV") or os.environ.get("OPENEO_ENV") or "dev"
+    deploy_env: str = (
+        os.environ.get("OPENEO_DEPLOY_ENV") or os.environ.get("OPENEO_ENV") or "dev"
+    )
 
     capabilities_service_id: Optional[str] = None
     capabilities_title: str = "GeoDN openEO Backend"
@@ -68,5 +70,9 @@ class OpenEoBackendConfig:
 
     url_signer: Optional[UrlSigner] = None
 
-    collection_exclusion_list: Dict[str, List[str]] = {}  # e.g. {"1.1.0":["my_collection_id"]}
-    processes_exclusion_list: Dict[str, List[str]] = {}  # e.g. {"1.1.0":["my_process_id"]}
+    collection_exclusion_list: Dict[str, List[str]] = (
+        {}
+    )  # e.g. {"1.1.0":["my_collection_id"]}
+    processes_exclusion_list: Dict[str, List[str]] = (
+        {}
+    )  # e.g. {"1.1.0":["my_process_id"]}

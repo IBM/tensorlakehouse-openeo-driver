@@ -110,7 +110,9 @@ def _extract_metadata(process: Dict[str, Any]) -> Dict:
     except KeyError as e:
         logger.error(f"Error! missing process_graph: {process}")
         raise e
-    assert isinstance(process_graph, dict), f"Error! process_graph is not a dict:{process_graph}"
+    assert isinstance(
+        process_graph, dict
+    ), f"Error! process_graph is not a dict:{process_graph}"
     polygons = list()
     start_datetime = end_datetime = None
     epsg = 4326

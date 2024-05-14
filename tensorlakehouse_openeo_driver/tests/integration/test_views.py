@@ -28,7 +28,9 @@ from tensorlakehouse_openeo_driver.tests.constants import ITEM_SCHEMA_PATH
 
 
 TEST_USER = "Mr.Test"
-TEST_USER_BEARER_TOKEN = "basic//" + HttpAuthHandler.build_basic_access_token(user_id=TEST_USER)
+TEST_USER_BEARER_TOKEN = "basic//" + HttpAuthHandler.build_basic_access_token(
+    user_id=TEST_USER
+)
 TEST_USER_AUTH_HEADER = {"Authorization": "Bearer " + TEST_USER_BEARER_TOKEN}
 
 COLLECTION_ID_HISTORICAL_CROP_PLANTING_MAP = "Historical crop planting map (USA)"
@@ -94,15 +96,21 @@ def collections(
 
 
 def collection_by_id(
-    catalog: TensorLakehouseCollectionCatalog, api_version: ComparableVersion, collection_id: str
+    catalog: TensorLakehouseCollectionCatalog,
+    api_version: ComparableVersion,
+    collection_id: str,
 ):
     metadata = catalog.get_collection_metadata(collection_id=collection_id)
-    metadata = _normalize_collection_metadata(metadata=metadata, api_version=api_version, full=True)
+    metadata = _normalize_collection_metadata(
+        metadata=metadata, api_version=api_version, full=True
+    )
     return metadata
 
 
 def collection_items(
-    catalog: TensorLakehouseCollectionCatalog, api_version: ComparableVersion, collection_id: str
+    catalog: TensorLakehouseCollectionCatalog,
+    api_version: ComparableVersion,
+    collection_id: str,
 ) -> Dict:
     """this method mimics the implementation of views.py::collection_items
 
@@ -261,14 +269,18 @@ def test_get_collections_items(collection_id):
             collection_id=collection_id,
         )
         for item in items.get("features"):
-            validate_stac_object_against_schema(stac_object=item, schema_path=ITEM_SCHEMA_PATH)
+            validate_stac_object_against_schema(
+                stac_object=item, schema_path=ITEM_SCHEMA_PATH
+            )
     else:
         pytest.skip(f"Warning! {collection_id} is not available in STAC {STAC_URL}")
 
 
 def test_get_collections():
     cat = TensorLakehouseCollectionCatalog()
-    collection_metadata = collections(catalog=cat, api_version=ComparableVersion("1.1.0"))
+    collection_metadata = collections(
+        catalog=cat, api_version=ComparableVersion("1.1.0")
+    )
     for collection in collection_metadata["collections"]:
         basic_keys = [
             "stac_version",
@@ -358,7 +370,9 @@ POST_RESULT_PAYLOADS = [
                                 "process_graph": {
                                     "min1": {
                                         "process_id": "min",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -416,7 +430,9 @@ POST_RESULT_PAYLOADS = [
                                 "process_graph": {
                                     "min1": {
                                         "process_id": "min",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -598,7 +614,9 @@ POST_RESULT_PAYLOADS = [
                                 "process_graph": {
                                     "min1": {
                                         "process_id": "min",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -658,7 +676,9 @@ POST_RESULT_PAYLOADS = [
                                 "process_graph": {
                                     "max1": {
                                         "process_id": "max",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -748,7 +768,9 @@ POST_RESULT_PAYLOADS = [
                                 "process_graph": {
                                     "mean1": {
                                         "process_id": "mean",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -785,7 +807,9 @@ class TestSynchronousPostResult:
     ):
         expected_crs = CRS.from_epsg(expected_epsg)
         print(f"api110 type = {type(api110)}")
-        collection_id = payload["process"]["process_graph"]["loadcollection1"]["arguments"]["id"]
+        collection_id = payload["process"]["process_graph"]["loadcollection1"][
+            "arguments"
+        ]["id"]
         assert isinstance(collection_id, str)
 
         print(f"GET /collections/{collection_id}")

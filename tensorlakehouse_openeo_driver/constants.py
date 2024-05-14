@@ -33,12 +33,17 @@ APPID_USERNAME = os.getenv("APPID_USERNAME")
 APPID_PASSWORD = os.getenv("APPID_PASSWORD")
 
 
-TENSORLAKEHOUSE_OPENEO_DRIVER_PORT = os.getenv("TENSORLAKEHOUSE_OPENEO_DRIVER_PORT", 9091)
+TENSORLAKEHOUSE_OPENEO_DRIVER_PORT = os.getenv(
+    "TENSORLAKEHOUSE_OPENEO_DRIVER_PORT", 9091
+)
 DASK_SCHEDULER_ADDRESS = os.getenv("DASK_SCHEDULER_ADDRESS", "http://127.0.0.1:8787")
 
 TENSORLAKEHOUSE_OPENEO_DRIVER_ROOT_DIR = Path(__file__).parent.parent.resolve()
 TEST_DATA_ROOT = (
-    TENSORLAKEHOUSE_OPENEO_DRIVER_ROOT_DIR / "tensorlakehouse_openeo_driver" / "tests" / "test_data"
+    TENSORLAKEHOUSE_OPENEO_DRIVER_ROOT_DIR
+    / "tensorlakehouse_openeo_driver"
+    / "tests"
+    / "test_data"
 )
 if not TEST_DATA_ROOT.exists():
     TEST_DATA_ROOT.mkdir()
@@ -63,7 +68,11 @@ STAC_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.000Z"
 
 # this env var sets the system under test
 OPENEO_URL = os.getenv("OPENEO_URL")
-if OPENEO_URL is not None and isinstance(OPENEO_URL, str) and not OPENEO_URL.endswith("/"):
+if (
+    OPENEO_URL is not None
+    and isinstance(OPENEO_URL, str)
+    and not OPENEO_URL.endswith("/")
+):
     OPENEO_URL += "/"
 OPENEO_USERNAME = os.getenv("OPENEO_USERNAME", None)
 OPENEO_PASSWORD = os.getenv("OPENEO_PASSWORD", None)

@@ -26,7 +26,7 @@ class S3FileReader:
         items: List[Dict[str, Any]],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
-        temporal_extent: Tuple[datetime, Optional[datetime]]
+        temporal_extent: Tuple[datetime, Optional[datetime]],
     ) -> None:
         """
 
@@ -34,7 +34,7 @@ class S3FileReader:
             items (List[Dict[str, Any]]): items that match the criteria set by the user and grouped by the media type
             bands (List[str]): bands specified by the user
             bbox (Tuple[float, float, float, float]): bounding box specified by the user (west, south, north, east)
-            temporal_extent (Tuple[datetime, datetime]): start and end. 
+            temporal_extent (Tuple[datetime, datetime]): start and end.
         Returns:
             S3FileReader: S3FileReader instance
         """
@@ -141,7 +141,9 @@ class S3FileReader:
         else:
             begin_bucket_name = 1
             end_bucket_name = url_parsed.path.find("/", begin_bucket_name)
-            assert end_bucket_name > begin_bucket_name, f"Error! Unable to find bucket name: {url}"
+            assert (
+                end_bucket_name > begin_bucket_name
+            ), f"Error! Unable to find bucket name: {url}"
             bucket = url_parsed.path[begin_bucket_name:end_bucket_name]
             return bucket
 
@@ -158,7 +160,9 @@ class S3FileReader:
         begin_bucket_name = 1
         url_parsed = urlparse(url=url)
         slash_index = url_parsed.path.find("/", begin_bucket_name) + 1
-        assert slash_index > begin_bucket_name, f"Error! Unable to find object name: {url}"
+        assert (
+            slash_index > begin_bucket_name
+        ), f"Error! Unable to find object name: {url}"
         object_name = url_parsed.path[slash_index:]
         return object_name
 

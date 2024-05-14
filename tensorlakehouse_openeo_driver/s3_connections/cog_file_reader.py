@@ -27,14 +27,16 @@ class COGFileReader(S3FileReader):
         items: List[Dict[str, Any]],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
-        temporal_extent: Tuple[datetime, Optional[datetime]]
+        temporal_extent: Tuple[datetime, Optional[datetime]],
     ) -> None:
-        super().__init__(items=items, bbox=bbox, bands=bands, temporal_extent=temporal_extent)
+        super().__init__(
+            items=items, bbox=bbox, bands=bands, temporal_extent=temporal_extent
+        )
 
     def load_items(
         self,
     ) -> xr.DataArray:
-        """ load STAC items that match the criteria specified by end-user as xarray object
+        """load STAC items that match the criteria specified by end-user as xarray object
 
         Args:
             items (List[Dict[str, Any]]): list of items matched
@@ -139,9 +141,15 @@ class COGFileReader(S3FileReader):
             if index == 0:
                 # convert stackstac default dimension names to openEO default
 
-                time_dim = geospatial_utils.get_dimension_name(item=item, dim_type="temporal")
-                x_dim = geospatial_utils.get_dimension_name(item=item, axis=DEFAULT_X_DIMENSION)
-                y_dim = geospatial_utils.get_dimension_name(item=item, axis=DEFAULT_Y_DIMENSION)
+                time_dim = geospatial_utils.get_dimension_name(
+                    item=item, dim_type="temporal"
+                )
+                x_dim = geospatial_utils.get_dimension_name(
+                    item=item, axis=DEFAULT_X_DIMENSION
+                )
+                y_dim = geospatial_utils.get_dimension_name(
+                    item=item, axis=DEFAULT_Y_DIMENSION
+                )
                 assets_item: Dict = item["assets"]
                 arbitrary_asset_key = next(iter(assets_item.keys()))
                 url = assets_item[arbitrary_asset_key]["href"]
@@ -178,7 +186,9 @@ class COGFileReader(S3FileReader):
             fill_value=np.nan,
             properties=["datetime"],
             assets=assets,
-            gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(always=dict(session=aws_session)),
+            gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(
+                always=dict(session=aws_session)
+            ),
             band_coords=False,
             sortby_date="asc",
         )
@@ -267,7 +277,9 @@ class COGFileReader(S3FileReader):
         (
             most_frequent_crs,
             most_frequent_res,
-        ) = COGFileReader._get_most_frequent_crs(crs_resolution_list=crs_resolution_list)
+        ) = COGFileReader._get_most_frequent_crs(
+            crs_resolution_list=crs_resolution_list
+        )
         return items_by_band, most_frequent_crs, most_frequent_res
 
     @staticmethod

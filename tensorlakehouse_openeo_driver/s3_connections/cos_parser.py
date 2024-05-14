@@ -88,7 +88,9 @@ class COSConnector:
         else:
             begin_bucket_name = 1
             end_bucket_name = url_parsed.path.find("/", begin_bucket_name)
-            assert end_bucket_name > begin_bucket_name, f"Error! Unable to find bucket name: {url}"
+            assert (
+                end_bucket_name > begin_bucket_name
+            ), f"Error! Unable to find bucket name: {url}"
             bucket = url_parsed.path[begin_bucket_name:end_bucket_name]
             return bucket
 
@@ -105,7 +107,9 @@ class COSConnector:
         begin_bucket_name = 1
         url_parsed = urlparse(url=url)
         slash_index = url_parsed.path.find("/", begin_bucket_name) + 1
-        assert slash_index > begin_bucket_name, f"Error! Unable to find object name: {url}"
+        assert (
+            slash_index > begin_bucket_name
+        ), f"Error! Unable to find object name: {url}"
         object_name = url_parsed.path[slash_index:]
         return object_name
 

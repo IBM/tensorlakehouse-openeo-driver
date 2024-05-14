@@ -143,5 +143,7 @@ def test_post_result():
         },
     )
     url = f"{OPENEO_URL}openeo/1.2/result"
-    resp = requests.post(url=url, headers={"Content-type": "application/json"}, json=process_graph)
+    resp = requests.post(
+        url=url, headers={"Content-type": "application/json"}, json=process_graph
+    )
     assert resp.status_code == 401, f"Error! {resp.status_code=}"

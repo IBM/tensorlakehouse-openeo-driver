@@ -31,7 +31,9 @@ from unittest.mock import patch
 from openeo_driver.constants import STAC_EXTENSION
 from openeo_driver.dummy import dummy_backend
 from tensorlakehouse_openeo_driver.catalog import TensorLakehouseCollectionCatalog
-from tensorlakehouse_openeo_driver.tests.unit.unit_tests_data import FEATURE_COLLECTION_JSON
+from tensorlakehouse_openeo_driver.tests.unit.unit_tests_data import (
+    FEATURE_COLLECTION_JSON,
+)
 from openeo_driver.dummy.dummy_backend import DummyBackendImplementation
 from openeo_driver.testing import (
     ApiTester,
@@ -59,7 +61,10 @@ from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
     validate_STAC_Collection,
     MockPystacClient,
 )
-from tensorlakehouse_openeo_driver.tests.conftest import TEST_APP_CONFIG, enhanced_logging
+from tensorlakehouse_openeo_driver.tests.conftest import (
+    TEST_APP_CONFIG,
+    enhanced_logging,
+)
 from tensorlakehouse_openeo_driver.constants import (
     GEODN_DISCOVERY_CRS,
     TEST_DATA_ROOT,
@@ -152,7 +157,9 @@ def mock_s3_resource(aws_credentials):
 
 def create_s3_bucket(s3_resource, bucket_name):
     bucket = s3_resource.Bucket(bucket_name)
-    bucket.create(CreateBucketConfiguration={"LocationConstraint": TEST_AWS_REGION_NAME})
+    bucket.create(
+        CreateBucketConfiguration={"LocationConstraint": TEST_AWS_REGION_NAME}
+    )
     return bucket
 
 
@@ -249,9 +256,13 @@ class TestGeneral:
             assert len(links) == 1
             return links[0]
 
-        assert get_link("version-history")["href"] == "http://oeo.net/.well-known/openeo"
+        assert (
+            get_link("version-history")["href"] == "http://oeo.net/.well-known/openeo"
+        )
         assert get_link("data")["href"] == "http://oeo.net/openeo/1.0.0/collections"
-        assert get_link("conformance")["href"] == "http://oeo.net/openeo/1.0.0/conformance"
+        assert (
+            get_link("conformance")["href"] == "http://oeo.net/openeo/1.0.0/conformance"
+        )
 
     @pytest.mark.skip("v0.4.2 is no longer supported")
     def test_capabilities_version_alias(self, client):
@@ -393,7 +404,9 @@ class TestGeneral:
         )
 
         # OPTIONS specific CORS headers
-        assert {"Authorization", "Content-Type"}.issubset(resp.access_control_allow_headers)
+        assert {"Authorization", "Content-Type"}.issubset(
+            resp.access_control_allow_headers
+        )
         assert {"GET", "POST", "PATCH"}.issubset(resp.access_control_allow_methods)
         assert resp.content_type == "application/json"
 
@@ -604,13 +617,18 @@ class TestGeneral:
             assert resp == {"status": "OK", "color": "green"}
             resp = api.get("/health?color=blue").assert_status_code(200).json
             assert resp == {"status": "OK", "color": "blue"}
-            resp = api.get("/health?shape=square&color=red").assert_status_code(200).json
+            resp = (
+                api.get("/health?shape=square&color=red").assert_status_code(200).json
+            )
             assert resp == {"status": "OK", "color": "red"}
 
     @pytest.mark.skip("v0.4.0 is no longer supported")
     def test_credentials_oidc_040(self, api040):
         resp = api040.get("/credentials/oidc").assert_status_code(303)
-        assert resp.headers["Location"] == "https://oidc.test/.well-known/openid-configuration"
+        assert (
+            resp.headers["Location"]
+            == "https://oidc.test/.well-known/openid-configuration"
+        )
 
     def test_credentials_oidc_100(self, api100):
         resp = api100.get("/credentials/oidc").assert_status_code(200).json
@@ -706,10 +724,12 @@ class TestGeneral:
     @pytest.mark.skip("not implemented")
     def test_processes_040_vs_100(self, api040, api100):
         pids040 = {
-            p["id"] for p in api040.get("/processes").assert_status_code(200).json["processes"]
+            p["id"]
+            for p in api040.get("/processes").assert_status_code(200).json["processes"]
         }
         pids100 = {
-            p["id"] for p in api100.get("/processes").assert_status_code(200).json["processes"]
+            p["id"]
+            for p in api100.get("/processes").assert_status_code(200).json["processes"]
         }
         expected_only_040 = {"aggregate_polygon"}
         expected_only_100 = {
@@ -750,13 +770,17 @@ class TestGeneral:
         process_spec_short = process_spec.copy()
         process_spec_short.pop("process_graph")
 
-        processes = api100.get("/processes/foobar").assert_status_code(200).json["processes"]
+        processes = (
+            api100.get("/processes/foobar").assert_status_code(200).json["processes"]
+        )
         processes_by_id = {p["id"]: p for p in processes}
         assert process_id in processes_by_id
         assert processes_by_id[process_id] == process_spec_short
 
         processes = (
-            api100.get("/processes/foobar?full=yes").assert_status_code(200).json["processes"]
+            api100.get("/processes/foobar?full=yes")
+            .assert_status_code(200)
+            .json["processes"]
         )
         processes_by_id = {p["id"]: p for p in processes}
         assert process_id in processes_by_id
@@ -781,7 +805,9 @@ class TestGeneral:
         if expect_success:
             response.assert_status_code(200)
         else:
-            response.assert_error(403, "PermissionsInsufficient", message="No access for Mark.")
+            response.assert_error(
+                403, "PermissionsInsufficient", message="No access for Mark."
+            )
 
 
 @pytest.fixture
@@ -814,7 +840,9 @@ class TestUser:
         api.get("/me").assert_error(401, "AuthenticationRequired")
 
     def test_basic_auth(self, api):
-        response = api.get("/me", headers=TEST_USER_AUTH_HEADER).assert_status_code(200).json
+        response = (
+            api.get("/me", headers=TEST_USER_AUTH_HEADER).assert_status_code(200).json
+        )
         assert response == {"name": TEST_USER, "user_id": TEST_USER}
 
     @pytest.mark.skip("quarantine - request-mock is not working")
@@ -828,14 +856,14 @@ class TestUser:
 
     @pytest.mark.skip("quarantine - request-mock is not working")
     def test_oidc_invalid_access_token(self, api, oidc_provider):
-        api.get("/me", headers={"Authorization": "Bearer oidc/app_id/invalid"}).assert_error(
-            403, "TokenInvalid"
-        )
+        api.get(
+            "/me", headers={"Authorization": "Bearer oidc/app_id/invalid"}
+        ).assert_error(403, "TokenInvalid")
 
     def test_oidc_invalid_provider(self, api, oidc_provider):
-        api.get("/me", headers={"Authorization": "Bearer oidc/invalid/j0hn"}).assert_error(
-            403, "TokenInvalid"
-        )
+        api.get(
+            "/me", headers={"Authorization": "Bearer oidc/invalid/j0hn"}
+        ).assert_error(403, "TokenInvalid")
 
     @pytest.mark.skip("not implemented")
     def test_default_plan(self, api, oidc_provider):
@@ -844,7 +872,9 @@ class TestUser:
             .assert_status_code(200)
             .json
         )
-        assert response == DictSubSet({"user_id": "Alice", "default_plan": "alice-plan"})
+        assert response == DictSubSet(
+            {"user_id": "Alice", "default_plan": "alice-plan"}
+        )
 
     @pytest.mark.skip("not implemented")
     def test_roles(self, api, oidc_provider):
@@ -853,7 +883,9 @@ class TestUser:
             .assert_status_code(200)
             .json
         )
-        assert response == DictSubSet({"user_id": "Carol", "roles": ["admin", "devops"]})
+        assert response == DictSubSet(
+            {"user_id": "Carol", "roles": ["admin", "devops"]}
+        )
 
 
 class TestLogging:
@@ -879,7 +911,9 @@ class TestLogging:
 class TestCollections:
     def test_normalize_collection_metadata_no_id(self, caplog):
         with pytest.raises(KeyError):
-            _normalize_collection_metadata({"foo": "bar"}, api_version=ComparableVersion("1.0.0"))
+            _normalize_collection_metadata(
+                {"foo": "bar"}, api_version=ComparableVersion("1.0.0")
+            )
         errors = [r.getMessage() for r in caplog.records if r.levelno == logging.ERROR]
         assert any("should have 'id' field" in m for m in errors)
 
@@ -899,8 +933,12 @@ class TestCollections:
             "license": "proprietary",
             "links": [],
         }
-        warnings = set(r.getMessage() for r in caplog.records if r.levelno == logging.WARN)
-        assert warnings == {"Collection 'foobar' metadata does not have field 'extent'."}
+        warnings = set(
+            r.getMessage() for r in caplog.records if r.levelno == logging.WARN
+        )
+        assert warnings == {
+            "Collection 'foobar' metadata does not have field 'extent'."
+        }
 
     @pytest.mark.skip("no support for v0.4.0")
     def test_normalize_collection_metadata_minimal_full_040(self, caplog):
@@ -920,7 +958,9 @@ class TestCollections:
             "other_properties": {},
             "links": [],
         }
-        warnings = set(r.getMessage() for r in caplog.records if r.levelno == logging.WARN)
+        warnings = set(
+            r.getMessage() for r in caplog.records if r.levelno == logging.WARN
+        )
         assert warnings == {
             "Collection 'foobar' metadata does not have field 'extent'.",
             "Collection 'foobar' metadata does not have field 'other_properties'.",
@@ -945,8 +985,12 @@ class TestCollections:
             "license": "proprietary",
             "links": [],
         }
-        warnings = set(r.getMessage() for r in caplog.records if r.levelno == logging.WARN)
-        assert warnings == {"Collection 'foobar' metadata does not have field 'extent'."}
+        warnings = set(
+            r.getMessage() for r in caplog.records if r.levelno == logging.WARN
+        )
+        assert warnings == {
+            "Collection 'foobar' metadata does not have field 'extent'."
+        }
 
     def test_normalize_collection_metadata_minimal_full_100(self, caplog):
         assert _normalize_collection_metadata(
@@ -968,14 +1012,18 @@ class TestCollections:
             "summaries": {},
             "links": [],
         }
-        warnings = set(r.getMessage() for r in caplog.records if r.levelno == logging.WARN)
+        warnings = set(
+            r.getMessage() for r in caplog.records if r.levelno == logging.WARN
+        )
         assert warnings == {
             "Collection 'foobar' metadata does not have field 'cube:dimensions'.",
             "Collection 'foobar' metadata does not have field 'extent'.",
             "Collection 'foobar' metadata does not have field 'summaries'.",
         }
 
-    def test_normalize_collection_metadata_cube_dimensions_extent_full_100(self, caplog):
+    def test_normalize_collection_metadata_cube_dimensions_extent_full_100(
+        self, caplog
+    ):
         metadata = {
             "id": "foobar",
             "extent": {
@@ -1012,7 +1060,9 @@ class TestCollections:
             "links": [],
         }
 
-    @pytest.mark.skip("Warning! openeo supports versions greater than or equal to 1.0.0")
+    @pytest.mark.skip(
+        "Warning! openeo supports versions greater than or equal to 1.0.0"
+    )
     def test_normalize_collection_metadata_dimensions_and_bands_040(self, caplog):
         metadata = {
             "id": "foobar",
@@ -1078,7 +1128,9 @@ class TestCollections:
                 "open",
                 return_value=MockPystacClient(),
             ):
-                collection_items = get_collection_items(collection_id="", parameters=None)
+                collection_items = get_collection_items(
+                    collection_id="", parameters=None
+                )
                 with patch.object(
                     TensorLakehouseCollectionCatalog,
                     "get_collection_items",
@@ -1099,14 +1151,18 @@ class TestCollections:
         collection_id = collection.id
         pystac_collections = [make_pystac_client_collection()]
         if api.api_version_compare.at_least("1.0.0"):
-            with mock.patch.object(Client, "get_collections", return_value=pystac_collections):
+            with mock.patch.object(
+                Client, "get_collections", return_value=pystac_collections
+            ):
                 with mock.patch.object(
                     TensorLakehouseCollectionCatalog,
                     "get_collection_items",
                     return_value=FEATURE_COLLECTION_JSON,
                 ):
                     resp = (
-                        api.get(f"/collections/{collection_id}/items").assert_status_code(200).json
+                        api.get(f"/collections/{collection_id}/items")
+                        .assert_status_code(200)
+                        .json
                     )
                     assert "links" in resp
                     assert "collections" in resp
@@ -1125,9 +1181,13 @@ class TestCollections:
 
     @pytest.mark.skip("not implemented")
     def test_strip_private_fields(self, api):
-        assert "_private" in dummy_backend.DummyCatalog().get_collection_metadata("S2_FOOBAR")
+        assert "_private" in dummy_backend.DummyCatalog().get_collection_metadata(
+            "S2_FOOBAR"
+        )
         # All metadata
-        collections = api.get("/collections").assert_status_code(200).json["collections"]
+        collections = (
+            api.get("/collections").assert_status_code(200).json["collections"]
+        )
         (metadata,) = (c for c in collections if c["id"] == "S2_FOOBAR")
         assert "_private" not in metadata
         # Single collection metadata
@@ -1136,7 +1196,9 @@ class TestCollections:
 
     @pytest.mark.skip("not implemented")
     def test_collections_detail_invalid_collection(self, api):
-        error = api.get("/collections/FOOBOO").assert_error(404, "CollectionNotFound").json
+        error = (
+            api.get("/collections/FOOBOO").assert_error(404, "CollectionNotFound").json
+        )
         assert error["message"] == "Collection 'FOOBOO' does not exist."
 
     def test_collections_detail(self, api: ApiTester):
@@ -1153,7 +1215,9 @@ class TestCollections:
                     return_value=FEATURE_COLLECTION_JSON,
                 ):
                     collection = (
-                        api.get(f"/collections/{collection_id}").assert_status_code(200).json
+                        api.get(f"/collections/{collection_id}")
+                        .assert_status_code(200)
+                        .json
                     )
                     assert collection["id"] == collection_id
                     validate_STAC_Collection(collection)
@@ -1201,7 +1265,9 @@ POST_RESULT_PAYLOADS = [
                                 "process_graph": {
                                     "max1": {
                                         "process_id": "max",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -1316,7 +1382,9 @@ POST_RESULT_PAYLOADS = [
                                 "process_graph": {
                                     "min1": {
                                         "process_id": "min",
-                                        "arguments": {"data": {"from_parameter": "data"}},
+                                        "arguments": {
+                                            "data": {"from_parameter": "data"}
+                                        },
                                         "result": True,
                                     }
                                 }
@@ -1348,18 +1416,20 @@ class TestSynchronousPostResult:
     AUTH_HEADER = TEST_USER_AUTH_HEADER
 
     def test_post_result(self, api110, payload, expected_dims):
-        bands = payload["process"]["process_graph"]["loadcollection1"]["arguments"]["bands"]
-
-        spatial_extent = payload["process"]["process_graph"]["loadcollection1"]["arguments"][
-            "spatial_extent"
+        bands = payload["process"]["process_graph"]["loadcollection1"]["arguments"][
+            "bands"
         ]
+
+        spatial_extent = payload["process"]["process_graph"]["loadcollection1"][
+            "arguments"
+        ]["spatial_extent"]
         latmin = spatial_extent.get("south")
         latmax = spatial_extent.get("north")
         lonmin = spatial_extent.get("west")
         lonmax = spatial_extent.get("east")
-        temporal_extent = payload["process"]["process_graph"]["loadcollection1"]["arguments"][
-            "temporal_extent"
-        ]
+        temporal_extent = payload["process"]["process_graph"]["loadcollection1"][
+            "arguments"
+        ]["temporal_extent"]
         size_time = 10
         mock_data_array = generate_xarray_datarray(
             bands=bands,
@@ -1437,7 +1507,9 @@ class TestBatchJobs:
                 (TEST_USER, "07024ee9-7847-4b8a-b260-6c879a2b3cdc"): BatchJobMetadata(
                     id="07024ee9-7847-4b8a-b260-6c879a2b3cdc",
                     status="running",
-                    process={"process_graph": {"foo": {"process_id": "foo", "arguments": {}}}},
+                    process={
+                        "process_graph": {"foo": {"process_id": "foo", "arguments": {}}}
+                    },
                     created=datetime(2017, 1, 1, 9, 32, 12),
                 ),
                 (TEST_USER, "53c71345-09b4-46b4-b6b0-03fd6fe1f199"): BatchJobMetadata(
@@ -1446,7 +1518,9 @@ class TestBatchJobs:
                     description="Your description here.",
                     status="finished",
                     progress=100,
-                    process={"process_graph": {"foo": {"process_id": "foo", "arguments": {}}}},
+                    process={
+                        "process_graph": {"foo": {"process_id": "foo", "arguments": {}}}
+                    },
                     created=datetime(2020, 6, 11, 11, 51, 29),
                     updated=datetime(2020, 6, 11, 11, 55, 15),
                     started=datetime(2020, 6, 11, 11, 55, 9),
@@ -1481,7 +1555,11 @@ class TestBatchJobs:
                     dummy_backend.DummyBatchJobs._job_registry[key] = BatchJobMetadata(
                         id=job_id,
                         status=job_settings.get("status", "running"),
-                        process={"process_graph": {"foo": {"process_id": "foo", "arguments": {}}}},
+                        process={
+                            "process_graph": {
+                                "foo": {"process_id": "foo", "arguments": {}}
+                            }
+                        },
                         created=datetime(2017, 1, 1, 9, 32, 12),
                     )
             yield dummy_backend.DummyBatchJobs._job_registry
@@ -1533,7 +1611,9 @@ class TestBatchJobs:
                 # headers=None,
                 json={
                     "process": {
-                        "process_graph": {"foo": {"process_id": "foo", "arguments": {}}},
+                        "process_graph": {
+                            "foo": {"process_id": "foo", "arguments": {}}
+                        },
                         "summary": "my foo job",
                     },
                     "title": "Foo job",
@@ -1541,7 +1621,9 @@ class TestBatchJobs:
                 },
             ).assert_status_code(201)
         # assert resp.headers["Location"] == "http://oeo.net/openeo/1.0.0/jobs/job-245"
-        job_id = resp.headers["Location"].replace("http://oeo.net/openeo/1.0.0/jobs/", "")
+        job_id = resp.headers["Location"].replace(
+            "http://oeo.net/openeo/1.0.0/jobs/", ""
+        )
         assert isinstance(job_id, str)
         assert len(job_id) > 0
         # assert resp.headers["OpenEO-Identifier"] == "job-245"
@@ -1564,7 +1646,9 @@ class TestBatchJobs:
                 headers=self.AUTH_HEADER,
                 json={
                     "process": {
-                        "process_graph": {"foo": {"process_id": "foo", "arguments": {}}},
+                        "process_graph": {
+                            "foo": {"process_id": "foo", "arguments": {}}
+                        },
                         "summary": "my foo job",
                     },
                     "job_options": {"driver-memory": "3g", "executor-memory": "5g"},
@@ -1583,7 +1667,9 @@ class TestBatchJobs:
                 headers=self.AUTH_HEADER,
                 json={
                     "process": {
-                        "process_graph": {"foo": {"process_id": "foo", "arguments": {}}},
+                        "process_graph": {
+                            "foo": {"process_id": "foo", "arguments": {}}
+                        },
                         "summary": "my foo job",
                     },
                     "driver-memory": "3g",
@@ -1606,9 +1692,9 @@ class TestBatchJobs:
                 ),
             ).assert_status_code(201)
             assert registry[TEST_USER, "job-267"].status == "created"
-            api.post("/jobs/job-267/results", headers=self.AUTH_HEADER, json={}).assert_status_code(
-                202
-            )
+            api.post(
+                "/jobs/job-267/results", headers=self.AUTH_HEADER, json={}
+            ).assert_status_code(202)
             assert registry[TEST_USER, "job-267"].status == "running"
 
     @pytest.mark.parametrize(
@@ -1632,7 +1718,9 @@ class TestBatchJobs:
                 created=datetime(2017, 1, 1, 9, 32, 12),
             )
             # Try to start job
-            with mock.patch.object(dummy_backend.DummyBatchJobs, "start_job") as start_job:
+            with mock.patch.object(
+                dummy_backend.DummyBatchJobs, "start_job"
+            ) as start_job:
                 api.post(
                     "/jobs/job-267/results", headers=self.AUTH_HEADER, json={}
                 ).assert_status_code(202)
@@ -1659,12 +1747,16 @@ class TestBatchJobs:
 
     @pytest.mark.skip("not implemented yet")
     def test_get_job_info_metrics_100(self, api100):
-        resp = api100.get("/jobs/53c71345-09b4-46b4-b6b0-03fd6fe1f199", headers=self.AUTH_HEADER)
+        resp = api100.get(
+            "/jobs/53c71345-09b4-46b4-b6b0-03fd6fe1f199", headers=self.AUTH_HEADER
+        )
         assert resp.assert_status_code(200).json == {
             "id": "53c71345-09b4-46b4-b6b0-03fd6fe1f199",
             "title": "Your title here.",
             "description": "Your description here.",
-            "process": {"process_graph": {"foo": {"process_id": "foo", "arguments": {}}}},
+            "process": {
+                "process_graph": {"foo": {"process_id": "foo", "arguments": {}}}
+            },
             "status": "finished",
             "progress": 100,
             "created": "2020-06-11T11:51:29Z",
@@ -1689,7 +1781,9 @@ class TestBatchJobs:
             "id": "07024ee9-7847-4b8a-b260-6c879a2b3cdc",
             "status": "running",
             "created": "2017-01-01T09:32:12Z",
-            "process": {"process_graph": {"foo": {"process_id": "foo", "arguments": {}}}},
+            "process": {
+                "process_graph": {"foo": {"process_id": "foo", "arguments": {}}}
+            },
         }
 
     @pytest.mark.skip("not implemented yet")
@@ -1773,7 +1867,9 @@ class TestBatchJobs:
                 "something else": "ignore me",
             }
 
-        with mock.patch.object(dummy_backend.DummyBatchJobs, "get_user_jobs", new=get_user_jobs):
+        with mock.patch.object(
+            dummy_backend.DummyBatchJobs, "get_user_jobs", new=get_user_jobs
+        ):
             resp = api100.get("/jobs", headers=self.AUTH_HEADER)
 
         assert resp.assert_status_code(200).json == {
@@ -1916,7 +2012,9 @@ class TestBatchJobs:
                 },
                 "geometry": {
                     "type": "Polygon",
-                    "coordinates": [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]],
+                    "coordinates": [
+                        [[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]
+                    ],
                 },
                 "bbox": [-180, -90, 180, 90],
                 "id": "53c71345-09b4-46b4-b6b0-03fd6fe1f199",
@@ -1965,7 +2063,9 @@ class TestBatchJobs:
             }
 
     @pytest.mark.skip("not implemented yet")
-    def test_get_job_results_public_href_asset_100(self, api100, backend_implementation):
+    def test_get_job_results_public_href_asset_100(
+        self, api100, backend_implementation
+    ):
         import numpy as np
 
         results_data = {
@@ -1981,7 +2081,9 @@ class TestBatchJobs:
                 jobs={"07024ee9-7847-4b8a-b260-6c879a2b3cdc": {"status": "finished"}}
             ),
             mock.patch.object(
-                backend_implementation.batch_jobs, "get_results", return_value=results_data
+                backend_implementation.batch_jobs,
+                "get_results",
+                return_value=results_data,
             ),
         ):
             resp = api100.get(
@@ -2238,7 +2340,9 @@ class TestBatchJobs:
                 "license": "proprietary",
                 "extent": {
                     "spatial": {"bbox": [[-180, -90, 180, 90]]},
-                    "temporal": {"interval": [["1981-04-24T03:00:00Z", "1981-04-24T03:00:00Z"]]},
+                    "temporal": {
+                        "interval": [["1981-04-24T03:00:00Z", "1981-04-24T03:00:00Z"]]
+                    },
                 },
                 "links": [
                     {
@@ -2307,7 +2411,9 @@ class TestBatchJobs:
         output_root = Path(tmp_path)
         jobs = {"07024ee9-7847-4b8a-b260-6c879a2b3cdc": {"status": "finished"}}
         with self._fresh_job_registry(output_root=output_root, jobs=jobs):
-            output = output_root / "07024ee9-7847-4b8a-b260-6c879a2b3cdc" / "output.tiff"
+            output = (
+                output_root / "07024ee9-7847-4b8a-b260-6c879a2b3cdc" / "output.tiff"
+            )
             output.parent.mkdir(parents=True)
             with output.open("wb") as f:
                 f.write(b"tiffdata")
@@ -2334,7 +2440,9 @@ class TestBatchJobs:
         with self._fresh_job_registry(output_root=output_root, jobs=jobs):
             s3_bucket = create_s3_bucket(mock_s3_resource, s3_bucket_name)
             s3_bucket.put_object(Key=s3_key, Body=large_tiff_data)
-            resp = api.get(f"/jobs/{job_id}/results/assets/output.tiff", headers=self.AUTH_HEADER)
+            resp = api.get(
+                f"/jobs/{job_id}/results/assets/output.tiff", headers=self.AUTH_HEADER
+            )
 
         assert resp.assert_status_code(200).data == large_tiff_data
         assert resp.headers["Content-Type"] == "image/tiff; application=geotiff"
@@ -2348,7 +2456,9 @@ class TestBatchJobs:
             mock.patch.dict(flask_app.config, app_config),
             self._fresh_job_registry(output_root=output_root, jobs=jobs),
         ):
-            output = output_root / "07024ee9-7847-4b8a-b260-6c879a2b3cdc" / "output.tiff"
+            output = (
+                output_root / "07024ee9-7847-4b8a-b260-6c879a2b3cdc" / "output.tiff"
+            )
             output.parent.mkdir(parents=True)
             with output.open("wb") as f:
                 f.write(b"tiffdata")
@@ -2362,7 +2472,9 @@ class TestBatchJobs:
     def test_download_result_signed_invalid(self, api, flask_app):
         app_config = {"SIGNED_URL": "TRUE", "SIGNED_URL_SECRET": "123&@#"}
         jobs = {"07024ee9-7847-4b8a-b260-6c879a2b3cdc": {"status": "finished"}}
-        with mock.patch.dict(flask_app.config, app_config), self._fresh_job_registry(jobs=jobs):
+        with mock.patch.dict(flask_app.config, app_config), self._fresh_job_registry(
+            jobs=jobs
+        ):
             resp = api.get(
                 "/jobs/07024ee9-7847-4b8a-b260-6c879a2b3cdc/results/assets/TXIuVGVzdA%3D%3D/test123/output.tiff"
             )
@@ -2382,7 +2494,9 @@ class TestBatchJobs:
             mock.patch.dict(flask_app.config, app_config),
             self._fresh_job_registry(output_root=output_root, jobs=jobs),
         ):
-            output = output_root / "07024ee9-7847-4b8a-b260-6c879a2b3cdc" / "output.tiff"
+            output = (
+                output_root / "07024ee9-7847-4b8a-b260-6c879a2b3cdc" / "output.tiff"
+            )
             output.parent.mkdir(parents=True)
             with output.open("wb") as f:
                 f.write(b"tiffdata")
@@ -2408,7 +2522,9 @@ class TestBatchJobs:
             mock.patch.dict(flask_app.config, app_config),
             self._fresh_job_registry(output_root=output_root, jobs=jobs),
         ):
-            output = output_root / "07024ee9-7847-4b8a-b260-6c879a2b3cdc" / "output.tiff"
+            output = (
+                output_root / "07024ee9-7847-4b8a-b260-6c879a2b3cdc" / "output.tiff"
+            )
             output.parent.mkdir(parents=True)
             with output.open("wb") as f:
                 f.write(b"tiffdata")
@@ -2417,7 +2533,9 @@ class TestBatchJobs:
                 "/jobs/07024ee9-7847-4b8a-b260-6c879a2b3cdc/results/assets/TXIuVGVzdA%3D%3D/fd0ca65e29c6d223da05b2e73a875683/output.tiff?expires=2234"
             )
             assert head_resp.assert_status_code(200).data == b""
-            assert head_resp.headers["Content-Type"] == "image/tiff; application=geotiff"
+            assert (
+                head_resp.headers["Content-Type"] == "image/tiff; application=geotiff"
+            )
             assert head_resp.headers["Accept-Ranges"] == "bytes"
 
             get_resp = api.get(
@@ -2428,14 +2546,18 @@ class TestBatchJobs:
 
     @pytest.mark.skip("not implemented yet")
     @mock.patch("time.time", mock.MagicMock(return_value=3456))
-    def test_download_result_signed_with_expiration_invalid(self, api, tmp_path, flask_app):
+    def test_download_result_signed_with_expiration_invalid(
+        self, api, tmp_path, flask_app
+    ):
         app_config = {
             "SIGNED_URL": "TRUE",
             "SIGNED_URL_SECRET": "123&@#",
             "SIGNED_URL_EXPIRATION": "1000",
         }
         jobs = {"07024ee9-7847-4b8a-b260-6c879a2b3cdc": {"status": "finished"}}
-        with mock.patch.dict(flask_app.config, app_config), self._fresh_job_registry(jobs=jobs):
+        with mock.patch.dict(flask_app.config, app_config), self._fresh_job_registry(
+            jobs=jobs
+        ):
             resp = api.get(
                 "/jobs/07024ee9-7847-4b8a-b260-6c879a2b3cdc/results/assets/TXIuVGVzdA%3D%3D/fd0ca65e29c6d223da05b2e73a875683/output.tiff?expires=2234"
             )
@@ -2507,7 +2629,9 @@ class TestBatchJobs:
             "id": random_id,
             "type": "Feature",
             "stac_version": "1.0.0",
-            "stac_extensions": ["https://stac-extensions.github.io/ml-model/v1.0.0/schema.json"],
+            "stac_extensions": [
+                "https://stac-extensions.github.io/ml-model/v1.0.0/schema.json"
+            ],
             "assets": {
                 "model": {
                     "href": "http://oeo.net/openeo/1.1.0/jobs/53c71345-09b4-46b4-b6b0-03fd6fe1f199/results/assets/randomforest.model",
@@ -2690,7 +2814,9 @@ class TestSecondaryServices:
         metadata = api100.get("/services/wmts-foo", headers=self.AUTH_HEADER).json
         assert metadata == {
             "id": "wmts-foo",
-            "process": {"process_graph": {"foo": {"process_id": "foo", "arguments": {}}}},
+            "process": {
+                "process_graph": {"foo": {"process_id": "foo", "arguments": {}}}
+            },
             "url": "https://oeo.net/wmts/foo",
             "type": "WMTS",
             "enabled": True,
@@ -2734,14 +2860,22 @@ def test_credentials_basic_no_headers(api):
 @pytest.mark.skip("Warning! auth has not been implemented")
 def test_credentials_basic_wrong_password(api):
     headers = {
-        "Authorization": build_basic_http_auth_header(username="john", password="password123")
+        "Authorization": build_basic_http_auth_header(
+            username="john", password="password123"
+        )
     }
-    api.get("/credentials/basic", headers=headers).assert_error(403, "CredentialsInvalid")
+    api.get("/credentials/basic", headers=headers).assert_error(
+        403, "CredentialsInvalid"
+    )
 
 
 @pytest.mark.skip("Warning! auth has not been implemented")
 def test_credentials_basic(api):
-    headers = {"Authorization": build_basic_http_auth_header(username="Alice", password="alice123")}
+    headers = {
+        "Authorization": build_basic_http_auth_header(
+            username="Alice", password="alice123"
+        )
+    }
     resp = api.get("/credentials/basic", headers=headers)
     response = resp.assert_status_code(200).json
     expected = {"access_token"}
@@ -2875,12 +3009,16 @@ class TestUserDefinedProcesses:
 
     def test_add_udp_no_pg(self, api100):
         spec = {"id": "evi", "parameters": [{"name": "red"}]}
-        res = api100.put("/process_graphs/evi", headers=TEST_USER_AUTH_HEADER, json=spec)
+        res = api100.put(
+            "/process_graphs/evi", headers=TEST_USER_AUTH_HEADER, json=spec
+        )
         res.assert_error(400, "ProcessGraphMissing")
 
     def test_add_udp_invalid_id(self, api100):
         spec = {"id": "foob@r", "process_graph": {"sub": {}}}
-        res = api100.put("/process_graphs/foob@r", headers=TEST_USER_AUTH_HEADER, json=spec)
+        res = api100.put(
+            "/process_graphs/foob@r", headers=TEST_USER_AUTH_HEADER, json=spec
+        )
         res.assert_error(400, "InvalidId")
 
     @pytest.mark.skip("not implemented")
@@ -2905,7 +3043,9 @@ class TestUserDefinedProcesses:
 
     @pytest.mark.skip("not implemented")
     def test_list_udps(self, api100, udp_store):
-        resp = api100.get("/process_graphs", headers=TEST_USER_AUTH_HEADER).assert_status_code(200)
+        resp = api100.get(
+            "/process_graphs", headers=TEST_USER_AUTH_HEADER
+        ).assert_status_code(200)
 
         udps = resp.json["processes"]
         assert udps == [{"id": "udp1"}, {"id": "udp2"}]
@@ -2969,7 +3109,9 @@ class TestUserDefinedProcesses:
     def test_delete_udp(self, api100, udp_store):
         assert ("Mr.Test", "udp2") in udp_store._processes
 
-        api100.delete("/process_graphs/udp2", headers=TEST_USER_AUTH_HEADER).assert_status_code(204)
+        api100.delete(
+            "/process_graphs/udp2", headers=TEST_USER_AUTH_HEADER
+        ).assert_status_code(204)
 
         assert ("Mr.Test", "udp1") in udp_store._processes
         assert ("Mr.Test", "udp2") not in udp_store._processes
@@ -3107,7 +3249,11 @@ class TestUserDefinedProcesses:
 
 
 def test_debug_echo_get(api):
-    res = api.get("/_debug/echo?xev=lol", headers={"foo": "bar"}).assert_status_code(200).json
+    res = (
+        api.get("/_debug/echo?xev=lol", headers={"foo": "bar"})
+        .assert_status_code(200)
+        .json
+    )
     assert res["method"] == "GET"
     assert res["args"] == {"xev": "lol"}
     assert res["data"] == "b''"
