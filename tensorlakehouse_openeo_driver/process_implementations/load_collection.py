@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, DefaultDict, Dict, List, Tuple
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 from openeo_pg_parser_networkx.pg_schema import (
     BoundingBox,
     TemporalInterval,
@@ -76,6 +76,13 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         bbox_wsg84 = LoadCollectionFromCOS._convert_to_WSG84(
             spatial_extent=spatial_extent
         )
+        # convert TemporalInterval to Tuple[datetime, Optional[datetime]]
+        start: datetime = pd.Timestamp(temporal_extent.start.to_numpy()).to_pydatetime()
+        if temporal_extent.end is not None:
+            end: Optional[datetime] = pd.Timestamp(temporal_extent.end.to_numpy()).to_pydatetime()
+        else:
+            end = None
+        temporal_ext = (start, end)
         item_search = self._search_items(
             bbox=bbox_wsg84,
             temporal_extent=temporal_extent,
@@ -92,7 +99,12 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         media_type = next(iter(items_by_media_type.keys()))
         items = next(iter(items_by_media_type.values()))
         if media_type in [COG_MEDIA_TYPE, JPG2000_MEDIA_TYPE]:
-            cog_file_reader = COGFileReader(items=items, bbox=bbox_wsg84, bands=bands)
+            cog_file_reader = COGFileReader(
+                items=items,
+                bbox=bbox_wsg84,
+                bands=bands,
+                temporal_extent=temporal_ext,
+            )
             data = cog_file_reader.load_items()
 
         return data

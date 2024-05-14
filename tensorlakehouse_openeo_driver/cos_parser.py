@@ -228,9 +228,10 @@ class COSConnector:
         )
         # select an arbitrary item based on the assumption that all items have the same 'assets'
         # structure, i.e., either use 'data' or band names
-        arbitrary_item = items[0]
+        assert len(items) > 0, "Error! None STAC item has been found"
+        arbitrary_item = items[0].to_dict()
         # select the list of assets that will be loaded
-        if COSConnector.DATA in arbitrary_item.assets.keys():
+        if COSConnector.DATA in arbitrary_item["assets"].keys():
             assets = [COSConnector.DATA]
         else:
             assets = bands

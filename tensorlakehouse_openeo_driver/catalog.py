@@ -1,29 +1,19 @@
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from pystac_client import Client, CollectionClient
 from pystac import Item
-from openeo_driver.backend import CollectionCatalog, LoadParameters
-from openeo_driver.utils import EvalEnv
+from openeo_driver.backend import CollectionCatalog
 from tensorlakehouse_openeo_driver.constants import (
-    GEODN_DATASERVICE_ENDPOINT,
-    GEODN_DATASERVICE_USER,
-    GEODN_DATASERVICE_PASSWORD,
     GEODN_DISCOVERY_USERNAME,
     GEODN_DISCOVERY_PASSWORD,
     STAC_URL,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
-    DEFAULT_TIME_DIMENSION,
 )
-from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
-from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 from tensorlakehouse_openeo_driver.geodn_discovery import GeoDNDiscovery
-from tensorlakehouse_openeo_driver.layer import LayerMetadata
 from datetime import datetime
-import pandas as pd
 import logging
-import xarray as xr
 from tensorlakehouse_openeo_driver.model.datacube_variable import DataCubeVariable
 
 from tensorlakehouse_openeo_driver.model.dimension import (
@@ -115,14 +105,18 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
         logger.debug(
             f"TensorLakehouseCollectionCatalog - Connecting to STAC service URL={STAC_URL}"
         )
-        logger.debug(f"TensorLakehouseCollectionCatalog - Searching collection: {collection_id}")
+        logger.debug(
+            f"TensorLakehouseCollectionCatalog - Searching collection: {collection_id}"
+        )
         collection = self.stac_client.get_collection(collection_id=collection_id)
         openeo_collection = self._convert_collection_client_to_openeo(
             pystac_collection=collection, full=True
         )
         return openeo_collection
 
-    def get_collection_items(self, collection_id: str, parameters: dict = {}) -> Dict[str, Any]:
+    def get_collection_items(
+        self, collection_id: str, parameters: dict = {}
+    ) -> Dict[str, Any]:
         """
         Optional STAC API endpoint `GET /collections/{collectionId}/items`
         """
@@ -132,7 +126,9 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
         limit = int(parameters.get("limit", 100))
         bbox_str: Optional[str] = parameters.get("bbox")
         if bbox_str is not None:
-            bbox = list(map(float, bbox_str.replace("[", " ").replace("]", " ").split(",")))
+            bbox = list(
+                map(float, bbox_str.replace("[", " ").replace("]", " ").split(","))
+            )
         else:
             bbox = None
         datetime_field = parameters.get("datetime")
@@ -164,7 +160,9 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
 
         for item in result.items():
             items.append(
-                TensorLakehouseCollectionCatalog._convert_item_client_to_openeo(pystac_item=item)
+                TensorLakehouseCollectionCatalog._convert_item_client_to_openeo(
+                    pystac_item=item
+                )
             )
         response = {
             "type": "FeatureCollection",
@@ -265,13 +263,19 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
                 msg = f"KeyError! extra_fields={extra_fields} - {e}"
                 logger.error(msg)
                 raise KeyError(msg)
-            cube_dimensions = self._extract_cube_dimensions(cube_dimensions=cube_dimensions_dict)
+            cube_dimensions = self._extract_cube_dimensions(
+                cube_dimensions=cube_dimensions_dict
+            )
             collection_as_dict["cube:dimensions"] = (
-                TensorLakehouseCollectionCatalog._export_cube_dimensions_group(cube_dimensions)
+                TensorLakehouseCollectionCatalog._export_cube_dimensions_group(
+                    cube_dimensions
+                )
             )
         return collection_as_dict
 
-    def _extract_cube_dimensions(self, cube_dimensions: Dict[str, Any]) -> List[Dimension]:
+    def _extract_cube_dimensions(
+        self, cube_dimensions: Dict[str, Any]
+    ) -> List[Dimension]:
         """instantia Dimension objects based on cube:dimensions fields in dict format
 
         Args:
@@ -287,7 +291,9 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
 
             if dimension["type"] == "bands":
                 band_values = cube_dimensions["bands"]["values"]
-                cube_dimensions_list.append(BandDimension(values=band_values, description=name))
+                cube_dimensions_list.append(
+                    BandDimension(values=band_values, description=name)
+                )
             elif dimension["type"] == "spatial":
                 # type, axis and extent keys are required by datacube extension
                 # https://github.com/stac-extensions/datacube/tree/main?tab=readme-ov-file#horizontal-spatial-raster-dimension-object
@@ -295,7 +301,9 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
                 if axis.lower() in [DEFAULT_X_DIMENSION, DEFAULT_Y_DIMENSION]:
                     extent = dimension["extent"]
                     cube_dimensions_list.append(
-                        HorizontalSpatialDimension(axis=axis, extent=extent, description=name)
+                        HorizontalSpatialDimension(
+                            axis=axis, extent=extent, description=name
+                        )
                     )
                 else:
                     if "extent" in dimension:
@@ -305,14 +313,18 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
                     else:
                         raise Exception(f"Error! Missing extent: {dimension}")
                     cube_dimensions_list.append(
-                        VerticalSpatialDimension(axis=axis, extent=extent, description=name)
+                        VerticalSpatialDimension(
+                            axis=axis, extent=extent, description=name
+                        )
                     )
             elif dimension["type"] == "temporal":
                 extent = dimension["extent"]
                 step = dimension.get("step")
                 values = dimension.get("values")
                 cube_dimensions_list.append(
-                    TemporalDimension(extent=extent, step=step, description=name, values=values)
+                    TemporalDimension(
+                        extent=extent, step=step, description=name, values=values
+                    )
                 )
         return cube_dimensions_list
 
@@ -332,7 +344,9 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
 
         cube_dimensions_collection = dict()
         for dimension in group_dimensions:
-            cube_dimensions_collection = cube_dimensions_collection | dimension.to_dict()
+            cube_dimensions_collection = (
+                cube_dimensions_collection | dimension.to_dict()
+            )
         return cube_dimensions_collection
 
     @staticmethod
@@ -352,410 +366,4 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
             variables[description] = cube_var.to_dict()
         return variables
 
-    def _extract_cube_variables(
-        self, feature_collection: Dict, dimensions: Dict[str, Dimension]
-    ) -> Dict[str, DataCubeVariable]:
-        """generate cube:dimensions field using items' cube:dimensions
 
-        {"2t": {"type": "data", "dimensions": ["x", "y", "time"]}, "tp": {"type": "data", "dimensions": ["x", "y", "time"]}}
-        Args:
-            feature_collection (Dict): response from STAC GET /collections/{coll}/items
-
-        Returns:
-            Dict: cube variables grouped by description
-        """
-        cube_variables: Dict[str, DataCubeVariable]
-        cube_variables = dict()
-        items: List[Dict[str, Any]] = feature_collection["features"]
-        # for each item
-        for item in items:
-            properties = item["properties"]
-            # get cube:variables metadata
-            cube_var: Dict[str, Dict[str, Any]] = properties[
-                TensorLakehouseCollectionCatalog.CUBE_VARIABLES
-            ]
-            for description, cube_var_metadata in cube_var.items():
-                # variable has not been added
-                if description not in cube_variables.keys():
-                    # get dimension names
-                    dimension_names: List[str] = cube_var_metadata["dimensions"]
-                    dimension_list = list()
-                    # create Dimension objects for each name
-                    for dim_name in dimension_names:
-                        dimension_list.append(dimensions[dim_name])
-                    # create DataCubeVariable
-                    cube_variables[description] = DataCubeVariable(
-                        dimensions=dimension_list,
-                        type=TensorLakehouseCollectionCatalog.DATA,
-                        description=description,
-                        values=None,
-                        extent=None,
-                    )
-        return cube_variables
-
-    def _get_summaries(self, dataset_metadata: DatasetMetadata) -> Dict[str, Any]:
-        """Summaries are either a unique set of all available values or statistics.
-            Statistics by default only specify the range (minimum and maximum values),
-            but can optionally be accompanied by additional statistical values.
-            The range can specify the potential range of values, but it is recommended to be
-            as precise as possible. The set of values MUST contain at least one element and it
-            is strongly RECOMMENDED to list all values. It is recommended to list as many properties
-            as reasonable so that consumers get a full overview of the Collection. Properties
-            that are covered by the Collection specification (e.g. providers and license)
-            SHOULD NOT be repeated in the summaries.
-            https://openeo.org/documentation/1.0/developers/api/reference.html#tag/EO-Data-Discovery/operation/describe-collection
-
-        Args:
-            dataset_metadata (DatasetMetadata): _description_
-            layer_metadata (List[LayerMetadata]): _description_
-
-        Returns:
-            Dict[str, Any]: summaries
-        """
-        summaries: Dict[str, Any]
-        summaries = dict()
-        summaries = {
-            "level": {
-                "max": dataset_metadata.level,
-                "min": dataset_metadata.level,
-            }
-        }
-        if dataset_metadata.spatial_resolution_of_raw_data is not None:
-            # The nominal Ground Sample Distance for the data, as measured in meters on the ground.
-            gsd = TensorLakehouseCollectionCatalog._parse_gsd(
-                distance=dataset_metadata.spatial_resolution_of_raw_data,
-                level=dataset_metadata.level,
-            )
-            summaries["gsd"] = {"max": gsd, "min": gsd}
-        if dataset_metadata.temporal_resolution is not None:
-            # summaries["temporal_resolution"] = dataset_metadata.temporal_resolution
-            temp_resolution_iso8601 = TensorLakehouseCollectionCatalog._to_iso8601_duration(
-                dataset_metadata.temporal_resolution
-            )
-            summaries["temporal_resolution"] = {
-                "max": temp_resolution_iso8601,
-                "min": temp_resolution_iso8601,
-            }
-        return summaries
-
-    @staticmethod
-    def _parse_gsd(distance: str, level: Optional[int] = None) -> str:
-        """convert spatial resolution from GeoDN notation to ground sample distance in meters
-
-        "In remote sensing, ground sample distance (GSD) in a digital photo (such as an orthophoto)
-        of the ground from air or space is the distance between pixel centers measured on the
-        ground. For example, in an image with a one-meter GSD, adjacent pixels image locations
-        are 1 meter apart on the ground.[1] GSD is a measure of one limitation to spatial
-        resolution or image resolution, that is, the limitation due to sampling.[2]" Wikipedia
-
-        Args:
-            distance (str): 250m
-
-        Returns:
-            str: _description_
-        """
-        km = "km"
-        meter = "m"
-        degree = "degrees"
-        # aprox. size in meter of one degree at the equator
-        one_degree_size_equator = 111000
-        if distance.find(km) >= 0:
-            gsd = distance.replace(km, "")
-            gsd = str(float(gsd) * 1000)
-            return gsd
-        elif distance.find(meter) >= 0:
-            gsd = distance.replace(meter, "").strip()
-            return gsd
-        elif distance.find(degree) >= 0 and level is not None:
-            step = TensorLakehouseCollectionCatalog._compute_step(level=level)
-            gsd = str(one_degree_size_equator * step)
-            return gsd
-        return distance
-
-    @staticmethod
-    def _parse_raster_bands(
-        dataset_metadata: DatasetMetadata, layer_metadata: List[LayerMetadata]
-    ) -> List[Dict[str, Any]]:
-        """adapt dataset and layers to the Raster bands extensions
-        https://github.com/stac-extensions/raster
-
-        Args:
-            dataset_metadata (DatasetMetadata): _description_
-            layer_metadata (List[LayerMetadata]): _description_
-
-        Returns:
-            List[Dict[str, Any]]: List of band metadata
-        """
-        raster_bands = list()
-        for metadata in layer_metadata:
-            band = {
-                "name": metadata.name,
-                "unit": metadata.unit,
-                "data_type": metadata.data_type,
-                "spatial_resolution": dataset_metadata.spatial_resolution_of_raw_data,
-                "nodata": metadata.nodata,
-            }
-            raster_bands.append(band)
-        return raster_bands
-
-    @staticmethod
-    def _generate_cube_variables(layer_metadata: List[LayerMetadata]) -> Dict[str, Any]:
-        """generate cube variable field which should be normalized and compatible with STAC
-
-        Args:
-            dataset_metadata (DatasetMetadata): _description_
-            layer_metadata (List[LayerMetadata]): _description_
-
-        Returns:
-            Dict[str, Any]: _description_
-        """
-        var_type = "data"
-        # TODO set var type dynamically
-        assert var_type in ["data", "auxiliary"]
-        # TODO set dimensions dynamically
-        dimensions = [
-            DEFAULT_X_DIMENSION,
-            DEFAULT_Y_DIMENSION,
-            DEFAULT_TIME_DIMENSION,
-        ]
-        cube_vars = dict()
-        for layer in layer_metadata:
-            # mapping layer's name to band ID
-            cube_vars[layer.band] = {
-                "dimensions": dimensions,
-                "type": var_type,
-                "description": layer.description_short,
-                "unit": layer.unit,
-            }
-        return cube_vars
-
-    @staticmethod
-    def _compute_step(level: int) -> float:
-        """compute GeoDN step using specified level
-
-        https://pairs.res.ibm.com/tutorial/tutorials/api/v01x/raster_data.html?highlight=level
-
-        Args:
-            level (int): GeoDN level
-
-        Returns:
-            float: step in degrees
-        """
-        step = float((10**-6) * (2 ** (29 - level)))
-        return step
-
-    @staticmethod
-    def _generate_cube_dimensions(
-        dataset_metadata: DatasetMetadata, layer_metadata: List[LayerMetadata]
-    ) -> Dict[Any, Any]:
-        """generate cube:dimensions metadata based on datacube spec
-        https://github.com/stac-extensions/datacube
-
-        Args:
-            dataset_metadata (DatasetMetadata): dataset metadata
-            layer_metadata (List[LayerMetadata]): list of layer metadata
-
-        Returns:
-            Dict[Any, Any]: cube dimensions
-        """
-        layer_names = list()
-        for layer in layer_metadata:
-            layer_names.append(layer.name)
-        step = TensorLakehouseCollectionCatalog._compute_step(level=dataset_metadata.level)
-        cube_dimensions = {
-            DEFAULT_X_DIMENSION: {
-                "type": "spatial",
-                "axis": DEFAULT_X_DIMENSION,
-                "extent": [
-                    dataset_metadata.longitude_min,
-                    dataset_metadata.longitude_max,
-                ],
-                "step": step,
-                "reference_system": dataset_metadata.crs,
-            },
-            DEFAULT_Y_DIMENSION: {
-                "type": "spatial",
-                "axis": DEFAULT_Y_DIMENSION,
-                "extent": [
-                    dataset_metadata.latitude_min,
-                    dataset_metadata.latitude_max,
-                ],
-                "step": step,
-                "reference_system": dataset_metadata.crs,
-            },
-            DEFAULT_TIME_DIMENSION: {
-                "type": "temporal",
-                "axis": DEFAULT_TIME_DIMENSION,
-                "extent": [
-                    (
-                        dataset_metadata.temporal_min.isoformat()
-                        if dataset_metadata.temporal_min is not None
-                        else None
-                    ),
-                    (
-                        dataset_metadata.temporal_max.isoformat()
-                        if dataset_metadata.temporal_max is not None
-                        else None
-                    ),
-                ],
-                "step": TensorLakehouseCollectionCatalog._to_iso8601_duration(
-                    dataset_metadata.temporal_resolution
-                ),
-            },
-            "bands": {
-                "type": "bands",
-                "values": layer_names,
-            },
-        }
-        return cube_dimensions
-
-    @staticmethod
-    def _to_iso8601_duration(temporal_resolution: Union[str, None]) -> Union[str, None]:
-        """
-        the space between the temporal instances as ISO 8601 duration, e.g. P1D.
-        Use null for irregularly spaced steps.
-
-        https://github.com/stac-extensions/datacube#temporal-dimension-object
-
-        Args:
-            temporal_resolution (str): temporal resolution as specified in GeoDN, e.g., 0 years 0 mons 0 days 0 hours 0 mins 86400.00 secs
-
-        Returns:
-            str: temporal resolution according to ISO8601
-        """
-        duration = None
-        if temporal_resolution is not None and isinstance(temporal_resolution, str):
-            mins_pattern = "mins"
-            secs_pattern = "secs"
-            mins_index = temporal_resolution.find(mins_pattern)
-            secs_index = temporal_resolution.find(secs_pattern)
-            if 0 < mins_index < secs_index:
-                total_secs = float(
-                    temporal_resolution[mins_index + len(mins_pattern) : secs_index]  # noqa: E203
-                )
-                delta = pd.Timedelta(total_secs, unit="seconds")
-                duration = delta.isoformat()
-        return duration
-
-    @staticmethod
-    def _parse_license(dataset_metadata: DatasetMetadata) -> str:
-        if dataset_metadata.license is not None:
-            return dataset_metadata.license
-        else:
-            return "Unknown"
-
-    @staticmethod
-    def _parse_description(dataset_metadata: DatasetMetadata) -> str:
-        """convert description from GeoDN to STAC/OpenEO
-
-        Args:
-            dataset_metadata (DatasetMetadata):
-
-        Returns:
-            str: description
-        """
-        if dataset_metadata.description_short is not None:
-            return dataset_metadata.description_short
-        else:
-            return dataset_metadata.name
-
-    @staticmethod
-    def _parse_temporal_extent(dataset_metadata: DatasetMetadata) -> List[datetime]:
-        """get temporal extent
-
-        Args:
-            dataset_metadata (Dict[str, str]): _description_
-
-        Returns:
-            List[datetime]: temporal min, temporal max
-
-        """
-        temporal_extent = list()
-        if dataset_metadata.temporal_min is not None:
-            temporal_extent.append(dataset_metadata.temporal_min)
-        if dataset_metadata.temporal_max is not None:
-            temporal_extent.append(dataset_metadata.temporal_max)
-        return temporal_extent
-
-    @staticmethod
-    def _parse_bbox(metadata: DatasetMetadata) -> List[float]:
-        """parse bbox from metadata item, if metadata exists
-
-        Args:
-            metadata_item (Dict[str, float]): _description_
-
-        Returns:
-            List[float]: longitude min, latitude min, longitude max, latitude max
-
-        """
-        # list of keys that store the coordinates and default values if keys are not found
-        bbox = [
-            metadata.longitude_min,
-            metadata.latitude_min,
-            metadata.longitude_max,
-            metadata.latitude_max,
-        ]
-
-        return bbox
-
-    def load_collection(
-        self, collection_id: str, load_params: LoadParameters, env: EvalEnv
-    ) -> TensorLakehouseDataCube:
-        """retrieve data from data provider
-
-        Args:
-            collection_id (str): collection (dataset) unique identifier
-            load_params (LoadParameters): contains spatial and temporal extents
-            env (EvalEnv): _description_
-
-        Returns:
-            TensorLakehouseDataCube: _description_
-        """
-        logger.debug(f"collection_id={collection_id}")
-        metadata = self.get_collection_metadata(collection_id=collection_id)
-        start_time_str, end_time_str = load_params.temporal_extent
-        try:
-            starttime = pd.Timestamp(start_time_str).to_pydatetime()
-        except ValueError:
-            starttime = None
-        try:
-            endtime = pd.Timestamp(end_time_str).to_pydatetime()
-        except ValueError:
-            endtime = None
-        spatial_extent = load_params.spatial_extent
-        level = metadata["summaries"]["level"]
-        latmax = float(spatial_extent.get("north"))
-        latmin = float(spatial_extent.get("south"))
-        lonmax = float(spatial_extent.get("east"))
-        lonmin = float(spatial_extent.get("west"))
-        bands = load_params.bands
-        arrays = list()
-        for band in bands:
-            logger.debug(f"Getting global timestamps from {GEODN_DATASERVICE_ENDPOINT} band={band}")
-            # find available global timestamps
-            # TODO can we search available timestamps of the specified area?
-            timestamps = query.get_global_timestamps(
-                layer_id=band,
-                starttime=starttime,
-                endtime=endtime,
-                dataserviceendpoint=GEODN_DATASERVICE_ENDPOINT,
-                username=GEODN_DATASERVICE_USER,
-                password=GEODN_DATASERVICE_PASSWORD,
-            )
-            # retrieve data from GeoDN.Discovery and load it as xr.DataArray
-            data_array = query.to_xarray(
-                layer_id=band,
-                latmax=latmax,
-                latmin=latmin,
-                lonmax=lonmax,
-                lonmin=lonmin,
-                timestamps=timestamps,
-                level=level,
-                dataserviceendpoint=GEODN_DATASERVICE_ENDPOINT,
-                username=GEODN_DATASERVICE_USER,
-                password=GEODN_DATASERVICE_PASSWORD,
-            )
-            arrays.append(data_array)
-            # dset = data_array.to_dataset()
-        dset = xr.merge(arrays)
-        return TensorLakehouseDataCube(metadata=metadata, data=dset)

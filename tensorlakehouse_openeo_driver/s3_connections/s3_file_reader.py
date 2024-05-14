@@ -26,7 +26,7 @@ class S3FileReader:
         items: List[Dict[str, Any]],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
-        temporal_extent: Tuple[datetime, datetime]
+        temporal_extent: Tuple[datetime, Optional[datetime]]
     ) -> None:
         """
 

@@ -14,6 +14,7 @@ import logging
 import pandas as pd
 from rasterio.session import AWSSession
 from tensorlakehouse_openeo_driver import geospatial_utils
+from datetime import datetime
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
@@ -26,21 +27,22 @@ class COGFileReader(S3FileReader):
         items: List[Dict[str, Any]],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
+        temporal_extent: Tuple[datetime, Optional[datetime]]
     ) -> None:
-        super().__init__(items=items, bbox=bbox, bands=bands)
+        super().__init__(items=items, bbox=bbox, bands=bands, temporal_extent=temporal_extent)
 
     def load_items(
         self,
     ) -> xr.DataArray:
-        """_summary_
+        """ load STAC items that match the criteria specified by end-user as xarray object
 
         Args:
-            items (List[Dict[str, Any]]): list of items
+            items (List[Dict[str, Any]]): list of items matched
             bands (List[str]): band names
             bbox (Tuple[float, float, float, float]): west, south, east, north - WSG84 reference system
 
         Returns:
-            xr.DataArray: _description_
+            xr.DataArray: datacube
         """
         # group items by media type, because zarr items are handled differently than non-zarr items
         (
