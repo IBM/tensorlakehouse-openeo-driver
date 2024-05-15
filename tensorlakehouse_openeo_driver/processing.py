@@ -27,7 +27,7 @@ logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
 
 
-class GeoDNProcessing(ConcreteProcessing):
+class TensorlakehouseProcessing(ConcreteProcessing):
     def __init__(self) -> None:
         super().__init__()
         # `process` is wrapped around each registered implementation

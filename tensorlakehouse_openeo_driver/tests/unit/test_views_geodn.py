@@ -1,4 +1,4 @@
-from tensorlakehouse_openeo_driver.geodn_backend import GeoDNBackendImplementation
+from tensorlakehouse_openeo_driver.tensorlakehouse_backend import TensorLakeHouseBackendImplementation
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     LoadCollectionFromCOS,
 )
@@ -328,7 +328,7 @@ class TestGeneral:
         assert endpoints["/file_formats"] == ["GET"]
         assert "/output_formats" not in endpoints
 
-        backend_implementation = GeoDNBackendImplementation()
+        backend_implementation = TensorLakeHouseBackendImplementation()
         api100 = api_from_backend_implementation(backend_implementation)
         capabilities = api100.get("/").assert_status_code(200).json
         endpoints = {e["path"] for e in capabilities["endpoints"]}
@@ -346,7 +346,7 @@ class TestGeneral:
         "Warning! /credentials/basic should be removed - backend_implementation.enable_oidc_auth is not working"
     )
     def test_capabilities_no_oidc_auth(self):
-        backend_implementation = GeoDNBackendImplementation()
+        backend_implementation = TensorLakeHouseBackendImplementation()
         api100 = api_from_backend_implementation(backend_implementation)
         capabilities = api100.get("/").assert_status_code(200).json
         endpoints = {e["path"] for e in capabilities["endpoints"]}

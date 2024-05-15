@@ -28,9 +28,14 @@ class COGFileReader(S3FileReader):
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
+        dimension_map: Optional[Dict[str, str]],
     ) -> None:
         super().__init__(
-            items=items, bbox=bbox, bands=bands, temporal_extent=temporal_extent
+            items=items,
+            bbox=bbox,
+            bands=bands,
+            temporal_extent=temporal_extent,
+            dimension_map=dimension_map,
         )
 
     def load_items(
@@ -141,13 +146,13 @@ class COGFileReader(S3FileReader):
             if index == 0:
                 # convert stackstac default dimension names to openEO default
 
-                time_dim = geospatial_utils.get_dimension_name(
+                time_dim = S3FileReader._get_dimension_name(
                     item=item, dim_type="temporal"
                 )
-                x_dim = geospatial_utils.get_dimension_name(
+                x_dim = S3FileReader._get_dimension_name(
                     item=item, axis=DEFAULT_X_DIMENSION
                 )
-                y_dim = geospatial_utils.get_dimension_name(
+                y_dim = S3FileReader._get_dimension_name(
                     item=item, axis=DEFAULT_Y_DIMENSION
                 )
                 assets_item: Dict = item["assets"]

@@ -16,7 +16,7 @@ from tensorlakehouse_openeo_driver.processes import (
     merge_cubes,
     aggregate_temporal_period,
 )
-from tensorlakehouse_openeo_driver.processing import GeoDNProcessing
+from tensorlakehouse_openeo_driver.processing import TensorlakehouseProcessing
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
     generate_xarray_datarray,
     validate_raster_datacube,
@@ -225,7 +225,7 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
         num_periods=num_periods,
     )
 
-    proc = GeoDNProcessing()
+    proc = TensorlakehouseProcessing()
     reducer = partial(
         proc.process_registry["mean"].implementation,
         data=ParameterReference(from_parameter="data"),

@@ -13,12 +13,14 @@ from tensorlakehouse_openeo_driver.constants import (
     JPG2000_MEDIA_TYPE,
     STAC_DATETIME_FORMAT,
     STAC_URL,
+    ZIP_ZARR_MEDIA_TYPE,
     logger,
 )
 import pandas as pd
 import pyproj
 from pyproj import Transformer
 from tensorlakehouse_openeo_driver.s3_connections.cog_file_reader import COGFileReader
+from tensorlakehouse_openeo_driver.s3_connections.zarr_file_reader import ZarrFileReader
 
 
 class AbstractLoadCollection(ABC):
@@ -106,9 +108,21 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 bbox=bbox_wsg84,
                 bands=bands,
                 temporal_extent=temporal_ext,
+                dimension_map=None,
             )
             data = cog_file_reader.load_items()
 
+        elif media_type == ZIP_ZARR_MEDIA_TYPE:
+            zarr_reader = ZarrFileReader(
+                items=items,
+                bbox=bbox_wsg84,
+                bands=bands,
+                temporal_extent=temporal_extent,
+                dimension_map=None,
+            )
+            data = zarr_reader.load_items()
+        else:
+            raise ValueError(f"Error! {media_type=} is not supported")
         return data
 
     def _search_items(

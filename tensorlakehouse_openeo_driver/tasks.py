@@ -15,7 +15,7 @@ import geopandas
 from tensorlakehouse_openeo_driver.s3_connections.cos_parser import COSConnector
 import pandas as pd
 
-from tensorlakehouse_openeo_driver.processing import GeoDNProcessing
+from tensorlakehouse_openeo_driver.processing import TensorlakehouseProcessing
 from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
 
 app = Celery("tasks")
@@ -59,7 +59,7 @@ def create_batch_jobs(
         meta=metadata,
     )
     # parse process graph
-    processing = GeoDNProcessing()
+    processing = TensorlakehouseProcessing()
     parsed_graph = OpenEOProcessGraph(pg_data=process)
     pg_callable = parsed_graph.to_callable(process_registry=processing.process_registry)
     # execute the process graph, i.e., traverse all nodes and execute each one of them

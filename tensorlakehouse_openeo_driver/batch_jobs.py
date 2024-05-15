@@ -11,7 +11,7 @@ from celery import states
 from tensorlakehouse_openeo_driver.constants import GTIFF, logger
 
 
-class TensorLakehouseBatchJobs(BatchJobs):
+class TensorLakeHouseBatchJobs(BatchJobs):
     _job_registry: Dict[Tuple[str, str], BatchJobMetadata] = {}
     _custom_job_logs: Dict[str, List[str]] = {}
 

@@ -43,53 +43,7 @@ def clip(
     return data
 
 
-def get_dimension_name(
-    item: Dict[str, Any], axis: Optional[str] = None, dim_type: Optional[str] = None
-) -> str:
-    """get dimension name of the specified axis or the specified dim_type. Otherwise, it throws an
-    exception
 
-    Args:
-        item (Dict[str, Any]): STAC item
-        axis (Optional[str], optional): axis name (e.g., x, y)
-        dim_type (Optional[str], optional): dimension type
-
-    Raises:
-        ValueError: _description_
-        ValueError: _description_
-        ValueError: _description_
-
-    Returns:
-        str: dimension name
-    """
-    item_properties = item["properties"]
-    cube_dims = item_properties["cube:dimensions"]
-    assert isinstance(cube_dims, dict), f"Error! Unexpected type: {cube_dims}"
-    assert axis is not None or dim_type is not None
-    found = None
-    i = 0
-    dim_list = list(cube_dims.items())
-    dimension_name = None
-    while i < len(dim_list) and not found:
-        k, v = dim_list[i]
-        i += 1
-        original_axis = v.get("axis")
-        if axis is not None and original_axis is not None and original_axis == axis:
-            dimension_name = k
-            found = True
-        if (
-            dim_type is not None
-            and v.get("type") is not None
-            and v.get("type") == dim_type
-        ):
-            dimension_name = k
-            found = True
-    if found and isinstance(dimension_name, str):
-        return dimension_name
-    else:
-        raise ValueError(
-            f"Error! Unable to dimension name - axis={axis} dim_type={dim_type}"
-        )
 
 
 def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):

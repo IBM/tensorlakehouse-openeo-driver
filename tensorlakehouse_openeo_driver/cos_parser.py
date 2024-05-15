@@ -79,61 +79,61 @@ class COSConnector:
                 return key
         return None
 
-    def load_zarr(
-        self,
-        items: List[Item],
-        # item_properties: ItemProperties,
-        bbox: Tuple[float, float, float, float],
-    ) -> xr.DataArray:
-        """connects to S3 and loads data into memory
+    # def load_zarr(
+    #     self,
+    #     items: List[Item],
+    #     # item_properties: ItemProperties,
+    #     bbox: Tuple[float, float, float, float],
+    # ) -> xr.DataArray:
+    #     """connects to S3 and loads data into memory
 
-        based on code snippet available https://nasa-openscapes.github.io/2021-Cloud-Hackathon/tutorials/05_Data_Access_Direct_S3.html#read-in-a-single-hls-file
+    #     based on code snippet available https://nasa-openscapes.github.io/2021-Cloud-Hackathon/tutorials/05_Data_Access_Direct_S3.html#read-in-a-single-hls-file
 
-        Args:
-            items (List[Item]): list of STAC items that will be loaded
-            item_properties (ItemProperties): item's properties
+    #     Args:
+    #         items (List[Item]): list of STAC items that will be loaded
+    #         item_properties (ItemProperties): item's properties
 
-        Returns:
-            xr.DataArray: data loaded from zarr file
-        """
-        urls = set()
-        datetimes = list()
-        # assumption: multiple items are mapped to a single zarr file
-        # check if this is true
-        for item in items:
-            assets = item.get_assets(role=COSConnector.DATA)
-            asset = assets[COSConnector.DATA]
-            urls.add(asset.href)
-            datetimes.append(pd.Timestamp(item.datetime))
-        assert (
-            len(urls) == 1
-        ), f"Error! no support for loading data from multiple ZARR files: {urls}. "
-        url = urls.pop()
-        # create S3Map object to load zarr into memory
-        store = self._create_s3map(url=url)
-        item = items[0]
-        assert isinstance(item, dict)
-        epsg = COSConnector._get_epsg(item=item)
-        assert isinstance(epsg, int), f"Error! Invalid {epsg=}"
-        # open zarr as xarray.Dataset
-        ds = xr.open_zarr(store)
-        # temporary data as it has not been clipped
-        temp_data = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
-        temporal_dim = get_dimension_name(item=item, dim_type="temporal")
-        assert isinstance(temporal_dim, str)
-        # get name of x axis dim
-        x_dim = get_dimension_name(item=item, axis=DEFAULT_X_DIMENSION)
-        assert isinstance(x_dim, str)
-        # get name of y axis dim
-        y_dim = get_dimension_name(item=item, axis=DEFAULT_Y_DIMENSION)
-        assert isinstance(y_dim, str)
-        # clipping data
-        temp_data = clip(data=temp_data, bbox=bbox, y_dim=y_dim, x_dim=x_dim, crs=epsg)
+    #     Returns:
+    #         xr.DataArray: data loaded from zarr file
+    #     """
+    #     urls = set()
+    #     datetimes = list()
+    #     # assumption: multiple items are mapped to a single zarr file
+    #     # check if this is true
+    #     for item in items:
+    #         assets = item.get_assets(role=COSConnector.DATA)
+    #         asset = assets[COSConnector.DATA]
+    #         urls.add(asset.href)
+    #         datetimes.append(pd.Timestamp(item.datetime))
+    #     assert (
+    #         len(urls) == 1
+    #     ), f"Error! no support for loading data from multiple ZARR files: {urls}. "
+    #     url = urls.pop()
+    #     # create S3Map object to load zarr into memory
+    #     store = self._create_s3map(url=url)
+    #     item = items[0]
+    #     assert isinstance(item, dict)
+    #     epsg = COSConnector._get_epsg(item=item)
+    #     assert isinstance(epsg, int), f"Error! Invalid {epsg=}"
+    #     # open zarr as xarray.Dataset
+    #     ds = xr.open_zarr(store)
+    #     # temporary data as it has not been clipped
+    #     temp_data = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
+    #     temporal_dim = get_dimension_name(item=item, dim_type="temporal")
+    #     assert isinstance(temporal_dim, str)
+    #     # get name of x axis dim
+    #     x_dim = get_dimension_name(item=item, axis=DEFAULT_X_DIMENSION)
+    #     assert isinstance(x_dim, str)
+    #     # get name of y axis dim
+    #     y_dim = get_dimension_name(item=item, axis=DEFAULT_Y_DIMENSION)
+    #     assert isinstance(y_dim, str)
+    #     # clipping data
+    #     temp_data = clip(data=temp_data, bbox=bbox, y_dim=y_dim, x_dim=x_dim, crs=epsg)
 
-        data = filter_by_time(
-            data=temp_data, timestamps=datetimes, temporal_dim=temporal_dim
-        )
-        return data
+    #     data = filter_by_time(
+    #         data=temp_data, timestamps=datetimes, temporal_dim=temporal_dim
+    #     )
+    #     return data
 
     @staticmethod
     def _extract_bucket_name_from_url(url: str) -> str:
@@ -202,104 +202,104 @@ class COSConnector:
                 return step
         return None
 
-    def load_items_using_stackstac(
-        self,
-        items: List[Item],
-        bbox: Tuple[float, float, float, float],
-        bands: List[str],
-        epsg: int,
-        resolution: float,
-    ) -> xr.DataArray:
-        """load STAC items into memory as xarray objects
+    # def load_items_using_stackstac(
+    #     self,
+    #     items: List[Item],
+    #     bbox: Tuple[float, float, float, float],
+    #     bands: List[str],
+    #     epsg: int,
+    #     resolution: float,
+    # ) -> xr.DataArray:
+    #     """load STAC items into memory as xarray objects
 
-        Args:
-            items (List[Item]): list of STAC items
-            bbox (Tuple[float, float, float, float]): bounding box (west, south, east, north)
-            resolution (float): spatial resolution or step.  Careful: this must be given in
-                the output CRS's units! For example, with epsg=4326 (meaning lat-lon),
-                the units are degrees of latitude/longitude, not meters. Giving resolution=20 in
-                that case would mean each pixel is 20ºx20º (probably not what you wanted).
-                You can also give pair of (x_resolution, y_resolution).
-            epsg (int): reference system (e.g., 4326)
+    #     Args:
+    #         items (List[Item]): list of STAC items
+    #         bbox (Tuple[float, float, float, float]): bounding box (west, south, east, north)
+    #         resolution (float): spatial resolution or step.  Careful: this must be given in
+    #             the output CRS's units! For example, with epsg=4326 (meaning lat-lon),
+    #             the units are degrees of latitude/longitude, not meters. Giving resolution=20 in
+    #             that case would mean each pixel is 20ºx20º (probably not what you wanted).
+    #             You can also give pair of (x_resolution, y_resolution).
+    #         epsg (int): reference system (e.g., 4326)
 
-        Returns:
-            xr.DataArray: _description_
-        """
-        # create boto3 session using credentials
-        session = self._create_boto3_session()
-        # accessing non-AWS s3 https://github.com/rasterio/rasterio/pull/1779
-        aws_session = AWSSession(
-            session=session,
-            endpoint_url=self._endpoint,
-        )
-        # select an arbitrary item based on the assumption that all items have the same 'assets'
-        # structure, i.e., either use 'data' or band names
-        assert len(items) > 0, "Error! None STAC item has been found"
-        arbitrary_item = items[0].to_dict()
-        # select the list of assets that will be loaded
-        if COSConnector.DATA in arbitrary_item["assets"].keys():
-            assets = [COSConnector.DATA]
-        else:
-            assets = bands
+    #     Returns:
+    #         xr.DataArray: _description_
+    #     """
+    #     # create boto3 session using credentials
+    #     session = self._create_boto3_session()
+    #     # accessing non-AWS s3 https://github.com/rasterio/rasterio/pull/1779
+    #     aws_session = AWSSession(
+    #         session=session,
+    #         endpoint_url=self._endpoint,
+    #     )
+    #     # select an arbitrary item based on the assumption that all items have the same 'assets'
+    #     # structure, i.e., either use 'data' or band names
+    #     assert len(items) > 0, "Error! None STAC item has been found"
+    #     arbitrary_item = items[0].to_dict()
+    #     # select the list of assets that will be loaded
+    #     if COSConnector.DATA in arbitrary_item["assets"].keys():
+    #         assets = [COSConnector.DATA]
+    #     else:
+    #         assets = bands
 
-        dict_items = []
-        for i in items:
-            dict_item = i.to_dict()
-            mydatetime = i.properties.get("datetime")
-            pddt = pd.Timestamp(mydatetime)
-            dict_item["properties"]["datetime"] = pddt.isoformat(
-                sep="T", timespec="seconds"
-            )
-            dict_items.append(dict_item)
+    #     dict_items = []
+    #     for i in items:
+    #         dict_item = i.to_dict()
+    #         mydatetime = i.properties.get("datetime")
+    #         pddt = pd.Timestamp(mydatetime)
+    #         dict_item["properties"]["datetime"] = pddt.isoformat(
+    #             sep="T", timespec="seconds"
+    #         )
+    #         dict_items.append(dict_item)
 
-        # setting gdal_env param is based on this https://github.com/gjoseph92/stackstac#roadmap
-        data_array = stackstac.stack(
-            dict_items,
-            epsg=epsg,
-            resolution=resolution,
-            bounds_latlon=bbox,
-            rescale=False,
-            fill_value=np.nan,
-            properties=["datetime"],
-            assets=assets,
-            gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(
-                always=dict(session=aws_session)
-            ),
-            band_coords=False,
-            sortby_date="asc",
-        )
-        # convert stackstac default dimension names to openEO default
-        if "band" in data_array.dims and "band" != DEFAULT_BANDS_DIMENSION:
-            data_array = data_array.rename({"band": DEFAULT_BANDS_DIMENSION})
-        time_dim = get_dimension_name(item=arbitrary_item, dim_type="temporal")
-        assert isinstance(
-            time_dim, str
-        ), f"Error! unexpected type of time_dim {time_dim}"
-        x_dim = get_dimension_name(item=arbitrary_item, axis=DEFAULT_X_DIMENSION)
-        y_dim = get_dimension_name(item=arbitrary_item, axis=DEFAULT_Y_DIMENSION)
-        # if time_dim in data_array.dims and "time" != TIME:
-        # data_array = data_array.rename({"time": TIME})
-        # drop coords that are not required to avoid merging conflicts
-        for coord in list(data_array.coords.keys()):
-            if coord not in [x_dim, y_dim, DEFAULT_BANDS_DIMENSION, time_dim]:
-                data_array = data_array.reset_coords(names=coord, drop=True)
-        data_array = remove_repeated_time_coords(
-            data_array=data_array, time_dim=time_dim
-        )
+    #     # setting gdal_env param is based on this https://github.com/gjoseph92/stackstac#roadmap
+    #     data_array = stackstac.stack(
+    #         dict_items,
+    #         epsg=epsg,
+    #         resolution=resolution,
+    #         bounds_latlon=bbox,
+    #         rescale=False,
+    #         fill_value=np.nan,
+    #         properties=["datetime"],
+    #         assets=assets,
+    #         gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(
+    #             always=dict(session=aws_session)
+    #         ),
+    #         band_coords=False,
+    #         sortby_date="asc",
+    #     )
+    #     # convert stackstac default dimension names to openEO default
+    #     if "band" in data_array.dims and "band" != DEFAULT_BANDS_DIMENSION:
+    #         data_array = data_array.rename({"band": DEFAULT_BANDS_DIMENSION})
+    #     time_dim = get_dimension_name(item=arbitrary_item, dim_type="temporal")
+    #     assert isinstance(
+    #         time_dim, str
+    #     ), f"Error! unexpected type of time_dim {time_dim}"
+    #     x_dim = get_dimension_name(item=arbitrary_item, axis=DEFAULT_X_DIMENSION)
+    #     y_dim = get_dimension_name(item=arbitrary_item, axis=DEFAULT_Y_DIMENSION)
+    #     # if time_dim in data_array.dims and "time" != TIME:
+    #     # data_array = data_array.rename({"time": TIME})
+    #     # drop coords that are not required to avoid merging conflicts
+    #     for coord in list(data_array.coords.keys()):
+    #         if coord not in [x_dim, y_dim, DEFAULT_BANDS_DIMENSION, time_dim]:
+    #             data_array = data_array.reset_coords(names=coord, drop=True)
+    #     data_array = remove_repeated_time_coords(
+    #         data_array=data_array, time_dim=time_dim
+    #     )
 
-        data_array.rio.write_crs(epsg, inplace=True)
+    #     data_array.rio.write_crs(epsg, inplace=True)
 
-        # if "data" is the coordinate of the band, rename it to band name (e.g., B02)
-        if (
-            data_array.coords[DEFAULT_BANDS_DIMENSION].values[0] == COSConnector.DATA
-            and len(bands) == 1
-        ):
-            data_array = data_array.assign_coords({DEFAULT_BANDS_DIMENSION: bands})
-        assert isinstance(
-            data_array, xr.DataArray
-        ), f"Error! data_array is not xarray.DataArray: {type(data_array)}"
+    #     # if "data" is the coordinate of the band, rename it to band name (e.g., B02)
+    #     if (
+    #         data_array.coords[DEFAULT_BANDS_DIMENSION].values[0] == COSConnector.DATA
+    #         and len(bands) == 1
+    #     ):
+    #         data_array = data_array.assign_coords({DEFAULT_BANDS_DIMENSION: bands})
+    #     assert isinstance(
+    #         data_array, xr.DataArray
+    #     ), f"Error! data_array is not xarray.DataArray: {type(data_array)}"
 
-        return data_array
+    #     return data_array
 
     @staticmethod
     def _convert_https_to_s3(url: str) -> str:

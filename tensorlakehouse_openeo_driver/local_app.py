@@ -9,7 +9,7 @@ from asgiref.wsgi import WsgiToAsgi
 from dask.distributed import Client, LocalCluster
 
 import openeo_driver
-from tensorlakehouse_openeo_driver.geodn_backend import GeoDNBackendImplementation
+from tensorlakehouse_openeo_driver.tensorlakehouse_backend import TensorLakeHouseBackendImplementation
 
 # from openeo_driver.server import run_gunicorn
 from openeo_driver.util.logging import get_logging_config, setup_logging, show_log_level
@@ -62,7 +62,7 @@ def create_app(environment: str = "production") -> OpenEoApiApp:
         "dev",
         "production",
     ], f"Error! Invalid environment: {environment}"
-    app = build_app(backend_implementation=GeoDNBackendImplementation())
+    app = build_app(backend_implementation=TensorLakeHouseBackendImplementation())
     app.config.from_mapping(
         OPENEO_TITLE="GeoDN Backend compliant with OpenEO",
         OPENEO_DESCRIPTION="GeoDN Backend compliant with OpenEO",
