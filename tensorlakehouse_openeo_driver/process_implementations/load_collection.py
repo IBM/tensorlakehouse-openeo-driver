@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple, Union
 from openeo_pg_parser_networkx.pg_schema import (
     BoundingBox,
     TemporalInterval,
@@ -11,6 +11,7 @@ import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
     COG_MEDIA_TYPE,
     JPG2000_MEDIA_TYPE,
+    NETCDF_MEDIA_TYPE,
     STAC_DATETIME_FORMAT,
     STAC_URL,
     ZIP_ZARR_MEDIA_TYPE,
@@ -19,8 +20,11 @@ from tensorlakehouse_openeo_driver.constants import (
 import pandas as pd
 import pyproj
 from pyproj import Transformer
-from tensorlakehouse_openeo_driver.s3_connections.cog_file_reader import COGFileReader
-from tensorlakehouse_openeo_driver.s3_connections.zarr_file_reader import ZarrFileReader
+from tensorlakehouse_openeo_driver.file_reader.cog_file_reader import COGFileReader
+from tensorlakehouse_openeo_driver.file_reader.netcdf_file_reader import (
+    NetCDFFileReader,
+)
+from tensorlakehouse_openeo_driver.file_reader.zarr_file_reader import ZarrFileReader
 
 
 class AbstractLoadCollection(ABC):
@@ -100,29 +104,39 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         ), "Error! Current implementation supports only loading items that have the same media\
                   type. For instance, if some of the selected items are associated with COG files \
                       and other with parquet files, it will raise an exception"
+    
         media_type = next(iter(items_by_media_type.keys()))
         items = next(iter(items_by_media_type.values()))
         if media_type in [COG_MEDIA_TYPE, JPG2000_MEDIA_TYPE]:
-            cog_file_reader = COGFileReader(
+            reader: Union[COGFileReader, ZarrFileReader, NetCDFFileReader] = (
+                COGFileReader(
+                    items=items,
+                    bbox=bbox_wsg84,
+                    bands=bands,
+                    temporal_extent=temporal_ext,
+                    dimension_map=None,
+                )
+            )
+
+        elif media_type == ZIP_ZARR_MEDIA_TYPE:
+            reader = ZarrFileReader(
                 items=items,
                 bbox=bbox_wsg84,
                 bands=bands,
                 temporal_extent=temporal_ext,
                 dimension_map=None,
             )
-            data = cog_file_reader.load_items()
-
-        elif media_type == ZIP_ZARR_MEDIA_TYPE:
-            zarr_reader = ZarrFileReader(
+        elif media_type == NETCDF_MEDIA_TYPE:
+            reader = NetCDFFileReader(
                 items=items,
                 bbox=bbox_wsg84,
                 bands=bands,
-                temporal_extent=temporal_extent,
+                temporal_extent=temporal_ext,
                 dimension_map=None,
             )
-            data = zarr_reader.load_items()
         else:
             raise ValueError(f"Error! {media_type=} is not supported")
+        data = reader.load_items()
         return data
 
     def _search_items(

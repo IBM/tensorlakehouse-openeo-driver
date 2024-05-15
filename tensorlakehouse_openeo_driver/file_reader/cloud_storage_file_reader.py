@@ -18,7 +18,7 @@ logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
 
 
-class S3FileReader:
+class CloudStorageFileReader:
     DATA = "data"
 
     def __init__(
@@ -56,8 +56,8 @@ class S3FileReader:
         assets: Dict = items[0]["assets"]
         asset_values = next(iter(assets.values()))
         href = asset_values["href"]
-        bucket = S3FileReader._extract_bucket_name_from_url(url=href)
-        credentials = S3FileReader._get_credentials_by_bucket(bucket=bucket)
+        self.bucket = CloudStorageFileReader._extract_bucket_name_from_url(url=href)
+        credentials = CloudStorageFileReader._get_credentials_by_bucket(bucket=self.bucket)
 
         self._endpoint = credentials["endpoint"]
         self.access_key_id = credentials["access_key_id"]
@@ -67,6 +67,14 @@ class S3FileReader:
     @property
     def endpoint(self) -> str:
         return self._endpoint.lower()
+
+    @property
+    def start_datetime(self) -> datetime:
+        return self.temporal_extent[0]
+    
+    @property
+    def end_datetime(self) -> Optional[datetime]:
+        return self.temporal_extent[1]
 
     def get_polygon(self) -> Polygon:
         """convert the bbox associated with this instance of the s3reader to a polygon
@@ -198,8 +206,8 @@ class S3FileReader:
             str: link to data on COS using s3 scheme
         """
 
-        bucket = S3FileReader._extract_bucket_name_from_url(url=url)
-        object = S3FileReader._get_object(url=url)
+        bucket = CloudStorageFileReader._extract_bucket_name_from_url(url=url)
+        object = CloudStorageFileReader._get_object(url=url)
         url = f"s3://{bucket}/{object}"
         return url
 
@@ -240,7 +248,7 @@ class S3FileReader:
         Args:
             item (Dict[str, Any]): STAC item
             axis (Optional[str], optional): axis name (e.g., x, y)
-            dim_type (Optional[str], optional): dimension type
+            dim_type (Optional[str], optional): dimension type (e.g., temporal, spatial)
 
         Raises:
             ValueError: _description_

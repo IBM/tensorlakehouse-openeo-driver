@@ -12,7 +12,7 @@ from tensorlakehouse_openeo_driver.constants import (
 from shapely.geometry.polygon import Polygon
 from shapely.ops import unary_union
 import geopandas
-from tensorlakehouse_openeo_driver.s3_connections.cos_parser import COSConnector
+from tensorlakehouse_openeo_driver.file_reader.cos_parser import COSConnector
 import pandas as pd
 
 from tensorlakehouse_openeo_driver.processing import TensorlakehouseProcessing

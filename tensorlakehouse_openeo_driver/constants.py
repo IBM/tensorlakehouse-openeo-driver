@@ -82,6 +82,7 @@ CREDENTIALS = decode_credential(os.environ["CREDENTIALS"])
 # list of media types for STAC
 # https://github.com/radiantearth/stac-spec/blob/master/best-practices.md#working-with-media-types
 ZIP_ZARR_MEDIA_TYPE = "application/zip+zarr"
+NETCDF_MEDIA_TYPE = "application/netcdf"
 COG_MEDIA_TYPE = "image/tiff; application=geotiff; profile=cloud-optimized"
 JPG2000_MEDIA_TYPE = "image/jp2"
 GEOTIFF_MEDIA_TYPE = "image/tiff; application=geotiff"

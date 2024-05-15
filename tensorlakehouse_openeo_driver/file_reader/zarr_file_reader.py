@@ -8,20 +8,20 @@ from tensorlakehouse_openeo_driver.constants import (
 import os
 from datetime import datetime
 import logging
-from tensorlakehouse_openeo_driver.s3_connections.s3_file_reader import S3FileReader
+from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import CloudStorageFileReader
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
 
 
-class ZarrFileReader(S3FileReader):
+class ZarrFileReader(CloudStorageFileReader):
     def __init__(
         self,
         items: List[Dict[str, Any]],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
-        temporal_extent: Tuple[datetime, datetime],
+        temporal_extent: Tuple[datetime, Optional[datetime]],
         dimension_map: Optional[Dict[str, str]],
     ) -> None:
         super().__init__(
@@ -58,9 +58,9 @@ class ZarrFileReader(S3FileReader):
             },
         )
 
-        t_axis_name = S3FileReader._get_dimension_name(item=item, dim_type="temporal")
-        x_axis_name = S3FileReader._get_dimension_name(item=item, axis=DEFAULT_X_DIMENSION)
-        y_axis_name = S3FileReader._get_dimension_name(item=item, axis=DEFAULT_Y_DIMENSION)
+        t_axis_name = CloudStorageFileReader._get_dimension_name(item=item, dim_type="temporal")
+        x_axis_name = CloudStorageFileReader._get_dimension_name(item=item, axis=DEFAULT_X_DIMENSION)
+        y_axis_name = CloudStorageFileReader._get_dimension_name(item=item, axis=DEFAULT_Y_DIMENSION)
 
         # filter by temporal_extent
         dataset = dataset.loc[

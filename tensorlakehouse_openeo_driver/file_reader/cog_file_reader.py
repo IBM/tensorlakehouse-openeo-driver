@@ -8,7 +8,7 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
 )
-from tensorlakehouse_openeo_driver.s3_connections.s3_file_reader import S3FileReader
+from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import CloudStorageFileReader
 import os
 import logging
 import pandas as pd
@@ -21,7 +21,7 @@ logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
 
 
-class COGFileReader(S3FileReader):
+class COGFileReader(CloudStorageFileReader):
     def __init__(
         self,
         items: List[Dict[str, Any]],
@@ -146,22 +146,22 @@ class COGFileReader(S3FileReader):
             if index == 0:
                 # convert stackstac default dimension names to openEO default
 
-                time_dim = S3FileReader._get_dimension_name(
+                time_dim = CloudStorageFileReader._get_dimension_name(
                     item=item, dim_type="temporal"
                 )
-                x_dim = S3FileReader._get_dimension_name(
+                x_dim = CloudStorageFileReader._get_dimension_name(
                     item=item, axis=DEFAULT_X_DIMENSION
                 )
-                y_dim = S3FileReader._get_dimension_name(
+                y_dim = CloudStorageFileReader._get_dimension_name(
                     item=item, axis=DEFAULT_Y_DIMENSION
                 )
                 assets_item: Dict = item["assets"]
                 arbitrary_asset_key = next(iter(assets_item.keys()))
                 url = assets_item[arbitrary_asset_key]["href"]
-                bucket = S3FileReader._extract_bucket_name_from_url(url=url)
+                bucket = CloudStorageFileReader._extract_bucket_name_from_url(url=url)
 
-                if S3FileReader.DATA in assets_item.keys():
-                    assets = [S3FileReader.DATA]
+                if CloudStorageFileReader.DATA in assets_item.keys():
+                    assets = [CloudStorageFileReader.DATA]
                 else:
                     assets = bands
             item_prop = item["properties"]
@@ -213,7 +213,7 @@ class COGFileReader(S3FileReader):
 
         # if "data" is the coordinate of the band, rename it to band name (e.g., B02)
         if (
-            data_array.coords[DEFAULT_BANDS_DIMENSION].values[0] == S3FileReader.DATA
+            data_array.coords[DEFAULT_BANDS_DIMENSION].values[0] == CloudStorageFileReader.DATA
             and len(bands) == 1
         ):
             data_array = data_array.assign_coords({DEFAULT_BANDS_DIMENSION: bands})
@@ -253,8 +253,8 @@ class COGFileReader(S3FileReader):
             item_properties = item["properties"]
             # get list of available bands, which are stored as cube:variables
             available_bands = list(item_properties["cube:variables"].keys())
-            epsg = S3FileReader._get_epsg(item=item)
-            resolution = S3FileReader._get_resolution(item=item)
+            epsg = CloudStorageFileReader._get_epsg(item=item)
+            resolution = CloudStorageFileReader._get_resolution(item=item)
             crs_resolution_list.append((epsg, resolution))
             for band in bands:
                 if band in available_bands:
