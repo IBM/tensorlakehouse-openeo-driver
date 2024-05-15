@@ -8,8 +8,6 @@ from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import 
     CloudStorageFileReader,
 )
 import xarray as xr
-from datetime import datetime
-from typing import Dict
 
 from tensorlakehouse_openeo_driver.geospatial_utils import clip, filter_by_time
 

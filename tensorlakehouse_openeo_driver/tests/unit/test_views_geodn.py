@@ -1,4 +1,6 @@
-from tensorlakehouse_openeo_driver.tensorlakehouse_backend import TensorLakeHouseBackendImplementation
+from tensorlakehouse_openeo_driver.tensorlakehouse_backend import (
+    TensorLakeHouseBackendImplementation,
+)
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     LoadCollectionFromCOS,
 )

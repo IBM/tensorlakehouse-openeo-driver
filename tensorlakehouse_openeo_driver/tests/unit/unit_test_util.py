@@ -1402,6 +1402,8 @@ def open_array(
         if "spatial_ref" in ds.variables:
             crs = CRS.from_wkt(ds["spatial_ref"].attrs["crs_wkt"])
             ds = ds.drop_vars(["spatial_ref"])
+        else:
+            crs = ds.rio.crs
         for band_name in band_names:
             variable_names = list(ds.keys())
             assert (

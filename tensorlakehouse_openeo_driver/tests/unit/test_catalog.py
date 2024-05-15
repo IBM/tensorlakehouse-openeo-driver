@@ -1,5 +1,7 @@
 from pystac_client import Client
-from tensorlakehouse_openeo_driver.tensorlakehouse_backend import TensorLakehouseCollectionCatalog
+from tensorlakehouse_openeo_driver.tensorlakehouse_backend import (
+    TensorLakehouseCollectionCatalog,
+)
 from unittest.mock import patch
 import pytest
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (

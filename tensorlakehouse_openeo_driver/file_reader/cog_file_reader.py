@@ -8,7 +8,9 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
 )
-from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import CloudStorageFileReader
+from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import (
+    CloudStorageFileReader,
+)
 import os
 import logging
 import pandas as pd
@@ -213,7 +215,8 @@ class COGFileReader(CloudStorageFileReader):
 
         # if "data" is the coordinate of the band, rename it to band name (e.g., B02)
         if (
-            data_array.coords[DEFAULT_BANDS_DIMENSION].values[0] == CloudStorageFileReader.DATA
+            data_array.coords[DEFAULT_BANDS_DIMENSION].values[0]
+            == CloudStorageFileReader.DATA
             and len(bands) == 1
         ):
             data_array = data_array.assign_coords({DEFAULT_BANDS_DIMENSION: bands})

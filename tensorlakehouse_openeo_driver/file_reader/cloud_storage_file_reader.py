@@ -57,7 +57,9 @@ class CloudStorageFileReader:
         asset_values = next(iter(assets.values()))
         href = asset_values["href"]
         self.bucket = CloudStorageFileReader._extract_bucket_name_from_url(url=href)
-        credentials = CloudStorageFileReader._get_credentials_by_bucket(bucket=self.bucket)
+        credentials = CloudStorageFileReader._get_credentials_by_bucket(
+            bucket=self.bucket
+        )
 
         self._endpoint = credentials["endpoint"]
         self.access_key_id = credentials["access_key_id"]
@@ -71,7 +73,7 @@ class CloudStorageFileReader:
     @property
     def start_datetime(self) -> datetime:
         return self.temporal_extent[0]
-    
+
     @property
     def end_datetime(self) -> Optional[datetime]:
         return self.temporal_extent[1]

@@ -9,7 +9,9 @@ from asgiref.wsgi import WsgiToAsgi
 from dask.distributed import Client, LocalCluster
 
 import openeo_driver
-from tensorlakehouse_openeo_driver.tensorlakehouse_backend import TensorLakeHouseBackendImplementation
+from tensorlakehouse_openeo_driver.tensorlakehouse_backend import (
+    TensorLakeHouseBackendImplementation,
+)
 
 # from openeo_driver.server import run_gunicorn
 from openeo_driver.util.logging import get_logging_config, setup_logging, show_log_level

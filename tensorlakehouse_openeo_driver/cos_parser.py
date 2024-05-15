@@ -3,31 +3,16 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-import numpy as np
-import pandas as pd
-from pystac import Item
+from typing import Any, Dict, Optional
 import pystac
-import stackstac
-import xarray as xr
 import s3fs
-from rasterio.session import AWSSession
 import logging
 import logging.config
 from tensorlakehouse_openeo_driver.constants import (
-    DEFAULT_BANDS_DIMENSION,
     CREDENTIALS,
-    DEFAULT_X_DIMENSION,
-    DEFAULT_Y_DIMENSION,
 )
 from boto3.session import Session
 from urllib.parse import urlparse
-from tensorlakehouse_openeo_driver.geospatial_utils import (
-    clip,
-    filter_by_time,
-    get_dimension_name,
-    remove_repeated_time_coords,
-)
 
 
 assert os.path.isfile("logging.conf")

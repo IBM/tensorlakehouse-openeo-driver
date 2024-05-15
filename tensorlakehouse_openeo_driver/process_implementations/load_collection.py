@@ -104,7 +104,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         ), "Error! Current implementation supports only loading items that have the same media\
                   type. For instance, if some of the selected items are associated with COG files \
                       and other with parquet files, it will raise an exception"
-    
+
         media_type = next(iter(items_by_media_type.keys()))
         items = next(iter(items_by_media_type.values()))
         if media_type in [COG_MEDIA_TYPE, JPG2000_MEDIA_TYPE]:

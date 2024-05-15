@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, DefaultDict
+from typing import Dict, List, Optional, Tuple, Union, DefaultDict
 import numpy as np
 import pyproj
 import xarray as xr
@@ -9,8 +9,8 @@ from rasterio.crs import CRS
 from tensorlakehouse_openeo_driver.constants import DEFAULT_TIME_DIMENSION
 from rasterio.enums import Resampling
 from datetime import datetime
-import pytz
 from dateutil import tz
+
 
 def clip(
     data: xr.DataArray,
@@ -52,32 +52,12 @@ def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):
     return data
 
 
-# def filter_by_time(
-#     data: xr.DataArray, timestamps: List[pd.Timestamp], temporal_dim: str
-# ) -> xr.DataArray:
-#     """filter out data that is not within bbox
-
-#     Args:
-#         data (xr.Dataset): data cube obtained from COS
-#         bbox (List[float]): area of interest
-#         crs (int): reference system
-
-#     Returns:
-#         xr.DataArray: filtered xarray
-#     """
-
-#     # Convert the selected timestamps to datetime objects
-#     selected_timestamps = [xr.cftime_range(time, time)[0] for time in timestamps]
-
-#     # Select the specific timestamps using the .sel() method
-#     selected_data = data.sel({temporal_dim: selected_timestamps}, method="nearest")
-#     return selected_data
-
-
 def filter_by_time(
-    data: xr.DataArray, temporal_extent: Tuple[datetime, Optional[datetime]], temporal_dim: str
+    data: xr.DataArray,
+    temporal_extent: Tuple[datetime, Optional[datetime]],
+    temporal_dim: str,
 ) -> xr.DataArray:
-    """ filter data by timestamp
+    """filter data by timestamp
 
     Args:
         data (xr.DataArray): datacube
