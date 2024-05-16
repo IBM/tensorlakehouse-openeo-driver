@@ -11,6 +11,7 @@ import logging
 from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import (
     CloudStorageFileReader,
 )
+from tensorlakehouse_openeo_driver.geospatial_utils import filter_by_time
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
@@ -50,15 +51,11 @@ class ZarrFileReader(CloudStorageFileReader):
         assert isinstance(assets, dict)
         asset_value = next(iter(assets.values()))
         href = asset_value["href"]
-        dataset = xr.open_dataset(
-            href,
-            engine="zarr",
-            storage_options={
-                "key": self.access_key_id,
-                "secret": self.secret_access_key,
-                "client_kwargs": {"endpoint_url": self._endpoint},
-            },
-        )
+        s3_link = self._convert_https_to_s3(url=href)
+        fs = self.create_s3filesystem()
+        store = fs.get_mapper(s3_link)
+        # store = s3fs.S3Map(root=s3_link, s3=fs)
+        dataset = xr.open_zarr(store=store)
 
         t_axis_name = CloudStorageFileReader._get_dimension_name(
             item=item, dim_type="temporal"
@@ -70,15 +67,14 @@ class ZarrFileReader(CloudStorageFileReader):
             item=item, axis=DEFAULT_Y_DIMENSION
         )
 
+        data = dataset[self.bands]
         # filter by temporal_extent
-        dataset = dataset.loc[
-            {t_axis_name: slice(self.temporal_extent[0], self.temporal_extent[1])}
-        ][self.bands]
+        data = filter_by_time(
+            data=dataset, temporal_extent=self.temporal_extent, temporal_dim=t_axis_name
+        )
 
         # Filter by spatial extent
-        dataset = dataset.loc[{x_axis_name: slice(self.bbox[0], self.bbox[2])}]
-        dataset = dataset.loc[{y_axis_name: slice(self.bbox[1], self.bbox[3])}]
+        data = data.loc[{x_axis_name: slice(self.bbox[0], self.bbox[2])}]
+        data = data.loc[{y_axis_name: slice(self.bbox[1], self.bbox[3])}]
 
-        dataarray = dataset.to_array()
-
-        return dataarray
+        return data

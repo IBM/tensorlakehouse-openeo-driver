@@ -29,12 +29,10 @@ class NetCDFFileReader(CloudStorageFileReader):
         return url
 
     def load_items(self) -> xr.DataArray:
-        """_summary_
-
-        https://nasa-openscapes.github.io/2021-Cloud-Workshop-AGU/how-tos/Earthdata_Cloud__Single_File__Direct_S3_Access_NetCDF4_Example.html
+        """load items that are associated with netcdf files
 
         Returns:
-            xr.DataArray: _description_
+            xr.DataArray: raster data cube
         """
         s3fs = self.create_s3filesystem()
         da = None
@@ -55,10 +53,9 @@ class NetCDFFileReader(CloudStorageFileReader):
             item=item, dim_type="temporal"
         )
         crs = CloudStorageFileReader._get_epsg(item=item)
-        # clip area of interest
         ds = ds[self.bands]
         da = ds.to_array()
-
+        # filter by area of interest
         da = clip(data=da, bbox=self.bbox, x_dim=x_dim, y_dim=y_dim, crs=crs)
         # remove timestamps that have not been selected by end-user
         da = filter_by_time(
@@ -66,58 +63,3 @@ class NetCDFFileReader(CloudStorageFileReader):
         )
 
         return da
-
-
-def main():
-    items = [
-        {
-            "assets": {
-                "data": {
-                    # "href": "s3://openeo-geodn-driver-output/tasmax_rcp85_land-cpm_uk_2.2km_01_day_20781201-20791130.nc"
-                    "href": "s3://openeo-geodn-driver-output/20240509T130344-7963dc30-40a4-421a-9a57-a1695d02c84f.nc"
-                }
-            },
-            "properties": {
-                "start_datetime": "2023-08-30T15:38:21Z",
-                "cube:dimensions": {
-                    "x": {
-                        "axis": "x",
-                        "step": 30.0,
-                        "type": "spatial",
-                        "extent": [699960.0, 809760.0],
-                        "reference_system": 32618,
-                    },
-                    "y": {
-                        "axis": "y",
-                        "step": -30.0,
-                        "type": "spatial",
-                        "extent": [5000040.0, 4890240.0],
-                        "reference_system": 4326,
-                    },
-                    "time": {
-                        "type": "temporal",
-                        "extent": ["2023-08-30T15:38:21Z", "2023-08-30T15:50:51Z"],
-                    },
-                },
-            },
-        }
-    ]
-    import pandas as pd
-
-    temporal_extent = (
-        pd.Timestamp("2007-11-01T00:00:00Z").to_pydatetime(),
-        pd.Timestamp("2007-12-01T00:00:00Z").to_pydatetime(),
-    )
-    reader = NetCDFFileReader(
-        items=items,
-        bbox=[-3.0, 53.0, 0.2, 54.0],
-        temporal_extent=temporal_extent,
-        bands=["Total precipitation"],
-        dimension_map={},
-    )
-    da = reader.load_items()
-    print(da)
-
-
-if __name__ == "__main__":
-    main()

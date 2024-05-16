@@ -51,16 +51,20 @@ FEATURE_COLLECTION_JSON = {
             "links": [
                 {
                     "rel": "self",
-                    "href": ("http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-dev-9ca4d14d4841"
-                             "3d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collec"
-                             "tions/Global weather (ERA5)/items/bc9979b519614bcfaa8fb0f86331a324"),
+                    "href": (
+                        "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-dev-9ca4d14d4841"
+                        "3d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collec"
+                        "tions/Global weather (ERA5)/items/bc9979b519614bcfaa8fb0f86331a324"
+                    ),
                     "type": "application/geo+json",
                 },
                 {
                     "rel": "parent",
-                    "href": ("http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-dev-9ca4d14d48"
-                             "413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/coll"
-                             "ections/Global weather (ERA5)"),
+                    "href": (
+                        "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-dev-9ca4d14d48"
+                        "413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/coll"
+                        "ections/Global weather (ERA5)"
+                    ),
                     "type": "application/json",
                 },
                 {

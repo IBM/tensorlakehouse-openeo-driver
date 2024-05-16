@@ -42,6 +42,12 @@ class CloudStorageFileReader:
         assert isinstance(items, list)
         assert len(items) > 0
         self.items = items
+        # validate bbox
+        assert isinstance(bbox, tuple), f"Error! {type(bbox)} is not a tuple"
+        assert len(bbox) == 4, f"Error! Invalid size: {len(bbox)}"
+        west, south, east, north = bbox
+        assert -180 <= west <= east <= 180, f"Error! {west=} {east=}"
+        assert -90 <= south <= north <= 90, f"Error! {south=} {north=}"
         self.bbox = bbox
         self.bands = bands
         if temporal_extent is not None and len(temporal_extent) > 0:
