@@ -7,7 +7,7 @@ services:
         - neta
       command: bash tensorlakehouse_openeo_driver/run_gunicorn.sh
       environment:
-        - PYTHONPATH=${PYTHONPATH}
+        - PYTHONPATH=/opt/app-root/src/tensorlakehouse-openeo-driver
         - BROKER_URL=${BROKER_URL}
         - RESULT_BACKEND=${RESULT_BACKEND}
         - CREDENTIALS=${CREDENTIALS}
@@ -31,7 +31,7 @@ services:
       container_name: worker
       command: celery -A tensorlakehouse_openeo_driver.tasks worker -s /opt/app-root/src/tensorlakehouse-openeo-driver/celerybeat-schedule --concurrency 2 --prefetch-multiplier 1 -Ofair -B  -Q openeo-pgstac-queue --loglevel=info
       environment:
-        - PYTHONPATH=${PYTHONPATH}
+        - PYTHONPATH=/opt/app-root/src/tensorlakehouse-openeo-driver
         - BROKER_URL=${BROKER_URL}
         - RESULT_BACKEND=${RESULT_BACKEND}
         - CREDENTIALS=${CREDENTIALS}

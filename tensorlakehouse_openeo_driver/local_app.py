@@ -106,7 +106,7 @@ if __name__ == "__main__":
     app = create_app(environment="dev")
     show_log_level(app.logger)
     host = "0.0.0.0"
-    port = int(TENSORLAKEHOUSE_OPENEO_DRIVER_PORT)
+    port = TENSORLAKEHOUSE_OPENEO_DRIVER_PORT
     debug = os.getenv("FLASK_DEBUG", False)
     app.run(host=host, port=port, debug=debug)
     # print(f"Running gunicorn {host}:{port}")

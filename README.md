@@ -11,6 +11,10 @@ The Tensorlakehouse openEO driver is a backend implementation of the [openEO API
   - [Running locally using containers](#running-locally-using-containers)
     - [Setting environment varibles:](#setting-environment-varibles)
     - [Building and running container images](#building-and-running-container-images)
+      - [*Step 1* Generate credentials](#step-1-generate-credentials)
+      - [*Step 2.* Set the environment variables and create  `.env` file](#step-2-set-the-environment-variables-and-create--env-file)
+      - [Step 3 - Build tensorlakehouse-openeo-driver](#step-3---build-tensorlakehouse-openeo-driver)
+      - [Step 4 - Run services using podman-compose](#step-4---run-services-using-podman-compose)
   - [Contributing](#contributing)
   - [Getting support](#getting-support)
 
@@ -53,7 +57,66 @@ flask run
 
 Prerequisites: 
 - docker or podman-compose installed
-- 
+- postgres database 
+- redis database
+
+#### *Step 1* Generate credentials
+
+```json
+{
+    "<my-bucket-name>": {
+        "endpoint": "s3.<region>.<hostname>",
+        "access_key_id": "<access key>",
+        "secret_access_key": "<secret>",
+        "region": "<region>"
+    },
+}
+```
+then convert it to base64 by running:
+```shell
+python tensorlakehouse_openeo_driver/util/credentials_manager.py --file <path>
+```
+The output should be used to set the CREDENTIALS env variable
+
+#### *Step 2.* Set the environment variables and create  `.env` file
+```
+# credentials to access cloud object store 
+CREDENTIALS=<see step 1>
+
+BROKER_URL=<redis database url>
+RESULT_BACKEND=<redis database url>
+
+DASK_SCHEDULER_ADDRESS=http://127.0.0.1:8787
+
+### optional environment variables
+
+PYTHONPATH=/Users/alice/tensorlakehouse-openeo-driver/
+# basic credential to proprietary solution
+GEODN_DISCOVERY_PASSWORD=<geodn-discovery-password>
+GEODN_DISCOVERY_USERNAME=<geodn-discovery-username>
+# authorization server
+APPID_ISSUER=<authorization server url>
+# username and password
+APPID_USERNAME=<username>
+APPID_PASSWORD=<password>
+# client id and secret
+OPENEO_AUTH_CLIENT_ID=<client id>
+OPENEO_AUTH_CLIENT_SECRET=<client secret>
+
+# default is 9091
+TENSORLAKEHOUSE_OPENEO_DRIVER_PORT=9091
+
+```
+
+#### Step 3 - Build tensorlakehouse-openeo-driver
+
+Go to repository root dir and run:
+```shell
+podman build -t tensorlakehouse-openeo-driver -f Containerfile
+```
+
+
+#### Step 4 - Run services using podman-compose
 
 Podman is a drop-in replacement for Docker. If you are a Docker user, just replace `podman` by `docker` and you will be fine. 
 
@@ -61,46 +124,6 @@ Podman is a drop-in replacement for Docker. If you are a Docker user, just repla
 podman-compose -f podman-compose.yml --env-file /Users/alice/tensorlakehouse-openeo-driver/.env up
 ```
 
-Create `.env` file
-
-```
-
-PYTHONPATH=/Users/alice/tensorlakehouse-openeo-driver/
-
-# RIS3 account - App ID-geodn instance - resource group foc-cimf
-APPID_ISSUER=<authorization server url>
-APPID_USERNAME=<username>
-APPID_PASSWORD=<password>
-OPENEO_AUTH_CLIENT_ID=<client id>
-OPENEO_AUTH_CLIENT_SECRET=<client secret>
-
-
-TENSORLAKEHOUSE_OPENEO_DRIVER_PORT=9091
-
-
-GEODN_DISCOVERY_PASSWORD=<geodn-discovery-password>
-GEODN_DISCOVERY_USERNAME=<geodn-discovery-username>
-
-
-DASK_SCHEDULER_ADDRESS=http://127.0.0.1:8787
-
-
-STAC_URL=https://stac-fastapi-pgstac-geospatial-be-staging.apps.fmaas-backend.fmaas.res.ibm.com/
-OPENEO_URL=https://openeo-geodn-driver-pgstac-geospatial-be-staging.apps.fmaas-backend.fmaas.res.ibm.com/openeo/1.1.0/
-
-OPENEO_USERNAME=john
-
-OPENEO_PASSWORD=john123
-
-CREDENTIALS=
-
-BROKER_URL=<
-RESULT_BACKEND=
-
-
-
-# NUMEXPR_MAX_THREADS=8
-```
 
 ## Contributing
 
