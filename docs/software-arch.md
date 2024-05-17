@@ -1,5 +1,7 @@
 # Software architecture overview
 
+The figure below provides an overview of the tensorlakehouse software architecture. Besides openEO service, the software architecture is composed by a STAC service and a dask scheduler, which runs compute intensive tasks. The STAC service queries a postgres database (which stores STAC entries) and tensorlakehouse-openEO service queries redis database that supports batch jobs. tensorlakehouse-openEO, STAC and dask scheduler are deployed on Openshift/Kubernetes and postgres and redis databases are deployed on cloud. 
+
 ![sw-arch-overview](./figs/tensorlakehouse-software-architecture-overview.png)
 
  Role of openEO libs on the openeo-geodn-driver implementation:

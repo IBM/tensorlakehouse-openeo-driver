@@ -15,6 +15,7 @@ The Tensorlakehouse openEO driver is a backend implementation of the [openEO API
       - [*Step 2.* Set the environment variables and create  `.env` file](#step-2-set-the-environment-variables-and-create--env-file)
       - [Step 3 - Build tensorlakehouse-openeo-driver](#step-3---build-tensorlakehouse-openeo-driver)
       - [Step 4 - Run services using podman-compose](#step-4---run-services-using-podman-compose)
+  - [Software architecture](#software-architecture)
   - [Contributing](#contributing)
   - [Getting support](#getting-support)
 
@@ -33,7 +34,6 @@ Using a virtual environment for all commands in this guide is strongly recommend
 3. Optional, but strongly suggested: follow the step describe [here](https://w3.ibm.com/w3publisher/detect-secrets) to setup detect-secrets tool
 
 ## Running locally using containers
-
 
 ### Setting environment varibles:
 
@@ -57,8 +57,9 @@ flask run
 
 Prerequisites: 
 - docker or podman-compose installed
-- postgres database 
+- postgres database with postgis extension 
 - redis database
+
 
 #### *Step 1* Generate credentials
 
@@ -124,6 +125,9 @@ Podman is a drop-in replacement for Docker. If you are a Docker user, just repla
 podman-compose -f podman-compose.yml --env-file /Users/alice/tensorlakehouse-openeo-driver/.env up
 ```
 
+## Software architecture
+
+Check [software architecture diagrams](./docs/software-arch.md).
 
 ## Contributing
 
