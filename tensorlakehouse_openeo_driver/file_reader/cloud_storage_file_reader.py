@@ -213,7 +213,7 @@ class CloudStorageFileReader:
         Returns:
             str: link to data on COS using s3 scheme
         """
-
+        assert url.lower().startswith("http")
         bucket = CloudStorageFileReader._extract_bucket_name_from_url(url=url)
         object = CloudStorageFileReader._get_object(url=url)
         url = f"s3://{bucket}/{object}"

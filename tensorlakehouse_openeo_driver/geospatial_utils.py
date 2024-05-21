@@ -39,6 +39,11 @@ def clip(
     # rename dimensions because clip_box accepts only x and y
     data = rename_dimension(data=data, rename_dict={x_dim: "x", y_dim: "y"})
     # clip data
+    minx = max(minx, min(data["x"].values))
+    maxx = min(maxx, max(data["x"].values))
+    
+    miny = max(miny, min(data["y"].values))
+    maxy = min(maxy, max(data["y"].values))
     data = data.rio.clip_box(minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs)
     # rename dimensions back to original
     data = rename_dimension(data=data, rename_dict={"x": x_dim, "y": y_dim})
@@ -199,15 +204,37 @@ def reproject_cube(
     return data_cube_stacked_reprojected
 
 
-def convert_point_to_4326(
-    x: float, y: float, crs: Union[int, str]
-) -> Tuple[float, float]:
-    epsg4326 = pyproj.CRS.from_epsg(4326)
-    if isinstance(crs, str):
-        crs = int(crs.split(":")[1])
-    crs_from = pyproj.CRS.from_epsg(crs)
+def reproject_bbox(
+    bbox: Tuple[float, float, float, float], dst_crs: Union[int, str], src_crs: Union[int, str] = 4326
+) -> Tuple[float, float, float, float]:
+    """ reproject bounding box to specified dst_crs
+
+    Args:
+        bbox (Tuple[float, float, float, float]): west, south, east, north
+        dst_crs (Union[int, str]): destination CRS
+        src_crs (Union[int, str], optional): source CRS. Defaults to 4326.
+
+    Returns:
+        Tuple[float, float, float, float]: reprojected bbox
+    """
+    crs_from = _get_epsg(crs_code=src_crs)
+    crs_to = _get_epsg(crs_code=dst_crs)
+    
     transformer = pyproj.Transformer.from_crs(
-        crs_from=crs_from, crs_to=epsg4326, always_xy=True
+        crs_from=crs_from, crs_to=crs_to, always_xy=True
     )
-    new_x, new_y = transformer.transform(x, y)
-    return new_x, new_y
+    minx, miny, maxx, maxy = bbox
+    assert minx <= maxx, f"Error! {minx=} <= {maxx=} is false"
+    assert miny <= maxy, f"Error! {miny=} <= {maxy=} is false"
+    repr_minx, repr_miny = transformer.transform(minx, miny)
+    repr_maxx, repr_maxy = transformer.transform(maxx, maxy)
+    assert repr_minx <= repr_maxx, f"Error! {repr_minx=} <= {repr_maxx=}"
+    assert repr_miny <= repr_maxy, f"Error! {repr_miny=} <= {repr_maxy=}"
+    return (repr_minx, repr_miny, repr_maxx, repr_maxy)
+
+
+def _get_epsg(crs_code: Union[str, int]) -> CRS:
+    if isinstance(crs_code, str):
+        crs_code = int(crs_code.split(":")[1])
+    crs_obj = pyproj.CRS.from_epsg(crs_code)
+    return crs_obj

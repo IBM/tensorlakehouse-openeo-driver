@@ -88,7 +88,7 @@ JPG2000_MEDIA_TYPE = "image/jp2"
 GEOTIFF_MEDIA_TYPE = "image/tiff; application=geotiff"
 
 # default reference system
-GEODN_DISCOVERY_CRS = "EPSG:4326"
+EPSG_4326 = "EPSG:4326"
 
 # internal names of formats to save data
 NETCDF = "NETCDF"

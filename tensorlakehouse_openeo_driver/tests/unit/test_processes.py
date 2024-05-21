@@ -18,7 +18,7 @@ from tensorlakehouse_openeo_driver.processes import (
 )
 from tensorlakehouse_openeo_driver.processing import TensorlakehouseProcessing
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
-    generate_xarray_datarray,
+    generate_xarray,
     validate_raster_datacube,
 )
 import pandas as pd
@@ -29,8 +29,8 @@ from rasterio import crs
 
 @pytest.mark.parametrize("source,target", [(DEFAULT_X_DIMENSION, "x_new")])
 def test_rename_dimension(source: str, target: str):
-    array = generate_xarray_datarray(
-        timestamps=(pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)),
+    array = generate_xarray(
+        temporal_extent=(pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)),
         latmax=50,
         latmin=40,
         lonmax=-80,
@@ -57,8 +57,8 @@ def test_rename_labels(
     source: List[Union[str, int]], target: List[Union[str, int]], dimension: str
 ):
     size_x = 100
-    array = generate_xarray_datarray(
-        timestamps=(pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)),
+    array = generate_xarray(
+        temporal_extent=(pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)),
         latmax=50,
         latmin=40,
         lonmax=-80,
@@ -76,8 +76,8 @@ def test_aggregate_temporal():
     size_x = 100
     start = pd.Timestamp(2020, 1, 1)
     end = pd.Timestamp(2020, 2, 1)
-    array = generate_xarray_datarray(
-        timestamps=(start, end),
+    array = generate_xarray(
+        temporal_extent=(start, end),
         latmax=50,
         latmin=40,
         lonmax=-80,
@@ -104,13 +104,13 @@ def test_aggregate_temporal():
 
 @pytest.mark.parametrize("resolution", [0, 0.01])
 def test_resample_spatial(resolution: int):
-    data = generate_xarray_datarray(
+    data = generate_xarray(
         bands=["b02", "b03"],
         latmax=41,
         latmin=40,
         lonmax=-90,
         lonmin=-91,
-        timestamps=(pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)),
+        temporal_extent=(pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)),
         freq=None,
     )
     target_projection = 4236
@@ -161,22 +161,22 @@ def test_resample_spatial(resolution: int):
 def test_merge_cubes(
     bands_1, bands_2, bbox_1, bbox_2, spatial_ext_1, spatial_ext_2, expected_dim_size
 ):
-    cube1 = generate_xarray_datarray(
+    cube1 = generate_xarray(
         bands=bands_1,
         lonmin=bbox_1[0],
         latmin=bbox_1[1],
         lonmax=bbox_1[2],
         latmax=bbox_1[3],
-        timestamps=spatial_ext_1,
+        temporal_extent=spatial_ext_1,
         freq=None,
     )
-    cube2 = generate_xarray_datarray(
+    cube2 = generate_xarray(
         bands=bands_2,
         lonmin=bbox_2[0],
         latmin=bbox_2[1],
         lonmax=bbox_2[2],
         latmax=bbox_2[3],
-        timestamps=spatial_ext_2,
+        temporal_extent=spatial_ext_2,
         freq=None,
     )
     merged_cube = merge_cubes(cube1=cube1, cube2=cube2)
@@ -212,7 +212,7 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
     elif period == "month":
         freq = "W"
         num_periods = 4 * expected_size
-    data = generate_xarray_datarray(
+    data = generate_xarray(
         bands=["B02"],
         latmax=41,
         latmin=40,
@@ -220,7 +220,7 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
         lonmax=-90,
         lonmin=-91,
         size_y=size_y,
-        timestamps=(pd.Timestamp(2020, 1, 1), None),
+        temporal_extent=(pd.Timestamp(2020, 1, 1), None),
         freq=freq,
         num_periods=num_periods,
     )

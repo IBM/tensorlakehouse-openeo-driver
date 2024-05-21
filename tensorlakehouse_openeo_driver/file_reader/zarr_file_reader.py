@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, Tuple
 import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
+    DEFAULT_BANDS_DIMENSION,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
 )
@@ -11,7 +12,7 @@ import logging
 from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import (
     CloudStorageFileReader,
 )
-from tensorlakehouse_openeo_driver.geospatial_utils import filter_by_time
+from tensorlakehouse_openeo_driver.geospatial_utils import filter_by_time, reproject_bbox
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
@@ -67,14 +68,18 @@ class ZarrFileReader(CloudStorageFileReader):
             item=item, axis=DEFAULT_Y_DIMENSION
         )
 
-        data = dataset[self.bands]
+        array = dataset[self.bands]
+        array = array.to_array(dim=DEFAULT_BANDS_DIMENSION)
         # filter by temporal_extent
-        data = filter_by_time(
-            data=dataset, temporal_extent=self.temporal_extent, temporal_dim=t_axis_name
+        array = filter_by_time(
+            data=array, temporal_extent=self.temporal_extent, temporal_dim=t_axis_name
         )
 
         # Filter by spatial extent
-        data = data.loc[{x_axis_name: slice(self.bbox[0], self.bbox[2])}]
-        data = data.loc[{y_axis_name: slice(self.bbox[1], self.bbox[3])}]
-
-        return data
+        crs_code = CloudStorageFileReader._get_epsg(item=item)
+        assert isinstance(crs_code, int), f"Error! crs_code is not an int: {type(crs_code)}"
+        reprojected_bbox = reproject_bbox(bbox=self.bbox, src_crs=4326, dst_crs=crs_code)
+        array = array.loc[{x_axis_name: slice(reprojected_bbox[0], reprojected_bbox[2])}]
+        array = array.loc[{y_axis_name: slice(reprojected_bbox[1], reprojected_bbox[3])}]
+        assert isinstance(array, xr.DataArray)
+        return array

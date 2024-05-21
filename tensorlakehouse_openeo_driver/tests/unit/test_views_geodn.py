@@ -57,7 +57,7 @@ from openeo_driver.views import (
 )
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
     make_pystac_client_collection,
-    generate_xarray_datarray,
+    generate_xarray,
     validate_downloaded_file,
     validate_OpenEO_collection,
     validate_STAC_Collection,
@@ -68,7 +68,7 @@ from tensorlakehouse_openeo_driver.tests.conftest import (
     enhanced_logging,
 )
 from tensorlakehouse_openeo_driver.constants import (
-    GEODN_DISCOVERY_CRS,
+    EPSG_4326,
     TEST_DATA_ROOT,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
@@ -1433,17 +1433,17 @@ class TestSynchronousPostResult:
             "arguments"
         ]["temporal_extent"]
         size_time = 10
-        mock_data_array = generate_xarray_datarray(
+        mock_data_array = generate_xarray(
             bands=bands,
             latmax=latmax,
             latmin=latmin,
             lonmax=lonmax,
             lonmin=lonmin,
-            timestamps=temporal_extent,
+            temporal_extent=temporal_extent,
             size_x=expected_dims.get(DEFAULT_X_DIMENSION, 100),
             size_y=expected_dims.get(DEFAULT_Y_DIMENSION, 100),
             num_periods=expected_dims.get(DEFAULT_TIME_DIMENSION, size_time),
-            crs=GEODN_DISCOVERY_CRS,
+            crs=EPSG_4326,
             freq=None,
         )
 
@@ -1469,7 +1469,7 @@ class TestSynchronousPostResult:
                         path=path,
                         expected_dimension_size=expected_dims,
                         band_names=bands,
-                        expected_crs=GEODN_DISCOVERY_CRS,
+                        expected_crs=EPSG_4326,
                     )
                 path.unlink()
 

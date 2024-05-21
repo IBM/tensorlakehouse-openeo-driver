@@ -3,7 +3,7 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from zipfile import ZipFile
 import matplotlib.pyplot as plt
 
@@ -20,7 +20,7 @@ from rasterio.crs import CRS
 
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
-    GEODN_DISCOVERY_CRS,
+    EPSG_4326,
     GEOTIFF_PREFIX,
     GTIFF,
     NETCDF,
@@ -31,6 +31,7 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_Y_DIMENSION,
 )
 from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
+from tensorlakehouse_openeo_driver.geospatial_utils import reproject_bbox
 from tensorlakehouse_openeo_driver.layer import LayerMetadata
 
 TEMPORAL_GUESSES = [
@@ -1040,19 +1041,20 @@ class MockSTACClient:
         return MockPystacClient()
 
 
-def generate_xarray_datarray(
+def generate_xarray(
     bands: List[str],
     latmax: float,
     latmin: float,
     lonmax: float,
     lonmin: float,
-    timestamps: Tuple[pd.Timestamp, pd.Timestamp],
+    temporal_extent: Tuple[pd.Timestamp, pd.Timestamp],
     size_x: int = 100,
     size_y: int = 100,
-    num_periods: int = 10,
+    num_periods: Optional[int] = 10,
     freq: Optional[str] = "D",
-    crs: str = GEODN_DISCOVERY_CRS,
-) -> xr.DataArray:
+    crs: str = EPSG_4326,
+    is_dataset: bool = False
+) -> Union[xr.DataArray, xr.Dataset]:
     """generate a synthetic data array for testing
 
     Args:
@@ -1065,7 +1067,7 @@ def generate_xarray_datarray(
         size_x (int, optional): _description_. Defaults to 100.
         size_y (int, optional): _description_. Defaults to 100.
         size_time (int, optional): _description_. Defaults to 10.
-        crs (str, optional): _description_. Defaults to GEODN_DISCOVERY_CRS.
+        crs (str, optional): _description_. Defaults to 4326.
 
     Raises:
         ValueError: _description_
@@ -1074,11 +1076,18 @@ def generate_xarray_datarray(
         xr.DataArray: _description_
     """
     np.random.seed(0)
-    start, stop = timestamps
-    lon = np.linspace(lonmin, lonmax, size_x).tolist()
-    lat = np.linspace(latmin, latmax, size_y).tolist()
-
-    time = pd.date_range(start=start, end=stop, periods=num_periods, freq=freq)
+    start, stop = temporal_extent
+    bbox = reproject_bbox(bbox=(lonmin, latmin, lonmax, latmax), dst_crs=crs, src_crs=EPSG_4326)
+    x = np.linspace(bbox[0], bbox[2], size_x).tolist()
+    y = np.linspace(bbox[1], bbox[3], size_y).tolist()
+    if num_periods is not None:
+        freq = None
+    else:
+        assert freq is not None
+    timestamps = pd.date_range(start=start, end=stop, periods=num_periods, freq=freq)
+    if num_periods is None:
+        num_periods = len(timestamps)
+    assert isinstance(num_periods, int)
     arrays = list()
     for band_name in bands:
         band_data = 15 + 8 * np.random.randn(num_periods, size_y, size_x)
@@ -1088,9 +1097,9 @@ def generate_xarray_datarray(
             data=band_data,
             dims=[DEFAULT_TIME_DIMENSION, DEFAULT_Y_DIMENSION, DEFAULT_X_DIMENSION],
             coords={
-                DEFAULT_TIME_DIMENSION: time.values,
-                DEFAULT_Y_DIMENSION: lat,
-                DEFAULT_X_DIMENSION: lon,
+                DEFAULT_TIME_DIMENSION: timestamps.values,
+                DEFAULT_Y_DIMENSION: y,
+                DEFAULT_X_DIMENSION: x,
             },
         )
         da = da.expand_dims({DEFAULT_BANDS_DIMENSION: 1})
@@ -1098,8 +1107,13 @@ def generate_xarray_datarray(
         arrays.append(da)
     da = xr.concat(arrays, pd.Index(bands, name=DEFAULT_BANDS_DIMENSION))
     da.rio.write_crs(crs, inplace=True)
+    assert isinstance(da, xr.DataArray)
     assert isinstance(da.openeo.spatial_dims, tuple)
-    return da
+    if is_dataset:
+        ds = da.to_dataset(dim=DEFAULT_BANDS_DIMENSION)
+        return ds
+    else:
+        return da
 
 
 def validate_OpenEO_collection(collection: Dict, full: bool = False) -> None:

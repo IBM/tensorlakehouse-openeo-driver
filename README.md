@@ -13,8 +13,8 @@ The Tensorlakehouse openEO driver is a backend implementation of the [openEO API
     - [Building and running container images](#building-and-running-container-images)
       - [*Step 1* Generate credentials](#step-1-generate-credentials)
       - [*Step 2.* Set the environment variables and create  `.env` file](#step-2-set-the-environment-variables-and-create--env-file)
-      - [Step 3 - Build tensorlakehouse-openeo-driver](#step-3---build-tensorlakehouse-openeo-driver)
-      - [Step 4 - Run services using podman-compose](#step-4---run-services-using-podman-compose)
+      - [*Step 3* - Build tensorlakehouse-openeo-driver](#step-3---build-tensorlakehouse-openeo-driver)
+      - [*Step 4* - Run services using podman-compose](#step-4---run-services-using-podman-compose)
   - [Software architecture](#software-architecture)
   - [Contributing](#contributing)
   - [Getting support](#getting-support)
@@ -109,7 +109,7 @@ TENSORLAKEHOUSE_OPENEO_DRIVER_PORT=9091
 
 ```
 
-#### Step 3 - Build tensorlakehouse-openeo-driver
+#### *Step 3* - Build tensorlakehouse-openeo-driver
 
 Go to repository root dir and run:
 ```shell
@@ -117,7 +117,7 @@ podman build -t tensorlakehouse-openeo-driver -f Containerfile
 ```
 
 
-#### Step 4 - Run services using podman-compose
+#### *Step 4* - Run services using podman-compose
 
 Podman is a drop-in replacement for Docker. If you are a Docker user, just replace `podman` by `docker` and you will be fine. 
 
