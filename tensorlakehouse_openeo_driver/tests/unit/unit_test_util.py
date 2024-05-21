@@ -1053,7 +1053,7 @@ def generate_xarray(
     num_periods: Optional[int] = 10,
     freq: Optional[str] = "D",
     crs: str = EPSG_4326,
-    is_dataset: bool = False
+    is_dataset: bool = False,
 ) -> Union[xr.DataArray, xr.Dataset]:
     """generate a synthetic data array for testing
 
@@ -1068,22 +1068,23 @@ def generate_xarray(
         size_y (int, optional): _description_. Defaults to 100.
         size_time (int, optional): _description_. Defaults to 10.
         crs (str, optional): _description_. Defaults to 4326.
+        is_dataset (bool): True if the object that is returned is a xr.Dataset and False if it is
+            xr.DataArray
 
     Raises:
         ValueError: _description_
 
     Returns:
-        xr.DataArray: _description_
+        Union[xr.DataArray, xr.Dataset]: raster data cube
     """
     np.random.seed(0)
     start, stop = temporal_extent
-    bbox = reproject_bbox(bbox=(lonmin, latmin, lonmax, latmax), dst_crs=crs, src_crs=EPSG_4326)
+    bbox = reproject_bbox(
+        bbox=(lonmin, latmin, lonmax, latmax), dst_crs=crs, src_crs=EPSG_4326
+    )
     x = np.linspace(bbox[0], bbox[2], size_x).tolist()
     y = np.linspace(bbox[1], bbox[3], size_y).tolist()
-    if num_periods is not None:
-        freq = None
-    else:
-        assert freq is not None
+
     timestamps = pd.date_range(start=start, end=stop, periods=num_periods, freq=freq)
     if num_periods is None:
         num_periods = len(timestamps)

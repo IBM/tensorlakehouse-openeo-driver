@@ -1,22 +1,44 @@
+""" this module handles the implementation of batch jobs using celery to support asynchronous 
+requests
+
+"""
+
+from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 from openeo_driver.backend import BatchJobMetadata, BatchJobResultMetadata, BatchJobs
 from openeo_driver.errors import JobNotFinishedException, JobNotFoundException
 from openeo_driver.users.user import User
-from openeo_driver.utils import generate_unique_id
-from datetime import datetime
 from openeo_driver.jobregistry import JOB_STATUS
 from celery.states import STARTED, SUCCESS, FAILURE, PENDING, RECEIVED
-from tensorlakehouse_openeo_driver import tasks
 from celery import states
+from tensorlakehouse_openeo_driver import tasks
 from tensorlakehouse_openeo_driver.constants import GTIFF, logger
 
 
 class TensorLakeHouseBatchJobs(BatchJobs):
+    """this class implements batch jobs methods specified by BatchJobs superclass. It relies
+    on celery to manage a queue of async tasks
+
+    Args:
+        BatchJobs (_type_): _description_
+
+    Raises:
+        Exception: _description_
+        JobNotFoundException: _description_
+        JobNotFoundException: _description_
+        JobNotFinishedException: _description_
+        log: _description_
+        ValueError: _description_
+
+    Returns:
+        _type_: _description_
+
+    Yields:
+        _type_: _description_
+    """
+
     _job_registry: Dict[Tuple[str, str], BatchJobMetadata] = {}
     _custom_job_logs: Dict[str, List[str]] = {}
-
-    def generate_job_id(self):
-        return generate_unique_id(prefix="j")
 
     def get_result_metadata(self, job_id: str, user_id: str) -> BatchJobResultMetadata:
         """
@@ -43,7 +65,12 @@ class TensorLakeHouseBatchJobs(BatchJobs):
         # Default implementation, based on legacy API
         task = tasks.app.AsyncResult(job_id)
         logger.debug(
-            f"batch_jobs::get_result_assets - task id={task.id} state={task.state} task_info={task.info}"
+            (
+                "batch_jobs::get_result_assets - task id=%s state=%s" "task_info=%s",
+                task.id,
+                task.state,
+                task.info,
+            )
         )
         metadata = task.info
         assert metadata is not None
@@ -69,11 +96,13 @@ class TensorLakeHouseBatchJobs(BatchJobs):
 
     def create_job(
         self,
-        user_id: str,
+        *,
+        user_id: str,  # TODO: deprecate `user_id` in favor of `user`?
+        user: User,
         process: dict,
         api_version: str,
         metadata: dict,
-        job_options: dict = {},
+        job_options: Optional[dict] = None,
     ) -> BatchJobMetadata:
         logger.debug(f"batch_jobs::create_job - process={process}")
         # set start time of this task
@@ -166,8 +195,10 @@ class TensorLakeHouseBatchJobs(BatchJobs):
             )
             return job_metadata
             # return self._job_registry[(user_id, job_id)]
-        except KeyError:
-            raise JobNotFoundException(job_id)
+        except KeyError as e:
+            exc_msg = str(e) + str(job_id)
+            logger.error(exc_msg)
+            raise JobNotFoundException(exc_msg)
 
     def get_user_jobs(self, user_id: str) -> List[BatchJobMetadata]:
         return [v for (k, v) in self._job_registry.items() if k[0] == user_id]
@@ -217,7 +248,7 @@ class TensorLakeHouseBatchJobs(BatchJobs):
 
     def get_results(self, job_id: str, user_id: str) -> Dict[str, Any]:
         if (
-            self._get_job_info(job_id=job_id, user_id=user_id).status
+            self.get_job_info(job_id=job_id, user_id=user_id).status
             != JOB_STATUS.FINISHED
         ):
             raise JobNotFinishedException
@@ -241,7 +272,10 @@ class TensorLakeHouseBatchJobs(BatchJobs):
                 "start_datetime": "2019-08-24T14:15:22Z",
                 "end_datetime": "2019-08-24T14:15:22Z",
                 "title": "NDVI based on Sentinel 2",
-                "description": "Deriving minimum NDVI measurements over pixel time series of Sentinel 2",
+                "description": (
+                    "Deriving minimum NDVI measurements over pixel time series of"
+                    "Sentinel 2"
+                ),
                 "license": "Apache-2.0",
                 "providers": [
                     {
@@ -258,7 +292,10 @@ class TensorLakeHouseBatchJobs(BatchJobs):
             },
             "assets": {
                 "preview.png": {
-                    "href": "https://openeo.example/api/v1/download/583fba8b2ce583fba8b2ce/preview.png",
+                    "href": (
+                        "https://openeo.example/api/v1/download/583fba8b2ce583fba8b2ce/"
+                        "preview.png"
+                    ),
                     "type": "image/png",
                     "title": "Thumbnail",
                     "roles": ["thumbnail"],
@@ -268,15 +305,22 @@ class TensorLakeHouseBatchJobs(BatchJobs):
                 {
                     "rel": "canonical",
                     "type": "application/geo+json",
-                    "href": "https://openeo.example/api/v1/download/583fba8b2ce583fba8b2ce/item.json",
+                    "href": (
+                        "https://openeo.example/api/v1/download/583fba8b2ce583fba8b2ce/"
+                        "item.json"
+                    ),
                 }
             ],
         }
 
     def get_log_entries(
-        self, job_id: str, user_id: str, offset: Optional[str] = None
+        self,
+        job_id: str,
+        user_id: str,
+        offset: Optional[str] = None,
+        level: Optional[str] = None,
     ) -> Iterable[dict]:
-        self._get_job_info(job_id=job_id, user_id=user_id)
+        self.get_job_info(job_id=job_id, user_id=user_id)
         default_logs = [{"id": "1", "level": "info", "message": "hello world"}]
         for log in self._custom_job_logs.get(job_id, default_logs):
             if isinstance(log, dict):
@@ -287,7 +331,7 @@ class TensorLakeHouseBatchJobs(BatchJobs):
                 raise ValueError(log)
 
     def cancel_job(self, job_id: str, user_id: str):
-        self._get_job_info(job_id=job_id, user_id=user_id)
+        self.get_job_info(job_id=job_id, user_id=user_id)
 
     def delete_job(self, job_id: str, user_id: str):
         self.cancel_job(job_id, user_id)

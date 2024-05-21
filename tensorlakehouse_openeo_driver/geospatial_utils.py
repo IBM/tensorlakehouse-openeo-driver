@@ -41,7 +41,7 @@ def clip(
     # clip data
     minx = max(minx, min(data["x"].values))
     maxx = min(maxx, max(data["x"].values))
-    
+
     miny = max(miny, min(data["y"].values))
     maxy = min(maxy, max(data["y"].values))
     data = data.rio.clip_box(minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs)
@@ -205,9 +205,11 @@ def reproject_cube(
 
 
 def reproject_bbox(
-    bbox: Tuple[float, float, float, float], dst_crs: Union[int, str], src_crs: Union[int, str] = 4326
+    bbox: Tuple[float, float, float, float],
+    dst_crs: Union[int, str],
+    src_crs: Union[int, str] = 4326,
 ) -> Tuple[float, float, float, float]:
-    """ reproject bounding box to specified dst_crs
+    """reproject bounding box to specified dst_crs
 
     Args:
         bbox (Tuple[float, float, float, float]): west, south, east, north
@@ -219,7 +221,7 @@ def reproject_bbox(
     """
     crs_from = _get_epsg(crs_code=src_crs)
     crs_to = _get_epsg(crs_code=dst_crs)
-    
+
     transformer = pyproj.Transformer.from_crs(
         crs_from=crs_from, crs_to=crs_to, always_xy=True
     )
