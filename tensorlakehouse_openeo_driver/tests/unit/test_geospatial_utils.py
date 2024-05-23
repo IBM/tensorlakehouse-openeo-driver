@@ -69,7 +69,7 @@ def test_clip_box(
         x_dim=DEFAULT_X_DIMENSION,
     )
     assert isinstance(array_clipped, xr.DataArray)
-    # if dimension is greater than or equal to 3, it means 
+    # if dimension is greater than or equal to 3, it means
     if array_clipped[DEFAULT_X_DIMENSION].size >= 3:
         minx = min(array_clipped[DEFAULT_X_DIMENSION].values)
         maxx = max(array_clipped[DEFAULT_X_DIMENSION].values)

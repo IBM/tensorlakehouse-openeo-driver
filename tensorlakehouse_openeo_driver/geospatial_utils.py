@@ -49,8 +49,8 @@ def clip_box(
     try:
         data = data.rio.clip_box(minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs)
     except OneDimensionalRaster:
-        # handling exception when resulting dataarray has either x or y 1-size dimension 
-        
+        # handling exception when resulting dataarray has either x or y 1-size dimension
+
         # assumption: coordinates are sorted
         # get index of x that is smaller than minx
         minx_index = bisect.bisect_left(a=data.x.values, x=minx)
@@ -72,15 +72,14 @@ def clip_box(
             else:
                 maxy_index += 1
         selector = {
-                "x": slice(minx_index, maxx_index),
-                "y": slice(miny_index, maxy_index)
-            }
+            "x": slice(minx_index, maxx_index),
+            "y": slice(miny_index, maxy_index),
+        }
 
         data = data.isel(selector)
     # rename dimensions back to original
     data = rename_dimension(data=data, rename_dict={"x": x_dim, "y": y_dim})
     return data
-
 
 
 def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):

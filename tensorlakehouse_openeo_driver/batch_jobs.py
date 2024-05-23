@@ -1,4 +1,4 @@
-""" this module handles the implementation of batch jobs using celery to support asynchronous 
+""" this module handles the implementation of batch jobs using celery to support asynchronous
 requests
 
 """
