@@ -59,7 +59,7 @@ pytzdata
 rasterio
 # https://github.com/celery/celery/discussions/8647
 redis<5.0.1
-requests
+requests>=2.32.0
 rioxarray
 s3fs
 scikit-image
