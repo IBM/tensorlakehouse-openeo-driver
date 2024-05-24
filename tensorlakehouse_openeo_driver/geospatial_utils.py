@@ -10,9 +10,11 @@ from tensorlakehouse_openeo_driver.constants import DEFAULT_TIME_DIMENSION
 from rasterio.enums import Resampling
 from datetime import datetime
 from dateutil import tz
+from rioxarray.exceptions import OneDimensionalRaster
+import bisect
 
 
-def clip(
+def clip_box(
     data: xr.DataArray,
     bbox: Tuple[float, float, float, float],
     x_dim: str,
@@ -44,7 +46,37 @@ def clip(
 
     miny = max(miny, min(data["y"].values))
     maxy = min(maxy, max(data["y"].values))
-    data = data.rio.clip_box(minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs)
+    try:
+        data = data.rio.clip_box(minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs)
+    except OneDimensionalRaster:
+        # handling exception when resulting dataarray has either x or y 1-size dimension
+
+        # assumption: coordinates are sorted
+        # get index of x that is smaller than minx
+        minx_index = bisect.bisect_left(a=data.x.values, x=minx)
+        # get index of x that is greater than maxx
+        maxx_index = bisect.bisect_right(a=data.x.values, x=maxx)
+        if minx_index == maxx_index:
+            if minx_index > 0:
+                minx_index -= 1
+            else:
+                maxx_index += 1
+
+        # get index of y that is smaller than miny
+        miny_index = bisect.bisect_left(a=data.y.values, x=miny)
+        # get index of y that is smaller than maxy
+        maxy_index = bisect.bisect_right(a=data.y.values, x=maxy)
+        if miny_index == maxy_index:
+            if miny_index > 0:
+                miny_index -= 1
+            else:
+                maxy_index += 1
+        selector = {
+            "x": slice(minx_index, maxx_index),
+            "y": slice(miny_index, maxy_index),
+        }
+
+        data = data.isel(selector)
     # rename dimensions back to original
     data = rename_dimension(data=data, rename_dict={"x": x_dim, "y": y_dim})
     return data
