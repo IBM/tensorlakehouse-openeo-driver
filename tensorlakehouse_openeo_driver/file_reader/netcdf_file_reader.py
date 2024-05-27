@@ -58,6 +58,8 @@ class NetCDFFileReader(CloudStorageFileReader):
         )
         crs_code = CloudStorageFileReader._get_epsg(item=item)
         assert isinstance(crs_code, int), f"Error! Invalid type: {crs_code=}"
+        if ds.rio.crs is None:
+            ds.rio.write_crs(f"epsg:{crs_code}", inplace=True)
         ds = ds[self.bands]
         da = ds.to_array()
         # filter by area of interest

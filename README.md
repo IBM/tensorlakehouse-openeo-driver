@@ -31,7 +31,7 @@ Using a virtual environment for all commands in this guide is strongly recommend
 
 1. Go to `tensorlakehouse-openeo-driver` directory
 2. Install *tensorlakehouse-openeo-driver* dependencies: `pip install -r requirements.txt`. Optionally, you can install other dependencies for development purpose: `pip install -r dev_requirements.txt`
-3. Optional, but strongly suggested: follow the step describe [here](https://w3.ibm.com/w3publisher/detect-secrets) to setup detect-secrets tool
+3. Optional, but strongly suggested: follow the step describe [here](https://github.com/ibm/detect-secrets) to setup detect-secrets tool
 
 ## Running locally using containers
 
