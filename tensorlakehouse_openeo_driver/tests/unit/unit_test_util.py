@@ -1078,7 +1078,7 @@ def generate_xarray(
     """
     np.random.seed(0)
     start, stop = temporal_extent
-   
+
     x = np.linspace(lonmin, lonmax, size_x).tolist()
     y = np.linspace(latmin, latmax, size_y).tolist()
 
