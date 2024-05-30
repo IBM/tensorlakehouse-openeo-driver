@@ -10,7 +10,7 @@ from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import 
 import xarray as xr
 
 from tensorlakehouse_openeo_driver.geospatial_utils import (
-    clip,
+    clip_box,
     filter_by_time,
     reproject_bbox,
 )
@@ -58,13 +58,15 @@ class NetCDFFileReader(CloudStorageFileReader):
         )
         crs_code = CloudStorageFileReader._get_epsg(item=item)
         assert isinstance(crs_code, int), f"Error! Invalid type: {crs_code=}"
+        if ds.rio.crs is None:
+            ds.rio.write_crs(f"epsg:{crs_code}", inplace=True)
         ds = ds[self.bands]
         da = ds.to_array()
         # filter by area of interest
         reprojected_bbox = reproject_bbox(
             bbox=self.bbox, src_crs=4326, dst_crs=crs_code
         )
-        da = clip(
+        da = clip_box(
             data=da, bbox=reprojected_bbox, x_dim=x_dim, y_dim=y_dim, crs=crs_code
         )
         # remove timestamps that have not been selected by end-user
