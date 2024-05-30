@@ -31,7 +31,6 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_Y_DIMENSION,
 )
 from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
-from tensorlakehouse_openeo_driver.geospatial_utils import reproject_bbox
 from tensorlakehouse_openeo_driver.layer import LayerMetadata
 
 TEMPORAL_GUESSES = [
@@ -1052,7 +1051,7 @@ def generate_xarray(
     size_y: int = 100,
     num_periods: Optional[int] = 10,
     freq: Optional[str] = "D",
-    crs: str = EPSG_4326,
+    crs: Optional[str] = EPSG_4326,
     is_dataset: bool = False,
 ) -> Union[xr.DataArray, xr.Dataset]:
     """generate a synthetic data array for testing
@@ -1079,11 +1078,9 @@ def generate_xarray(
     """
     np.random.seed(0)
     start, stop = temporal_extent
-    bbox = reproject_bbox(
-        bbox=(lonmin, latmin, lonmax, latmax), dst_crs=crs, src_crs=EPSG_4326
-    )
-    x = np.linspace(bbox[0], bbox[2], size_x).tolist()
-    y = np.linspace(bbox[1], bbox[3], size_y).tolist()
+
+    x = np.linspace(lonmin, lonmax, size_x).tolist()
+    y = np.linspace(latmin, latmax, size_y).tolist()
 
     timestamps = pd.date_range(start=start, end=stop, periods=num_periods, freq=freq)
     if num_periods is None:
@@ -1107,7 +1104,8 @@ def generate_xarray(
         da = da.assign_coords({DEFAULT_BANDS_DIMENSION: [band_name]})
         arrays.append(da)
     da = xr.concat(arrays, pd.Index(bands, name=DEFAULT_BANDS_DIMENSION))
-    da.rio.write_crs(crs, inplace=True)
+    if crs is not None:
+        da.rio.write_crs(crs, inplace=True)
     assert isinstance(da, xr.DataArray)
     assert isinstance(da.openeo.spatial_dims, tuple)
     if is_dataset:

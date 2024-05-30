@@ -9,9 +9,10 @@ from rasterio.crs import CRS
 from tensorlakehouse_openeo_driver.constants import DEFAULT_TIME_DIMENSION
 from rasterio.enums import Resampling
 from datetime import datetime
-from dateutil import tz
 from rioxarray.exceptions import OneDimensionalRaster
 import bisect
+from cftime._cftime import Datetime360Day
+import pytz
 
 
 def clip_box(
@@ -89,8 +90,42 @@ def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):
     return data
 
 
+def _convert_to_datetime(
+    datetime_index: List[Union[str, datetime, np.datetime64, Datetime360Day]]
+) -> List[datetime]:
+    """convert a list of datetime values to native datetime
+
+    Args:
+        datetime_index (_type_): _description_
+
+
+    Returns:
+        List[datetime]: list of timezone aware datetime objects
+    """
+    dt = datetime_index[0]
+    timestamps: List[datetime] = list()
+    if isinstance(dt, str) or isinstance(dt, datetime) or isinstance(dt, np.datetime64):
+        for dt in datetime_index:
+            ts = pd.Timestamp(dt)
+            if ts.tzinfo is None:
+                ts = ts.tz_localize(tz="UTC")
+            timestamps.append(ts.to_pydatetime())
+    elif isinstance(dt, Datetime360Day):
+        for dt in datetime_index:
+            julian = (dt.month - 1) * 30 + dt.day
+
+            ts = pd.to_datetime(
+                f"{dt.year}-{julian}T{dt.hour}:{dt.minute}:{dt.second}",
+                format="%Y-%jT%H:%M:%S",
+            )
+            if ts.tzinfo is None:
+                ts = ts.tz_localize(tz="UTC")
+            timestamps.append(ts.to_pydatetime())
+    return timestamps
+
+
 def filter_by_time(
-    data: xr.DataArray,
+    data: Union[xr.DataArray, xr.Dataset],
     temporal_extent: Tuple[datetime, Optional[datetime]],
     temporal_dim: str,
 ) -> xr.DataArray:
@@ -105,6 +140,13 @@ def filter_by_time(
     Returns:
         xr.DataArray: datacube
     """
+    if isinstance(data, xr.Dataset):
+        data = data.to_array()
+    # convert 360 calendar to gregorian
+    if isinstance(data[temporal_dim].values[0], Datetime360Day):
+        data = data.convert_calendar(
+            calendar="gregorian", dim=temporal_dim, align_on="year", use_cftime=False
+        )
     start_datetime = temporal_extent[0]
     end_datetime = temporal_extent[1]
     ts = data[temporal_dim].values
@@ -112,16 +154,18 @@ def filter_by_time(
     # if end_datetime is None it is a open ended interval
     if end_datetime is None:
         end_datetime = sorted(ts)[-1]
-    # get sample timestamp
-    sample_ts = pd.Timestamp(ts[0])
-    # if timestamp is naive set tz to None
-    if sample_ts.tzinfo is None:
-        start_datetime = start_datetime.astimezone(tz.tzutc()).replace(tzinfo=None)
-        end_datetime = end_datetime.astimezone(tz.tzutc()).replace(tzinfo=None)
-    else:
-        start_datetime = start_datetime.astimezone(tz.tzutc())
-        end_datetime = end_datetime.astimezone(tz.tzutc())
-    data = data.sel({temporal_dim: slice(start_datetime, end_datetime)})
+    if start_datetime.tzinfo is None:
+        start_datetime = pytz.UTC.localize(start_datetime)
+
+    if end_datetime.tzinfo is None:
+        end_datetime = pytz.UTC.localize(end_datetime)
+
+    # convert temporal index to datetime timezone-aware
+    timestamps = _convert_to_datetime(datetime_index=ts)
+    start_index = bisect.bisect_left(timestamps, start_datetime)
+    end_index = bisect.bisect_right(timestamps, end_datetime)
+
+    data = data.isel({temporal_dim: slice(start_index, end_index)})
     return data
 
 

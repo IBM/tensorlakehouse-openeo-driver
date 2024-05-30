@@ -86,11 +86,12 @@ class ZarrFileReader(CloudStorageFileReader):
         reprojected_bbox = reproject_bbox(
             bbox=self.bbox, src_crs=4326, dst_crs=crs_code
         )
+        epsilon = 1e-8
         array = array.loc[
-            {x_axis_name: slice(reprojected_bbox[0], reprojected_bbox[2])}
+            {x_axis_name: slice(reprojected_bbox[0], reprojected_bbox[2] + epsilon)}
         ]
         array = array.loc[
-            {y_axis_name: slice(reprojected_bbox[1], reprojected_bbox[3])}
+            {y_axis_name: slice(reprojected_bbox[1], reprojected_bbox[3] + epsilon)}
         ]
         assert isinstance(array, xr.DataArray)
         return array

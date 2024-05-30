@@ -31,7 +31,7 @@ Using a virtual environment for all commands in this guide is strongly recommend
 
 1. Go to `tensorlakehouse-openeo-driver` directory
 2. Install *tensorlakehouse-openeo-driver* dependencies: `pip install -r requirements.txt`. Optionally, you can install other dependencies for development purpose: `pip install -r dev_requirements.txt`
-3. Optional, but strongly suggested: follow the step describe [here](https://w3.ibm.com/w3publisher/detect-secrets) to setup detect-secrets tool
+3. Optional, but strongly suggested: follow the step describe [here](https://github.com/ibm/detect-secrets) to setup detect-secrets tool
 
 ## Running locally using containers
 
@@ -42,6 +42,12 @@ Using a virtual environment for all commands in this guide is strongly recommend
  - `CREDENTIALS` is a set of credentials (encoded in base64) that allows this service to access COS S3 buckets
  - `BROKER_URL` - URL to the broker, which mediates communication between clients and workers.
  - `RESULT_BACKEND` - URL to the backend, which is necessary when we want to keep track of the tasks' states or retrieve results from tasks
+ - if you want to implement OIDC authentication you need:
+   - `APPID_ISSUER`  which is the authorization server url
+   - `APPID_USERNAME` username of the authorization server
+   - `APPID_PASSWORD` password of the authorization server
+   - `OPENEO_AUTH_CLIENT_ID`  client ID
+   - `OPENEO_AUTH_CLIENT_SECRET` client secret
  - `GEODN_DISCOVERY_USERNAME` and `GEODN_DISCOVERY_PASSWORD` (optional) for basic auth to get GeoDN.Discovery (former PAIRS) metadata
 
 `FLASK_APP` and `FLASK_DEBUG` environment variables are useful for debugging:
@@ -77,7 +83,7 @@ then convert it to base64 by running:
 ```shell
 python tensorlakehouse_openeo_driver/util/credentials_manager.py --file <path>
 ```
-The output should be used to set the CREDENTIALS env variable
+The output should be used to set the `CREDENTIALS` env variable
 
 #### *Step 2.* Set the environment variables and create  `.env` file
 ```
@@ -111,7 +117,7 @@ TENSORLAKEHOUSE_OPENEO_DRIVER_PORT=9091
 
 #### *Step 3* - Build tensorlakehouse-openeo-driver
 
-Go to repository root dir and run:
+Podman is a drop-in replacement for Docker. If you are a Docker user, just replace `podman` by `docker` and you will be fine. Go to repository root dir and run:
 ```shell
 podman build -t tensorlakehouse-openeo-driver -f Containerfile
 ```
@@ -119,7 +125,8 @@ podman build -t tensorlakehouse-openeo-driver -f Containerfile
 
 #### *Step 4* - Run services using podman-compose
 
-Podman is a drop-in replacement for Docker. If you are a Docker user, just replace `podman` by `docker` and you will be fine. 
+ 
+run podman-compose 
 
 ```shell
 podman-compose -f podman-compose.yml --env-file /Users/alice/tensorlakehouse-openeo-driver/.env up
