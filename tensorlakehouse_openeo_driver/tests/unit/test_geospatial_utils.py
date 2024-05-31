@@ -59,8 +59,9 @@ def test_clip_box(
         num_periods=365,
         freq=None,
         bands=["Band1"],
+        is_dataset=False,
     )
-
+    assert isinstance(array, xr.DataArray)
     array_clipped = clip_box(
         data=array,
         bbox=filter_bbox,
