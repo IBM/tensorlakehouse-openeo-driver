@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 # namespace: geoft
-namespace: nasageospatial-dev
+namespace: default
 stacurl: http://stac-fastapi-sqlalchemy.nasageospatial-dev.svc.cluster.local:8081/
 
 stacdb:
@@ -17,3 +17,5 @@ routes:
   openeo: openeo-geodn-nasageospatial-dev.cash.sl.cloud9.ibm.com
   stacexplorer: stac-explorer-geodn-discovery.cash.sl.cloud9.ibm.com
   router: router-cash.cash.sl.cloud9.ibm.com
+
+applyroutes: false

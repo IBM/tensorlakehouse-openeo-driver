@@ -1,3 +1,4 @@
+{{ if .Values.applyroutes }}
 ---
 kind: Route
 apiVersion: route.openshift.io/v1
@@ -60,3 +61,4 @@ status:
           status: 'True'
       wildcardPolicy: None
       routerCanonicalHostname: {{ .Values.routes.router }}
+{{ end }}
