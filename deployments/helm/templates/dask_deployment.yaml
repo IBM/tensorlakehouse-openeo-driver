@@ -18,7 +18,7 @@ spec:
       - name: us.icr.io
       containers:
       - name: dask-scheduler
-        image: us.icr.io/geodn/dask:0.11
+        image: quay.io/tensorlakehouse/dask:0.11
         imagePullPolicy: Always
         command: ["dask-scheduler"]
         ports:
@@ -51,7 +51,7 @@ spec:
       - name: us.icr.io
       containers:
       - name: dask-worker
-        image: us.icr.io/geodn/dask:0.11
+        image: quay.io/tensorlakehouse/dask:0.11
         imagePullPolicy: Always
         command: ["dask-worker", "dask-scheduler:8786"]
         resources:

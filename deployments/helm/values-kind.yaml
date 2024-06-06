@@ -2,7 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# namespace: geoft
 namespace: default
 stacurl: http://stac-fastapi-sqlalchemy.nasageospatial-dev.svc.cluster.local:8081/
 
