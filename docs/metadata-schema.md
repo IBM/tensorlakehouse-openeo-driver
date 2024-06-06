@@ -1,4 +1,4 @@
-# STAC-OpenEO-GeoDN metadata
+# STAC format supported by tensorlakehouse openEO
 
 ## Items
 
@@ -72,7 +72,7 @@ Example:
 | --- | --- | --- | --- |
 | collection | string | REQUIRED. id of containing STAC Collection. | Yes |
 | id | string | REQUIRED. Suggested: Object name for COS. hBase ID schema for hBase. | Yes |
-| assets | Map\<string, Asset Object\>| REQUIRED. Dictionary of asset objects that can be downloaded, each with a unique key. There has to be exactly one data asset. All other assets are currently ignored. | load_collection |
+| assets | Map\<string, Asset Object\>| REQUIRED. Dictionary of asset objects that can be downloaded, each with a unique key. Asset's keys must be either `data` or `<band-names>` e.g., `B02`. Assets that are not data type are currently ignored. | load_collection |
 | bbox | [number] | REQUIRED if geometry is not null. In the [full specification](https://datatracker.ietf.org/doc/html/rfc7946#section-5) this is a n-dimensional bounding box (i.e. for all dimensions). We restrict to the horizontal plain in WGS 84. In other words: [min. longitude, min. latitude, max. longitude, max. latitude] which is equal to [west, south, east, north]. This is the bounding box of the asset, so the coordinates should be the edge of the raster; not the center coordinate of the pixels at the edges. Includes all pixels, even NaN ones. | STAC search |
 | geometry | GeoJSON Geometry | REQUIRED if bounding box is not present. Footprint of the asset as GeoJSON in WGS 84 (lat/lon). The footprint includes all pixels, even NaN ones. | STAC search |
 | properties | PropertiesObject | REQUIRED. A dictionary of additional metadata for the Item. | |
