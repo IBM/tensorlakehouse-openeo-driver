@@ -23,7 +23,7 @@ spec:
           ports:
             - containerPort: 8080
               protocol: TCP
-          image: us.icr.io/geodn/stac-browser:0.11
+          image: quay.io/tensorlakehouse/stac-browser:0.11
           imagePullPolicy: Always
           command: ["/start.sh"]
       restartPolicy: Always

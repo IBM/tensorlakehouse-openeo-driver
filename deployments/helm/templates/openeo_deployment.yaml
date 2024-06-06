@@ -22,7 +22,7 @@ spec:
       - name: us.icr.io
       containers:
         - name: openeo-geodn-driver
-          image: 'us.icr.io/geodn/openeo-geodn-driver:v0.1.4'
+          image: 'quay.io/tensorlakehouse/openeo-geodn-driver:v0.1.4'
           ports:
             - containerPort: 9091
               protocol: TCP
