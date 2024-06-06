@@ -1,0 +1,63 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dask-scheduler
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dask-scheduler
+  template:
+    metadata:
+      labels:
+        app: dask-scheduler
+    spec:
+      imagePullSecrets:
+      - name: us.icr.io
+      containers:
+      - name: dask-scheduler
+        image: us.icr.io/geodn/dask:0.11
+        imagePullPolicy: Always
+        command: ["dask-scheduler"]
+        ports:
+          - containerPort: 8787
+          - containerPort: 8786
+        resources:
+          requests:
+            cpu: "2"
+            memory: "4G"
+          limits:
+            cpu: "2"
+            memory: "4G"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dask-worker
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dask-worker
+  template:
+    metadata:
+      labels:
+        app: dask-worker
+    spec:
+      imagePullSecrets:
+      - name: us.icr.io
+      containers:
+      - name: dask-worker
+        image: us.icr.io/geodn/dask:0.11
+        imagePullPolicy: Always
+        command: ["dask-worker", "dask-scheduler:8786"]
+        resources:
+          requests:
+            cpu: "2"
+            memory: "4G"
+          limits:
+            cpu: "2"
+            memory: "4G"
