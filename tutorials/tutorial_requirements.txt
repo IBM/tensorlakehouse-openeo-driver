@@ -19,3 +19,4 @@ stackstac
 stac_validator
 odc-algo==0.2.3
 odc-geo==0.3.3
+jupyterlab

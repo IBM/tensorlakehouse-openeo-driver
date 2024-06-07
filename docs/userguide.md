@@ -24,7 +24,7 @@ cd tensorlakehouse-openeo-driver/tutorials
 pip install -r tutorial_requirements.txt
 ```
 
-5. Run jupyter notebook or jupyter lab
+1. Run jupyter lab (or jupyter-notebook)
 ```
-jupyter lab notebooks
+jupyter lab .
 ```
