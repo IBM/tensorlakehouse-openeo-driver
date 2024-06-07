@@ -1,0 +1,29 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: stac-explorer
+  namespace: {{ .Values.namespace }}
+  generation: 1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stac-explorer
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: stac-explorer
+    spec:
+      imagePullSecrets:
+      - name: us.icr.io
+      containers:
+        - name: stac-explorer
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          image: quay.io/tensorlakehouse/stac-browser:0.11
+          imagePullPolicy: Always
+          command: ["/start.sh"]
+      restartPolicy: Always

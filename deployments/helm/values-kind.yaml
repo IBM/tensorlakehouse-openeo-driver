@@ -1,0 +1,20 @@
+# Default values for geodn.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+namespace: default
+stacurl: http://stac-fastapi-sqlalchemy.nasageospatial-dev.svc.cluster.local:8081/
+
+stacdb:
+  postgresHost: 9ad731f2-19b8-47ec-8f24-f701900ccfa6.c2f3lg8w0g8s0rkj98i0.databases.appdomain.cloud
+  postgresHostReader: 9ad731f2-19b8-47ec-8f24-f701900ccfa6.c2f3lg8w0g8s0rkj98i0.databases.appdomain.cloud
+  postgresHostWriter: 9ad731f2-19b8-47ec-8f24-f701900ccfa6.c2f3lg8w0g8s0rkj98i0.databases.appdomain.cloud
+  port: "32094"
+
+routes:
+  stac: stac-fastapi-sqlalchemy-nasageospatial-dev.cash.sl.cloud9.ibm.com
+  openeo: openeo-geodn-nasageospatial-dev.cash.sl.cloud9.ibm.com
+  stacexplorer: stac-explorer-geodn-discovery.cash.sl.cloud9.ibm.com
+  router: router-cash.cash.sl.cloud9.ibm.com
+
+applyroutes: false

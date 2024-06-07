@@ -46,7 +46,7 @@ services:
         - OPENEO_AUTH_CLIENT_SECRET=${OPENEO_AUTH_CLIENT_SECRET}
       restart: always
     stac:
-      image: localhost/stac-fastapi-pgstac
+      image: quay.io/tensorlakehouse/stac-fastapi-pypgstac:latest
       container_name: stac
       networks:
         - neta

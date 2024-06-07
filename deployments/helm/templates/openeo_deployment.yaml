@@ -1,0 +1,68 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: openeo-geodn-driver
+  namespace: {{ .Values.namespace }}
+  generation: 1
+  annotations:
+    deployment.kubernetes.io/revision: '1'
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: openeo-geodn-driver
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: openeo-geodn-driver
+    spec:
+      imagePullSecrets:
+      - name: us.icr.io
+      containers:
+        - name: openeo-geodn-driver
+          image: 'quay.io/tensorlakehouse/openeo-geodn-driver:v0.1.4'
+          ports:
+            - containerPort: 9091
+              protocol: TCP
+          env:
+            - name: STAC_URL
+              value: >-
+                {{ .Values.stacurl }}
+            - name: OPENEO_GEODN_DRIVER_PORT
+              value: '9091'
+            - name: DASK_SCHEDULER_ADDRESS
+              value: 'dask-scheduler:8786'
+            - name: GEODN_DISCOVERY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openeo-geodn-driver-secret
+                  key: GEODN_DISCOVERY_API_KEY
+            - name: CREDENTIALS
+              valueFrom:
+                secretKeyRef:
+                  name: openeo-geodn-driver-secret
+                  key: CREDENTIALS
+          resources:
+            limits:
+              cpu: '2'
+              memory: 4G
+            requests:
+              cpu: '2'
+              memory: 4G
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
