@@ -23,3 +23,16 @@ According to OpenEO developers "load_collection is meant for "internal" loading 
 The proposed dimension names are documented at https://api.openeo.org/#tag/EO-Data-Discovery/operation/describe-collection (property: cube:dimension)."
 
 Based on previous discussion, our understanding is that dimension labels should be defined during the generation of STAC entries, that is, when a STAC item is defined it sets dimension labels as documented by STAC datacube extension. If there is a conflict between STAC entries and actual data, then openEO should rename dimension labels to be consitent with STAC entries.
+
+
+## Handling Non-standard Calendar 
+
+tensorlakehouse automatically convert dates from a 360-day calendar to a standard calendar using [convert_calendar function](https://docs.xarray.dev/en/stable/generated/xarray.DataArray.convert_calendar.html)
+
+
+> The dates are translated according to their relative position in the year, ignoring their original month and day information, meaning that the missing/surplus days are added/removed at regular intervals. From a 360_day to a standard calendar, the output will be missing the following dates (day of year in parentheses):
+> 
+>  To a leap year:
+>    January 31st (31), March 31st (91), June 1st (153), July 31st (213), September 31st (275) and November 30th (335).
+> 
+> To a non-leap year: February 6th (36), April 19th (109), July 2nd (183), September 12th (255), November 25th (329).

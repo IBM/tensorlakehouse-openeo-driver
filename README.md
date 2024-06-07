@@ -15,6 +15,7 @@ The Tensorlakehouse openEO driver is a backend implementation of the [openEO API
       - [*Step 2.* Set the environment variables and create  `.env` file](#step-2-set-the-environment-variables-and-create--env-file)
       - [*Step 3* - Build tensorlakehouse-openeo-driver](#step-3---build-tensorlakehouse-openeo-driver)
       - [*Step 4* - Run services using podman-compose](#step-4---run-services-using-podman-compose)
+  - [Setup Broker and Result store](#setup-broker-and-result-store)
   - [Software architecture](#software-architecture)
   - [Contributing](#contributing)
   - [Getting support](#getting-support)
@@ -64,7 +65,7 @@ flask run
 Prerequisites: 
 - docker or podman-compose installed
 - postgres database with postgis extension 
-- redis database
+- redis database - see [setup redis](#setup-redis)
 
 
 #### *Step 1* Generate credentials
@@ -130,6 +131,20 @@ run podman-compose
 
 ```shell
 podman-compose -f podman-compose.yml --env-file /Users/alice/tensorlakehouse-openeo-driver/.env up
+```
+
+## Setup Broker and Result store
+
+tensorlakehouse rely on [celery](https://docs.celeryq.dev/en/stable/getting-started/introduction.html) (a distributed task queue) and Redis (broker and result store) to support batch jobs. Once Redis is up and running, you can set the `BROKER_URL` and `RESULT_BACKEND` environment variables so both tensorlakehouse's webserver and worker can connect to it. In this case, both are the same and they have the following format:
+
+```
+BROKER_URL=rediss://<username>:<password>@<hostname>:<port>/0?ssl_cert_reqs=none
+```
+
+Celery configuration is defined on [celeryconfig.py](./tensorlakehouse_openeo_driver/celeryconfig.py) module. Note that the task routes defined in this module must be the same that are used to run tensorlakehouse worker. In the example below, the task route is `openeo-pgstac-queue`.
+
+```
+celery -A tensorlakehouse_openeo_driver.tasks worker -s /opt/app-root/src/tensorlakehouse-openeo-driver/celerybeat-schedule --concurrency 2 --prefetch-multiplier 1 -Ofair -B  -Q openeo-pgstac-queue --loglevel=info
 ```
 
 ## Software architecture
