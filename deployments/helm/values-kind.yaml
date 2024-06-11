@@ -18,3 +18,5 @@ routes:
   router: router-cash.cash.sl.cloud9.ibm.com
 
 applyroutes: false
+use_pull_secret: false
+pull_secret: None

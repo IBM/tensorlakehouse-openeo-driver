@@ -18,8 +18,10 @@ spec:
       labels:
         app: openeo-geodn-driver
     spec:
+      {{ if .Values.use_pull_secret }}
       imagePullSecrets:
-      - name: us.icr.io
+      - name: {{ .Values.pull_secret }}
+      {{ end }}
       containers:
         - name: openeo-geodn-driver
           image: 'quay.io/tensorlakehouse/openeo-geodn-driver:v0.1.4'
