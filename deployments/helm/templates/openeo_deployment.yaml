@@ -8,7 +8,7 @@ metadata:
   annotations:
     deployment.kubernetes.io/revision: '1'
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: openeo-geodn-driver
@@ -24,7 +24,7 @@ spec:
       {{ end }}
       containers:
         - name: openeo-geodn-driver
-          image: 'quay.io/tensorlakehouse/openeo-geodn-driver:v0.1.4'
+          image: 'docker.io/tensorlakehouse/openeo-geodn-driver:0.1.4'
           ports:
             - containerPort: 9091
               protocol: TCP
