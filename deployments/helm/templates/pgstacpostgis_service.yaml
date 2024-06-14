@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: pgstacpostgis
+  name: pgstacpostgisservice
+  namespace: {{ .Values.namespace }}
+spec:
+  ports:
+  - name: http
+    port: 5432
+    protocol: TCP
+  selector:
+    app: pgstacpostgis

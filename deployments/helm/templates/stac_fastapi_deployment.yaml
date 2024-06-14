@@ -1,0 +1,77 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: stac-fastapi-sqlalchemy
+  namespace: {{ .Values.namespace }}
+  generation: 1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stac-fastapi-sqlalchemy
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: stac-fastapi-sqlalchemy
+    spec:
+      containers:
+        - name: stac-fastapi-sqlalchemy
+          env:
+          - name: APP_HOST
+            value: "0.0.0.0"
+          - name: APP_PORT
+            value: "8080"
+          - name: RELOAD
+            value: 'true'
+          - name: ENVIRONMENT
+            value: 'local'
+          - name: POSTGRES_USER
+            value: 'username'
+          - name: POSTGRES_PASS
+            value: 'password'
+          - name: POSTGRES_DBNAME
+            value: postgis
+          - name: POSTGRES_HOST
+            value: {{ .Values.stacdb.postgresHost }}
+          - name: POSTGRES_HOST_READER
+            value: {{ .Values.stacdb.postgresHostReader }}
+          - name: POSTGRES_HOST_WRITER
+            value: {{ .Values.stacdb.postgresHostWriter }}
+          - name: POSTGRES_PORT
+            value: '{{ .Values.stacdb.port }}'
+          - name: WEB_CONCURRENCY
+            value: "10"
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          image: docker.io/tensorlakehouse/stac-fastapi-pgstac:26f6d918eb933a90833f30e69e21ba3b4e8a7151
+          # resources:
+          #   limits:
+          #     cpu: '2'
+          #     memory: 4G
+          #   requests:
+          #     cpu: '2'
+          #     memory: 4G
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+status:
+  observedGeneration: 1
+  replicas: 1
+  updatedReplicas: 1
+  readyReplicas: 1
+  availableReplicas: 1
