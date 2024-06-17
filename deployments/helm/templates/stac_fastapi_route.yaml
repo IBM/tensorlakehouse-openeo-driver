@@ -1,0 +1,64 @@
+{{ if .Values.applyroutes }}
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: stac-fastapi-sqlalchemy-http
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: stac-fastapi-sqlalchemy
+    ingress-router: cash
+  annotations:
+    openshift.io/host.generated: 'true'
+    haproxy.router.openshift.io/timeout: 2700s
+spec:
+  host: {{ .Values.routes.stac }}-http.{{ .Values.routes.suffix }}
+  to:
+    kind: Service
+    name: stac-fastapi-sqlalchemy
+    weight: 100
+  port:
+    targetPort: http
+  wildcardPolicy: None
+status:
+  ingress:
+    - host: {{ .Values.routes.stac }}-http.{{ .Values.routes.suffix }}
+      routerName: default
+      conditions:
+        - type: Admitted
+          status: 'True'
+      wildcardPolicy: None
+      routerCanonicalHostname: {{ .Values.routes.router }}
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: stac-fastapi-sqlalchemy-https
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: stac-fastapi-sqlalchemy
+    ingress-router: cash
+  annotations:
+    openshift.io/host.generated: 'true'
+    haproxy.router.openshift.io/timeout: 2700s
+spec:
+  host: {{ .Values.routes.stac }}.{{ .Values.routes.suffix }}
+  to:
+    kind: Service
+    name: stac-fastapi-sqlalchemy
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+  wildcardPolicy: None
+status:
+  ingress:
+    - host: {{ .Values.routes.stac }}.{{ .Values.routes.suffix }}
+      routerName: default
+      conditions:
+        - type: Admitted
+          status: 'True'
+      wildcardPolicy: None
+      routerCanonicalHostname: {{ .Values.routes.router }}
+{{ end }}

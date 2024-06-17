@@ -2,40 +2,25 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: pgstac
+  name: pgstacpostgis
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pgstac
+      app: pgstacpostgis
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app: pgstac
+        app: pgstacpostgis
     spec:
       {{ if .Values.use_pull_secret }}
       imagePullSecrets:
       - name: {{ .Values.pull_secret }}
       {{ end }}
       containers:
-        - name: pypgstac
-          ports:
-            - containerPort: 8080
-              protocol: TCP
-          env:
-            - name: PGHOST
-              value: pgstac
-            - name: PGUSER
-              value: username
-            - name: PGPASSWORD
-              value: password
-            - name: PGDATABASE
-              value: postgis
-          image: quay.io/tensorlakehouse/stac-fastapi-pypgstac:latest
-          imagePullPolicy: Always
-        - name: pgstac
+        - name: pgstacpostgis
           ports:
             - containerPort: 5432
               protocol: TCP
