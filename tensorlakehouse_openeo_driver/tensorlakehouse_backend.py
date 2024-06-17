@@ -15,7 +15,6 @@ from shapely.geometry.collection import GeometryCollection
 
 from openeo.internal.process_graph_visitor import ProcessGraphVisitor
 from openeo.metadata import CollectionMetadata
-from openeo_driver.config import OpenEoBackendConfig
 from openeo_driver.ProcessGraphDeserializer import ConcreteProcessing
 from openeo_driver.backend import (
     SecondaryServices,
@@ -43,6 +42,9 @@ from openeo_driver.users import User
 from openeo_driver.utils import EvalEnv
 from tensorlakehouse_openeo_driver.batch_jobs import TensorLakeHouseBatchJobs
 from tensorlakehouse_openeo_driver.catalog import TensorLakehouseCollectionCatalog
+from tensorlakehouse_openeo_driver.config.geodn_config import (
+    TensorlakehouseOpenEoBackendConfig,
+)
 from tensorlakehouse_openeo_driver.constants import (
     OPENEO_AUTH_CLIENT_ID,
     OPENEO_AUTH_CLIENT_SECRET,
@@ -429,13 +431,6 @@ class DummyUserDefinedProcesses(UserDefinedProcesses):
             raise ProcessGraphNotFoundException(process_id)
 
 
-def _valid_basic_auth(username: str, password: str) -> bool:
-    # Next generation password scheme!!1!
-    assert isinstance(username, str)
-    assert isinstance(password, str)
-    return password == f"{username.lower()}123"
-
-
 class TensorLakeHouseBackendImplementation(OpenEoBackendImplementation):
     __version__ = "0.1.0"
 
@@ -466,8 +461,8 @@ class TensorLakeHouseBackendImplementation(OpenEoBackendImplementation):
 
         self._oidc_providers = list()
         self._oidc_providers.append(oidc_prov)
-        config = OpenEoBackendConfig(
-            oidc_providers=self.oidc_providers,
+        config = TensorlakehouseOpenEoBackendConfig(
+            oidc_providers=oidc_prov,
             capabilities_title="tensorlakehouse openEO Backend",
             capabilities_description="This is the tensorlakehouse openEO Backend",
             capabilities_backend_version="0.1.0",

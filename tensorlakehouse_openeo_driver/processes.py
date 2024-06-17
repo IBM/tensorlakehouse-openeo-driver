@@ -16,11 +16,14 @@ import pystac
 import xarray as xr
 from openeo_driver.errors import ProcessParameterInvalidException
 from openeo_pg_parser_networkx.graph import Callable
+from openeo.udf.udf_data import UdfData
+from openeo.udf.xarraydatacube import XarrayDataCube
 from openeo_pg_parser_networkx.pg_schema import (
     BoundingBox,
     TemporalInterval,
     TemporalIntervals,
 )
+from openeo.udf.run_code import run_udf_code
 from openeo_processes_dask.process_implementations.data_model import (
     RasterCube,
     VectorCube,
@@ -1073,6 +1076,18 @@ def resample_spatial(
         # if target CRS is equal to source CRS and resolution is zero, do nothing
         pass
     return data
+
+
+def run_udf(
+    data: RasterCube, udf: str, runtime: str, version: Optional[str] = None
+) -> UdfData:
+    logger.debug(f"run_udf {udf=} {data=}")
+    if not isinstance(data, xr.DataArray):
+        data.compute()
+        # data = xr.DataArray(data=data, coords=data.coords, dims=data.dims)
+    # assert isinstance(data, xr.DataArray), f"Error! {type(data)}"
+    udf_data = UdfData(datacube_list=[XarrayDataCube(data)])
+    return run_udf_code(code=udf, data=udf_data)
 
 
 def aggregate_temporal_period(

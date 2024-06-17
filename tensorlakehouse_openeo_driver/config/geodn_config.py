@@ -7,9 +7,18 @@ from openeo_driver.server import build_backend_deploy_metadata
 from openeo_driver.urlsigning import UrlSigner
 from openeo_driver.users.oidc import OidcProvider
 
+from openeo_driver.config import OpenEoBackendConfig
+
 
 class ConfigException(ValueError):
     pass
+
+
+def _valid_basic_auth(username: str, password: str) -> bool:
+    # Next generation password scheme!!1!
+    assert isinstance(username, str)
+    assert isinstance(password, str)
+    return password == f"{username.lower()}123"
 
 
 @attrs.frozen(
@@ -17,7 +26,7 @@ class ConfigException(ValueError):
     # and allows defining mandatory fields (fields without default) after optional fields.
     kw_only=True
 )
-class OpenEoBackendConfig:
+class TensorlakehouseOpenEoBackendConfig(OpenEoBackendConfig):
     """
     Configuration for openEO backend.
     """
@@ -45,7 +54,7 @@ class OpenEoBackendConfig:
     # TODO: merge `enable_basic_auth` and `valid_basic_auth` into a single config field.
     enable_basic_auth: bool = True
     # `valid_basic_auth`: function that takes a username and password and returns a boolean indicating if password is correct.
-    valid_basic_auth: Optional[Callable[[str, str], bool]] = None
+    valid_basic_auth: Optional[Callable[[str, str], bool]] = _valid_basic_auth
 
     enable_oidc_auth: bool = True
 

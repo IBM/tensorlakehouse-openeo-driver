@@ -32,7 +32,9 @@ from openeo_processes_dask.process_implementations.cubes import (
 def get_openeo_impls() -> Dict[str, str]:
     # this function returns all the names of the processes implemented by openeo
     # TODO: apply function is hardcoded because it is a reserved python word
-    processes = {"apply": "openeo_processes_dask.process_implementations.cubes.apply"}
+    processes = {
+        "apply": "openeo_processes_dask.process_implementations.cubes.apply",
+    }
     for m in [
         resample,
         aggregate,

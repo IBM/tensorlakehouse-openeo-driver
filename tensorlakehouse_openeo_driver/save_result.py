@@ -64,8 +64,14 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                 logger.debug(f"Storing xarray as netcdf file called {filename}")
 
                 # explicitly convert from DataArray to Dataset because xarray would do it anyway
-                ds = array.to_dataset(dim=DEFAULT_BANDS_DIMENSION)
-                dimensions = ds.dims
+                dimensions = array.dims
+                assert all(
+                    isinstance(d, str) for d in dimensions
+                ), f"Error! Unexpected dimension name: {dimensions=}"
+                if DEFAULT_BANDS_DIMENSION in dimensions:
+                    ds = array.to_dataset(dim=DEFAULT_BANDS_DIMENSION)
+                else:
+                    ds = array.to_dataset(name="variable")
                 logger.debug(f"DataSet dimensions {dimensions}")
                 ds.to_netcdf(path=filename, engine=engine)  # type: ignore[call-overload]
             except TypeError as e:

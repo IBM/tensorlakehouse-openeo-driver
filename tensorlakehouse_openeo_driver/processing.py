@@ -20,7 +20,8 @@ from tensorlakehouse_openeo_driver.get_process_implementations import get_impls
 from openeo_processes_dask.process_implementations import _max, _min
 from openeo_processes_dask.specs import _max as max_spec, _min as min_spec
 from openeo_processes_dask.process_implementations.core import process
-
+import openeo
+from openeo.udf import run_udf_code
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
@@ -39,7 +40,7 @@ class TensorlakehouseProcessing(ConcreteProcessing):
         openeo_process_specs = (
             Path() / "tensorlakehouse_openeo_driver" / "process_specifications"
         )
-        for proc_name in ["rename_dimension", "rename_labels"]:
+        for proc_name in ["rename_dimension", "rename_labels", "run_udf"]:
             proc_path = openeo_process_specs / f"{proc_name}.json"
 
             assert proc_path.exists()
@@ -52,8 +53,10 @@ class TensorlakehouseProcessing(ConcreteProcessing):
         processes_by_openeo = list(
             set(process_names).intersection([t for t in openeo_impls.keys()])
         )
+        print(f"{processes_by_openeo=}")
         # get a list of processes implemented by openeo-geodn-driver
         processes_by_geodn = list(set(process_names).intersection(geodn_impls))
+        print(f"{processes_by_geodn=}")
 
         # remove openeo implementations that are implemented by geodn
         for item in processes_by_geodn:
@@ -136,3 +139,22 @@ class TensorlakehouseProcessing(ConcreteProcessing):
                         "code": "MissingProduct",
                         "message": "Tile 4322 not available",
                     }
+
+    def run_udf(self, udf: str, data: openeo.udf.UdfData) -> openeo.udf.UdfData:
+        logger.debug(f"run_udf {udf=} {data=}")
+        return run_udf_code(code=udf, data=data)
+
+    def verify_for_synchronous_processing(
+        self, process_graph: dict, env: EvalEnv = None
+    ) -> Iterable[str]:
+        collections = [
+            p["arguments"]["id"]
+            for p in process_graph.values()
+            if p["process_id"] == "load_collection"
+        ]
+        for cid in collections:
+            if "NO_SYNC_PROCESSING" in cid:
+                yield f"Collection {cid!r} is not available for synchronous processing."
+            if "FAIL_VERIFY_FOR_SYNC_PROCESSING" in cid:
+                # For testing that things keep working when verifying goes wrong
+                raise RuntimeError("Nope, catch this")

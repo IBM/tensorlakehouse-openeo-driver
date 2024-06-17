@@ -29,7 +29,7 @@ services:
     worker:
       image: tensorlakehouse-openeo-driver:latest
       container_name: worker
-      command: celery -A tensorlakehouse_openeo_driver.tasks worker -s /opt/app-root/src/tensorlakehouse-openeo-driver/celerybeat-schedule --concurrency 2 --prefetch-multiplier 1 -Ofair -B  -Q openeo-pgstac-queue --loglevel=info
+      command: celery -A tensorlakehouse_openeo_driver.tasks worker -s /tmp/celerybeat-schedule --concurrency 2 --prefetch-multiplier 1 -Ofair -B  -Q openeo-pgstac-queue --loglevel=info
       environment:
         - PYTHONPATH=/opt/app-root/src/tensorlakehouse-openeo-driver
         - BROKER_URL=${BROKER_URL}
@@ -46,7 +46,7 @@ services:
         - OPENEO_AUTH_CLIENT_SECRET=${OPENEO_AUTH_CLIENT_SECRET}
       restart: always
     stac:
-      image: quay.io/tensorlakehouse/stac-fastapi-pypgstac:latest
+      image: localhost/stac-fastapi-pgstac:latest
       container_name: stac
       networks:
         - neta
