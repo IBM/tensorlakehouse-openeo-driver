@@ -23,7 +23,7 @@ gunicorn
 h5py
 h5netcdf
 ibm-cos-sdk~=2.13.1
-ibm-cos-sdk-core~=2.13.1
+ibm-cos-sdk-core~=2.13.5
 ibm-cos-sdk-s3transfer~=2.13.1
 ibmpairs~=3.0.9
 imageio

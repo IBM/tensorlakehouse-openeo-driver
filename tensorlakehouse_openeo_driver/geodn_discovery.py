@@ -228,14 +228,3 @@ class GeoDNDiscovery:
         """
         dataset = catalog.get_data_set(id=dataset_id, client=self.pairs_client)
         return GeoDNDiscovery._make_dataset(dataset)
-
-    # def list_datalayers(self) -> List[Dict[Any, Any]]:
-    #     """make a request to GeoDN.Data to retrieve a list of all datasets
-
-    #     Returns:
-    #         List: _description_
-    #     """
-    #     endpoint = "/v2/datalayers/full"
-    #     datalayers = self.get(endpoint=endpoint)
-    #     assert isinstance(datalayers, list), f"Error! Unexpected response: {datalayers}"
-    #     return datalayers

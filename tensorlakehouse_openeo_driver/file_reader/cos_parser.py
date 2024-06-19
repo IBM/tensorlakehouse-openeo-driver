@@ -1,5 +1,5 @@
 import ibm_boto3
-from botocore.config import Config
+from ibm_botocore.config import Config
 from botocore.exceptions import ClientError
 import os
 from pathlib import Path
