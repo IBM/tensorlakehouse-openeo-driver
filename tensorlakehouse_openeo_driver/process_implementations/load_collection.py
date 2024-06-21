@@ -170,7 +170,9 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         return operator, value
 
     @staticmethod
-    def _convert_properties_to_filter(properties: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_properties_to_filter(
+        properties: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """convert properties parameter of load_collection process to a filter parameter of
         pystac_client search method
 
@@ -197,10 +199,13 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                     ],
                 }
                 conditions.append(condition)
-        if len(conditions) > 1:
-            filter_cql = {"op": "and", "args": conditions}
-        else:
+
+        if len(conditions) == 0:
+            filter_cql = None
+        elif len(conditions) == 1:
             filter_cql = conditions.pop()
+        else:
+            filter_cql = {"op": "and", "args": conditions}
         return filter_cql
 
     def _search_items(

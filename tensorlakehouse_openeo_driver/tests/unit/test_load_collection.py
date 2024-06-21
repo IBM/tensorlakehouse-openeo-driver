@@ -2,7 +2,6 @@ from tensorlakehouse_openeo_driver.process_implementations.load_collection impor
     LoadCollectionFromCOS,
 )
 
-
 import pytest
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 import deepdiff
@@ -11,6 +10,10 @@ import deepdiff
 @pytest.mark.parametrize(
     "properties, expected_filter",
     [
+        (
+            {},
+            None,
+        ),
         (
             {
                 "cloud_coverage": {
