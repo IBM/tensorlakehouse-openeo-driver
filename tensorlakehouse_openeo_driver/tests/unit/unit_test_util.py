@@ -49,6 +49,1028 @@ X_GUESSES = ["x", "lon", "longitude"]
 Y_GUESSES = ["y", "lat", "latitude"]
 BANDS_GUESSES = ["b", "bands", "band"]
 
+HLSS30_ITEMS = (
+    {
+        "id": "HLS.S30.T18TYQ.2023242T153821.v2.0.Fmask",
+        "bbox": [-72.4573686, 44.0997709, -71.1300132, 45.1255249],
+        "type": "Feature",
+        "assets": {
+            "data": {
+                "href": "s3://fm-geospatial-cos-standard-poc/lchu/HLSS30/vermont_manual/la+444844+447409lo-719616-716025/2023/08/HLS.S30.T18TYQ.2023242T153821.v2.0.Fmask.tif",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                "roles": ["data"],
+                "title": "Fmask",
+                "description": "",
+            }
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-72.4573686, 45.1255249],
+                    [-72.5001512, 44.1380077],
+                    [-71.1300132, 44.0997709],
+                    [-71.0639024, 45.085957],
+                    [-72.4573686, 45.1255249],
+                ]
+            ],
+        },
+        "collection": "HLSS30",
+        "properties": {
+            "tile": "T18TYP",
+            "created": "2023-09-19T13:00:11.245361Z",
+            "updated": "2023-09-19T13:00:11.245361Z",
+            "datetime": "2023-08-30T15:38:21Z",
+            "cloud_coverage": 98,
+            "cube:variables": {
+                "Fmask": {
+                    "type": "data",
+                    "unit": "",
+                    "values": [],
+                    "dimensions": ["x", "y", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "x": {
+                    "axis": "x",
+                    "step": 30,
+                    "type": "spatial",
+                    "extent": [699960, 809760],
+                    "reference_system": 32618,
+                },
+                "y": {
+                    "axis": "y",
+                    "step": -30,
+                    "type": "spatial",
+                    "extent": [5000040, 4890240],
+                    "reference_system": 32618,
+                },
+                "time": {
+                    "type": "temporal",
+                    "extent": ["2023-08-30T15:38:21Z", "2023-08-30T15:50:51Z"],
+                },
+            },
+        },
+        "stac_version": "1.0.0",
+        "links": [
+            {
+                "rel": "collection",
+                "type": "application/json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/collections/HLSS30",
+            },
+            {
+                "rel": "parent",
+                "type": "application/json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/collections/HLSS30",
+            },
+            {
+                "rel": "root",
+                "type": "application/json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/",
+            },
+            {
+                "rel": "self",
+                "type": "application/geo+json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/collections/HLSS30/items/HLS.S30.T18TYQ.2023242T153821.v2.0.Fmask",
+            },
+        ],
+    },
+    {
+        "id": "HLS.S30.T18TYQ.2023242T153821.v2.0.B8A",
+        "bbox": [-72.4573686, 44.0997709, -71.1300132, 45.1255249],
+        "type": "Feature",
+        "assets": {
+            "data": {
+                "href": "s3://fm-geospatial-cos-standard-poc/lchu/HLSS30/vermont_manual/la+444844+447409lo-719616-716025/2023/08/HLS.S30.T18TYQ.2023242T153821.v2.0.B8A.tif",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                "roles": ["data"],
+                "title": "B8A",
+                "description": "",
+            }
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-72.4573686, 45.1255249],
+                    [-72.5001512, 44.1380077],
+                    [-71.1300132, 44.0997709],
+                    [-71.0639024, 45.085957],
+                    [-72.4573686, 45.1255249],
+                ]
+            ],
+        },
+        "collection": "HLSS30",
+        "properties": {
+            "tile": "T18TYQ",
+            "created": "2023-09-19T13:00:10.916202Z",
+            "updated": "2023-09-19T13:00:10.916202Z",
+            "datetime": "2023-08-30T15:38:21Z",
+            "cloud_coverage": 97,
+            "cube:variables": {
+                "B8A": {
+                    "type": "data",
+                    "unit": "",
+                    "values": [],
+                    "dimensions": ["x", "y", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "x": {
+                    "axis": "x",
+                    "step": 30,
+                    "type": "spatial",
+                    "extent": [699960, 809760],
+                    "reference_system": 32618,
+                },
+                "y": {
+                    "axis": "y",
+                    "step": -30,
+                    "type": "spatial",
+                    "extent": [5000040, 4890240],
+                    "reference_system": 32618,
+                },
+                "time": {
+                    "type": "temporal",
+                    "extent": ["2023-08-30T15:38:21Z", "2023-08-30T15:50:51Z"],
+                },
+            },
+        },
+        "stac_version": "1.0.0",
+        "links": [
+            {
+                "rel": "collection",
+                "type": "application/json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/collections/HLSS30",
+            },
+            {
+                "rel": "parent",
+                "type": "application/json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/collections/HLSS30",
+            },
+            {
+                "rel": "root",
+                "type": "application/json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/",
+            },
+            {
+                "rel": "self",
+                "type": "application/geo+json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/collections/HLSS30/items/HLS.S30.T18TYQ.2023242T153821.v2.0.B8A",
+            },
+        ],
+    },
+    {
+        "id": "HLS.S30.T18TYQ.2023242T153821.v2.0.B12",
+        "bbox": [-72.4573686, 44.0997709, -71.1300132, 45.1255249],
+        "type": "Feature",
+        "assets": {
+            "data": {
+                "href": "s3://fm-geospatial-cos-standard-poc/lchu/HLSS30/vermont_manual/la+444844+447409lo-719616-716025/2023/08/HLS.S30.T18TYQ.2023242T153821.v2.0.B12.tif",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                "roles": ["data"],
+                "title": "B12",
+                "description": "",
+            }
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-72.4573686, 45.1255249],
+                    [-72.5001512, 44.1380077],
+                    [-71.1300132, 44.0997709],
+                    [-71.0639024, 45.085957],
+                    [-72.4573686, 45.1255249],
+                ]
+            ],
+        },
+        "collection": "HLSS30",
+        "properties": {
+            "tile": "T18TYQ",
+            "created": "2023-09-19T13:00:10.596792Z",
+            "updated": "2023-09-19T13:00:10.596792Z",
+            "datetime": "2023-08-30T15:38:21Z",
+            "cloud_coverage": 99,
+            "cube:variables": {
+                "B12": {
+                    "type": "data",
+                    "unit": "",
+                    "values": [],
+                    "dimensions": ["x", "y", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "x": {
+                    "axis": "x",
+                    "step": 30,
+                    "type": "spatial",
+                    "extent": [699960, 809760],
+                    "reference_system": 32618,
+                },
+                "y": {
+                    "axis": "y",
+                    "step": -30,
+                    "type": "spatial",
+                    "extent": [5000040, 4890240],
+                    "reference_system": 32618,
+                },
+                "time": {
+                    "type": "temporal",
+                    "extent": ["2023-08-30T15:38:21Z", "2023-08-30T15:50:51Z"],
+                },
+            },
+        },
+        "stac_version": "1.0.0",
+        "links": [
+            {
+                "rel": "collection",
+                "type": "application/json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/collections/HLSS30",
+            },
+            {
+                "rel": "parent",
+                "type": "application/json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/collections/HLSS30",
+            },
+            {
+                "rel": "root",
+                "type": "application/json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/",
+            },
+            {
+                "rel": "self",
+                "type": "application/geo+json",
+                "href": "https://stac-fastapi-pgstac-nasageospatial-dev.cash.sl.cloud9.ibm.com/collections/HLSS30/items/HLS.S30.T18TYQ.2023242T153821.v2.0.B12",
+            },
+        ],
+    },
+)
+
+
+STAC_ITEMS = [
+    {
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "type": "Feature",
+        "id": "0bba530824d148fcb4629123e4a1328f",
+        "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-179.934464, -89.934464],
+                    [-179.934464, 111.261056],
+                    [189.03321599996895, 111.261056],
+                    [189.03321599996895, -89.934464],
+                    [-179.934464, -89.934464],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2023-06-29T15:41:52.471025Z",
+            "updated": "2023-06-29T15:41:52.471025Z",
+            "datetime": "2021-12-21T03:00:00Z",
+            "cube:variables": {
+                "49459": {
+                    "type": "data",
+                    "dimensions": ["lon", "lat", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
+                "lon": {
+                    "axis": "x",
+                    "extent": [-179.934464, 189.03321599996895],
+                },
+                "time": {
+                    "step": "P0DT0H0M0S",
+                    "extent": [
+                        "2021-12-21T03:00:00+00:00",
+                        "2021-12-21T03:00:00+00:00",
+                    ],
+                },
+            },
+        },
+        "collection": "Global weather (ERA5) (ZARR)",
+        "links": [
+            {
+                "rel": "self",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/0bba530824d148fcb4629123e4a1328f",
+                "type": "application/geo+json",
+            },
+            {
+                "rel": "parent",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "collection",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "root",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
+                "type": "application/json",
+                "title": "stac-fastapi",
+            },
+        ],
+        "assets": {
+            "data": {
+                "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
+                "type": "application/zip+zarr",
+                "roles": ["data"],
+                "title": "Total precipitation",
+            }
+        },
+    },
+    {
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "type": "Feature",
+        "id": "a22242194cc0471d93ec1850a8312ba5",
+        "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-179.934464, -89.934464],
+                    [-179.934464, 111.261056],
+                    [189.03321599996895, 111.261056],
+                    [189.03321599996895, -89.934464],
+                    [-179.934464, -89.934464],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2023-06-29T15:41:52.471398Z",
+            "updated": "2023-06-29T15:41:52.471398Z",
+            "datetime": "2021-12-21T02:00:00Z",
+            "cube:variables": {
+                "49459": {
+                    "type": "data",
+                    "dimensions": ["lon", "lat", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
+                "lon": {
+                    "axis": "x",
+                    "extent": [-179.934464, 189.03321599996895],
+                },
+                "time": {
+                    "step": "P0DT0H0M0S",
+                    "extent": [
+                        "2021-12-21T02:00:00+00:00",
+                        "2021-12-21T02:00:00+00:00",
+                    ],
+                },
+            },
+        },
+        "collection": "Global weather (ERA5) (ZARR)",
+        "links": [
+            {
+                "rel": "self",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/a22242194cc0471d93ec1850a8312ba5",
+                "type": "application/geo+json",
+            },
+            {
+                "rel": "parent",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "collection",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "root",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
+                "type": "application/json",
+                "title": "stac-fastapi",
+            },
+        ],
+        "assets": {
+            "data": {
+                "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
+                "type": "application/zip+zarr",
+                "roles": ["data"],
+                "title": "Total precipitation",
+            }
+        },
+    },
+    {
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "type": "Feature",
+        "id": "d140ccbc65d8448fa7f36b8e87175e86",
+        "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-179.934464, -89.934464],
+                    [-179.934464, 111.261056],
+                    [189.03321599996895, 111.261056],
+                    [189.03321599996895, -89.934464],
+                    [-179.934464, -89.934464],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2023-06-29T15:41:52.471481Z",
+            "updated": "2023-06-29T15:41:52.471481Z",
+            "datetime": "2021-12-21T01:00:00Z",
+            "cube:variables": {
+                "49459": {
+                    "type": "data",
+                    "dimensions": ["lon", "lat", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
+                "lon": {
+                    "axis": "x",
+                    "extent": [-179.934464, 189.03321599996895],
+                },
+                "time": {
+                    "step": "P0DT0H0M0S",
+                    "extent": [
+                        "2021-12-21T01:00:00+00:00",
+                        "2021-12-21T01:00:00+00:00",
+                    ],
+                },
+            },
+        },
+        "collection": "Global weather (ERA5) (ZARR)",
+        "links": [
+            {
+                "rel": "self",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/d140ccbc65d8448fa7f36b8e87175e86",
+                "type": "application/geo+json",
+            },
+            {
+                "rel": "parent",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "collection",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "root",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
+                "type": "application/json",
+                "title": "stac-fastapi",
+            },
+        ],
+        "assets": {
+            "data": {
+                "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
+                "type": "application/zip+zarr",
+                "roles": ["data"],
+                "title": "Total precipitation",
+            }
+        },
+    },
+    {
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "type": "Feature",
+        "id": "5132df11e3794f588df9cb3885ebae9f",
+        "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-179.934464, -89.934464],
+                    [-179.934464, 111.261056],
+                    [189.03321599996895, 111.261056],
+                    [189.03321599996895, -89.934464],
+                    [-179.934464, -89.934464],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2023-06-29T15:41:52.471670Z",
+            "updated": "2023-06-29T15:41:52.471670Z",
+            "datetime": "2021-12-21T00:00:00Z",
+            "cube:variables": {
+                "49459": {
+                    "type": "data",
+                    "dimensions": ["lon", "lat", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
+                "lon": {
+                    "axis": "x",
+                    "extent": [-179.934464, 189.03321599996895],
+                },
+                "time": {
+                    "step": "P0DT0H0M0S",
+                    "extent": [
+                        "2021-12-21T00:00:00+00:00",
+                        "2021-12-21T00:00:00+00:00",
+                    ],
+                },
+            },
+        },
+        "collection": "Global weather (ERA5) (ZARR)",
+        "links": [
+            {
+                "rel": "self",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/5132df11e3794f588df9cb3885ebae9f",
+                "type": "application/geo+json",
+            },
+            {
+                "rel": "parent",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "collection",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "root",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
+                "type": "application/json",
+                "title": "stac-fastapi",
+            },
+        ],
+        "assets": {
+            "data": {
+                "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
+                "type": "application/zip+zarr",
+                "roles": ["data"],
+                "title": "Total precipitation",
+            }
+        },
+    },
+    {
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "type": "Feature",
+        "id": "473cd65b195d4ebf800a1c5601e70f0e",
+        "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-179.934464, -89.934464],
+                    [-179.934464, 111.261056],
+                    [189.03321599996895, 111.261056],
+                    [189.03321599996895, -89.934464],
+                    [-179.934464, -89.934464],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2023-06-29T15:41:52.471711Z",
+            "updated": "2023-06-29T15:41:52.471711Z",
+            "datetime": "2021-12-20T23:00:00Z",
+            "cube:variables": {
+                "49459": {
+                    "type": "data",
+                    "dimensions": ["lon", "lat", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
+                "lon": {
+                    "axis": "x",
+                    "extent": [-179.934464, 189.03321599996895],
+                },
+                "time": {
+                    "step": "P0DT0H0M0S",
+                    "extent": [
+                        "2021-12-20T23:00:00+00:00",
+                        "2021-12-20T23:00:00+00:00",
+                    ],
+                },
+            },
+        },
+        "collection": "Global weather (ERA5) (ZARR)",
+        "links": [
+            {
+                "rel": "self",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/473cd65b195d4ebf800a1c5601e70f0e",
+                "type": "application/geo+json",
+            },
+            {
+                "rel": "parent",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "collection",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "root",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
+                "type": "application/json",
+                "title": "stac-fastapi",
+            },
+        ],
+        "assets": {
+            "data": {
+                "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
+                "type": "application/zip+zarr",
+                "roles": ["data"],
+                "title": "Total precipitation",
+            }
+        },
+    },
+    {
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "type": "Feature",
+        "id": "1d6e22d8dcb648348fe5ed12601a79c1",
+        "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-179.934464, -89.934464],
+                    [-179.934464, 111.261056],
+                    [189.03321599996895, 111.261056],
+                    [189.03321599996895, -89.934464],
+                    [-179.934464, -89.934464],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2023-06-29T15:41:52.471993Z",
+            "updated": "2023-06-29T15:41:52.471993Z",
+            "datetime": "2021-12-20T22:00:00Z",
+            "cube:variables": {
+                "49459": {
+                    "type": "data",
+                    "dimensions": ["lon", "lat", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
+                "lon": {
+                    "axis": "x",
+                    "extent": [-179.934464, 189.03321599996895],
+                },
+                "time": {
+                    "step": "P0DT0H0M0S",
+                    "extent": [
+                        "2021-12-20T22:00:00+00:00",
+                        "2021-12-20T22:00:00+00:00",
+                    ],
+                },
+            },
+        },
+        "collection": "Global weather (ERA5) (ZARR)",
+        "links": [
+            {
+                "rel": "self",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/1d6e22d8dcb648348fe5ed12601a79c1",
+                "type": "application/geo+json",
+            },
+            {
+                "rel": "parent",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "collection",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "root",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
+                "type": "application/json",
+                "title": "stac-fastapi",
+            },
+        ],
+        "assets": {
+            "data": {
+                "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
+                "type": "application/zip+zarr",
+                "roles": ["data"],
+                "title": "Total precipitation",
+            }
+        },
+    },
+    {
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "type": "Feature",
+        "id": "bfcfeb748a6f49b983054599875be670",
+        "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-179.934464, -89.934464],
+                    [-179.934464, 111.261056],
+                    [189.03321599996895, 111.261056],
+                    [189.03321599996895, -89.934464],
+                    [-179.934464, -89.934464],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2023-06-29T15:41:52.472098Z",
+            "updated": "2023-06-29T15:41:52.472098Z",
+            "datetime": "2021-12-20T21:00:00Z",
+            "cube:variables": {
+                "49459": {
+                    "type": "data",
+                    "dimensions": ["lon", "lat", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
+                "lon": {
+                    "axis": "x",
+                    "extent": [-179.934464, 189.03321599996895],
+                },
+                "time": {
+                    "step": "P0DT0H0M0S",
+                    "extent": [
+                        "2021-12-20T21:00:00+00:00",
+                        "2021-12-20T21:00:00+00:00",
+                    ],
+                },
+            },
+        },
+        "collection": "Global weather (ERA5) (ZARR)",
+        "links": [
+            {
+                "rel": "self",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/bfcfeb748a6f49b983054599875be670",
+                "type": "application/geo+json",
+            },
+            {
+                "rel": "parent",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "collection",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "root",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
+                "type": "application/json",
+                "title": "stac-fastapi",
+            },
+        ],
+        "assets": {
+            "data": {
+                "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
+                "type": "application/zip+zarr",
+                "roles": ["data"],
+                "title": "Total precipitation",
+            }
+        },
+    },
+    {
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "type": "Feature",
+        "id": "0aadbb6b79374ee49e3000e94343aaea",
+        "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-179.934464, -89.934464],
+                    [-179.934464, 111.261056],
+                    [189.03321599996895, 111.261056],
+                    [189.03321599996895, -89.934464],
+                    [-179.934464, -89.934464],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2023-06-29T15:41:52.472176Z",
+            "updated": "2023-06-29T15:41:52.472176Z",
+            "datetime": "2021-12-20T20:00:00Z",
+            "cube:variables": {
+                "49459": {
+                    "type": "data",
+                    "dimensions": ["lon", "lat", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
+                "lon": {
+                    "axis": "x",
+                    "extent": [-179.934464, 189.03321599996895],
+                },
+                "time": {
+                    "step": "P0DT0H0M0S",
+                    "extent": [
+                        "2021-12-20T20:00:00+00:00",
+                        "2021-12-20T20:00:00+00:00",
+                    ],
+                },
+            },
+        },
+        "collection": "Global weather (ERA5) (ZARR)",
+        "links": [
+            {
+                "rel": "self",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/0aadbb6b79374ee49e3000e94343aaea",
+                "type": "application/geo+json",
+            },
+            {
+                "rel": "parent",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "collection",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "root",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
+                "type": "application/json",
+                "title": "stac-fastapi",
+            },
+        ],
+        "assets": {
+            "data": {
+                "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
+                "type": "application/zip+zarr",
+                "roles": ["data"],
+                "title": "Total precipitation",
+            }
+        },
+    },
+    {
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "type": "Feature",
+        "id": "3299076cbb754731bf404f4bba2a3ef2",
+        "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-179.934464, -89.934464],
+                    [-179.934464, 111.261056],
+                    [189.03321599996895, 111.261056],
+                    [189.03321599996895, -89.934464],
+                    [-179.934464, -89.934464],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2023-06-29T15:41:52.472285Z",
+            "updated": "2023-06-29T15:41:52.472285Z",
+            "datetime": "2021-12-20T19:00:00Z",
+            "cube:variables": {
+                "49459": {
+                    "type": "data",
+                    "dimensions": ["lon", "lat", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
+                "lon": {
+                    "axis": "x",
+                    "extent": [-179.934464, 189.03321599996895],
+                },
+                "time": {
+                    "step": "P0DT0H0M0S",
+                    "extent": [
+                        "2021-12-20T19:00:00+00:00",
+                        "2021-12-20T19:00:00+00:00",
+                    ],
+                },
+            },
+        },
+        "collection": "Global weather (ERA5) (ZARR)",
+        "links": [
+            {
+                "rel": "self",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/3299076cbb754731bf404f4bba2a3ef2",
+                "type": "application/geo+json",
+            },
+            {
+                "rel": "parent",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "collection",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "root",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
+                "type": "application/json",
+                "title": "stac-fastapi",
+            },
+        ],
+        "assets": {
+            "data": {
+                "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
+                "type": "application/zip+zarr",
+                "roles": ["data"],
+                "title": "Total precipitation",
+            }
+        },
+    },
+    {
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "type": "Feature",
+        "id": "22ec9312e00f47289826aa30ba5257a5",
+        "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-179.934464, -89.934464],
+                    [-179.934464, 111.261056],
+                    [189.03321599996895, 111.261056],
+                    [189.03321599996895, -89.934464],
+                    [-179.934464, -89.934464],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2023-06-29T15:41:52.472421Z",
+            "updated": "2023-06-29T15:41:52.472421Z",
+            "datetime": "2021-12-20T18:00:00Z",
+            "cube:variables": {
+                "49459": {
+                    "type": "data",
+                    "dimensions": ["lon", "lat", "time"],
+                }
+            },
+            "cube:dimensions": {
+                "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
+                "lon": {
+                    "axis": "x",
+                    "extent": [-179.934464, 189.03321599996895],
+                },
+                "time": {
+                    "step": "P0DT0H0M0S",
+                    "extent": [
+                        "2021-12-20T18:00:00+00:00",
+                        "2021-12-20T18:00:00+00:00",
+                    ],
+                },
+            },
+        },
+        "collection": "Global weather (ERA5) (ZARR)",
+        "links": [
+            {
+                "rel": "self",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/22ec9312e00f47289826aa30ba5257a5",
+                "type": "application/geo+json",
+            },
+            {
+                "rel": "parent",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "collection",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
+                "type": "application/json",
+            },
+            {
+                "rel": "root",
+                "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
+                "type": "application/json",
+                "title": "stac-fastapi",
+            },
+        ],
+        "assets": {
+            "data": {
+                "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
+                "type": "application/zip+zarr",
+                "roles": ["data"],
+                "title": "Total precipitation",
+            }
+        },
+    },
+]
+
 
 @xr.register_dataarray_accessor("openeo")
 class OpenEOExtensionDa:
@@ -253,774 +1275,22 @@ def make_pystac_client_collection(collection_id: str = "fake-id") -> Collection:
 def get_collection_items(collection_id: str, parameters: Optional[str] = None):
     s = {
         "type": "FeatureCollection",
-        "features": [
-            {
-                "stac_version": "1.0.0",
-                "stac_extensions": [],
-                "type": "Feature",
-                "id": "0bba530824d148fcb4629123e4a1328f",
-                "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-179.934464, -89.934464],
-                            [-179.934464, 111.261056],
-                            [189.03321599996895, 111.261056],
-                            [189.03321599996895, -89.934464],
-                            [-179.934464, -89.934464],
-                        ]
-                    ],
-                },
-                "properties": {
-                    "created": "2023-06-29T15:41:52.471025Z",
-                    "updated": "2023-06-29T15:41:52.471025Z",
-                    "datetime": "2021-12-21T03:00:00Z",
-                    "cube:variables": {
-                        "49459": {
-                            "type": "data",
-                            "dimensions": ["lon", "lat", "time"],
-                        }
-                    },
-                    "cube:dimensions": {
-                        "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
-                        "lon": {
-                            "axis": "x",
-                            "extent": [-179.934464, 189.03321599996895],
-                        },
-                        "time": {
-                            "step": "P0DT0H0M0S",
-                            "extent": [
-                                "2021-12-21T03:00:00+00:00",
-                                "2021-12-21T03:00:00+00:00",
-                            ],
-                        },
-                    },
-                },
-                "collection": "Global weather (ERA5) (ZARR)",
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/0bba530824d148fcb4629123e4a1328f",
-                        "type": "application/geo+json",
-                    },
-                    {
-                        "rel": "parent",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "collection",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "root",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
-                        "type": "application/json",
-                        "title": "stac-fastapi",
-                    },
-                ],
-                "assets": {
-                    "data": {
-                        "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
-                        "type": "application/zip+zarr",
-                        "roles": ["data"],
-                        "title": "Total precipitation",
-                    }
-                },
-            },
-            {
-                "stac_version": "1.0.0",
-                "stac_extensions": [],
-                "type": "Feature",
-                "id": "a22242194cc0471d93ec1850a8312ba5",
-                "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-179.934464, -89.934464],
-                            [-179.934464, 111.261056],
-                            [189.03321599996895, 111.261056],
-                            [189.03321599996895, -89.934464],
-                            [-179.934464, -89.934464],
-                        ]
-                    ],
-                },
-                "properties": {
-                    "created": "2023-06-29T15:41:52.471398Z",
-                    "updated": "2023-06-29T15:41:52.471398Z",
-                    "datetime": "2021-12-21T02:00:00Z",
-                    "cube:variables": {
-                        "49459": {
-                            "type": "data",
-                            "dimensions": ["lon", "lat", "time"],
-                        }
-                    },
-                    "cube:dimensions": {
-                        "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
-                        "lon": {
-                            "axis": "x",
-                            "extent": [-179.934464, 189.03321599996895],
-                        },
-                        "time": {
-                            "step": "P0DT0H0M0S",
-                            "extent": [
-                                "2021-12-21T02:00:00+00:00",
-                                "2021-12-21T02:00:00+00:00",
-                            ],
-                        },
-                    },
-                },
-                "collection": "Global weather (ERA5) (ZARR)",
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/a22242194cc0471d93ec1850a8312ba5",
-                        "type": "application/geo+json",
-                    },
-                    {
-                        "rel": "parent",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "collection",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "root",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
-                        "type": "application/json",
-                        "title": "stac-fastapi",
-                    },
-                ],
-                "assets": {
-                    "data": {
-                        "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
-                        "type": "application/zip+zarr",
-                        "roles": ["data"],
-                        "title": "Total precipitation",
-                    }
-                },
-            },
-            {
-                "stac_version": "1.0.0",
-                "stac_extensions": [],
-                "type": "Feature",
-                "id": "d140ccbc65d8448fa7f36b8e87175e86",
-                "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-179.934464, -89.934464],
-                            [-179.934464, 111.261056],
-                            [189.03321599996895, 111.261056],
-                            [189.03321599996895, -89.934464],
-                            [-179.934464, -89.934464],
-                        ]
-                    ],
-                },
-                "properties": {
-                    "created": "2023-06-29T15:41:52.471481Z",
-                    "updated": "2023-06-29T15:41:52.471481Z",
-                    "datetime": "2021-12-21T01:00:00Z",
-                    "cube:variables": {
-                        "49459": {
-                            "type": "data",
-                            "dimensions": ["lon", "lat", "time"],
-                        }
-                    },
-                    "cube:dimensions": {
-                        "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
-                        "lon": {
-                            "axis": "x",
-                            "extent": [-179.934464, 189.03321599996895],
-                        },
-                        "time": {
-                            "step": "P0DT0H0M0S",
-                            "extent": [
-                                "2021-12-21T01:00:00+00:00",
-                                "2021-12-21T01:00:00+00:00",
-                            ],
-                        },
-                    },
-                },
-                "collection": "Global weather (ERA5) (ZARR)",
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/d140ccbc65d8448fa7f36b8e87175e86",
-                        "type": "application/geo+json",
-                    },
-                    {
-                        "rel": "parent",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "collection",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "root",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
-                        "type": "application/json",
-                        "title": "stac-fastapi",
-                    },
-                ],
-                "assets": {
-                    "data": {
-                        "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
-                        "type": "application/zip+zarr",
-                        "roles": ["data"],
-                        "title": "Total precipitation",
-                    }
-                },
-            },
-            {
-                "stac_version": "1.0.0",
-                "stac_extensions": [],
-                "type": "Feature",
-                "id": "5132df11e3794f588df9cb3885ebae9f",
-                "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-179.934464, -89.934464],
-                            [-179.934464, 111.261056],
-                            [189.03321599996895, 111.261056],
-                            [189.03321599996895, -89.934464],
-                            [-179.934464, -89.934464],
-                        ]
-                    ],
-                },
-                "properties": {
-                    "created": "2023-06-29T15:41:52.471670Z",
-                    "updated": "2023-06-29T15:41:52.471670Z",
-                    "datetime": "2021-12-21T00:00:00Z",
-                    "cube:variables": {
-                        "49459": {
-                            "type": "data",
-                            "dimensions": ["lon", "lat", "time"],
-                        }
-                    },
-                    "cube:dimensions": {
-                        "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
-                        "lon": {
-                            "axis": "x",
-                            "extent": [-179.934464, 189.03321599996895],
-                        },
-                        "time": {
-                            "step": "P0DT0H0M0S",
-                            "extent": [
-                                "2021-12-21T00:00:00+00:00",
-                                "2021-12-21T00:00:00+00:00",
-                            ],
-                        },
-                    },
-                },
-                "collection": "Global weather (ERA5) (ZARR)",
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/5132df11e3794f588df9cb3885ebae9f",
-                        "type": "application/geo+json",
-                    },
-                    {
-                        "rel": "parent",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "collection",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "root",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
-                        "type": "application/json",
-                        "title": "stac-fastapi",
-                    },
-                ],
-                "assets": {
-                    "data": {
-                        "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
-                        "type": "application/zip+zarr",
-                        "roles": ["data"],
-                        "title": "Total precipitation",
-                    }
-                },
-            },
-            {
-                "stac_version": "1.0.0",
-                "stac_extensions": [],
-                "type": "Feature",
-                "id": "473cd65b195d4ebf800a1c5601e70f0e",
-                "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-179.934464, -89.934464],
-                            [-179.934464, 111.261056],
-                            [189.03321599996895, 111.261056],
-                            [189.03321599996895, -89.934464],
-                            [-179.934464, -89.934464],
-                        ]
-                    ],
-                },
-                "properties": {
-                    "created": "2023-06-29T15:41:52.471711Z",
-                    "updated": "2023-06-29T15:41:52.471711Z",
-                    "datetime": "2021-12-20T23:00:00Z",
-                    "cube:variables": {
-                        "49459": {
-                            "type": "data",
-                            "dimensions": ["lon", "lat", "time"],
-                        }
-                    },
-                    "cube:dimensions": {
-                        "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
-                        "lon": {
-                            "axis": "x",
-                            "extent": [-179.934464, 189.03321599996895],
-                        },
-                        "time": {
-                            "step": "P0DT0H0M0S",
-                            "extent": [
-                                "2021-12-20T23:00:00+00:00",
-                                "2021-12-20T23:00:00+00:00",
-                            ],
-                        },
-                    },
-                },
-                "collection": "Global weather (ERA5) (ZARR)",
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/473cd65b195d4ebf800a1c5601e70f0e",
-                        "type": "application/geo+json",
-                    },
-                    {
-                        "rel": "parent",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "collection",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "root",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
-                        "type": "application/json",
-                        "title": "stac-fastapi",
-                    },
-                ],
-                "assets": {
-                    "data": {
-                        "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
-                        "type": "application/zip+zarr",
-                        "roles": ["data"],
-                        "title": "Total precipitation",
-                    }
-                },
-            },
-            {
-                "stac_version": "1.0.0",
-                "stac_extensions": [],
-                "type": "Feature",
-                "id": "1d6e22d8dcb648348fe5ed12601a79c1",
-                "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-179.934464, -89.934464],
-                            [-179.934464, 111.261056],
-                            [189.03321599996895, 111.261056],
-                            [189.03321599996895, -89.934464],
-                            [-179.934464, -89.934464],
-                        ]
-                    ],
-                },
-                "properties": {
-                    "created": "2023-06-29T15:41:52.471993Z",
-                    "updated": "2023-06-29T15:41:52.471993Z",
-                    "datetime": "2021-12-20T22:00:00Z",
-                    "cube:variables": {
-                        "49459": {
-                            "type": "data",
-                            "dimensions": ["lon", "lat", "time"],
-                        }
-                    },
-                    "cube:dimensions": {
-                        "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
-                        "lon": {
-                            "axis": "x",
-                            "extent": [-179.934464, 189.03321599996895],
-                        },
-                        "time": {
-                            "step": "P0DT0H0M0S",
-                            "extent": [
-                                "2021-12-20T22:00:00+00:00",
-                                "2021-12-20T22:00:00+00:00",
-                            ],
-                        },
-                    },
-                },
-                "collection": "Global weather (ERA5) (ZARR)",
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/1d6e22d8dcb648348fe5ed12601a79c1",
-                        "type": "application/geo+json",
-                    },
-                    {
-                        "rel": "parent",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "collection",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "root",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
-                        "type": "application/json",
-                        "title": "stac-fastapi",
-                    },
-                ],
-                "assets": {
-                    "data": {
-                        "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
-                        "type": "application/zip+zarr",
-                        "roles": ["data"],
-                        "title": "Total precipitation",
-                    }
-                },
-            },
-            {
-                "stac_version": "1.0.0",
-                "stac_extensions": [],
-                "type": "Feature",
-                "id": "bfcfeb748a6f49b983054599875be670",
-                "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-179.934464, -89.934464],
-                            [-179.934464, 111.261056],
-                            [189.03321599996895, 111.261056],
-                            [189.03321599996895, -89.934464],
-                            [-179.934464, -89.934464],
-                        ]
-                    ],
-                },
-                "properties": {
-                    "created": "2023-06-29T15:41:52.472098Z",
-                    "updated": "2023-06-29T15:41:52.472098Z",
-                    "datetime": "2021-12-20T21:00:00Z",
-                    "cube:variables": {
-                        "49459": {
-                            "type": "data",
-                            "dimensions": ["lon", "lat", "time"],
-                        }
-                    },
-                    "cube:dimensions": {
-                        "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
-                        "lon": {
-                            "axis": "x",
-                            "extent": [-179.934464, 189.03321599996895],
-                        },
-                        "time": {
-                            "step": "P0DT0H0M0S",
-                            "extent": [
-                                "2021-12-20T21:00:00+00:00",
-                                "2021-12-20T21:00:00+00:00",
-                            ],
-                        },
-                    },
-                },
-                "collection": "Global weather (ERA5) (ZARR)",
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/bfcfeb748a6f49b983054599875be670",
-                        "type": "application/geo+json",
-                    },
-                    {
-                        "rel": "parent",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "collection",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "root",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
-                        "type": "application/json",
-                        "title": "stac-fastapi",
-                    },
-                ],
-                "assets": {
-                    "data": {
-                        "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
-                        "type": "application/zip+zarr",
-                        "roles": ["data"],
-                        "title": "Total precipitation",
-                    }
-                },
-            },
-            {
-                "stac_version": "1.0.0",
-                "stac_extensions": [],
-                "type": "Feature",
-                "id": "0aadbb6b79374ee49e3000e94343aaea",
-                "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-179.934464, -89.934464],
-                            [-179.934464, 111.261056],
-                            [189.03321599996895, 111.261056],
-                            [189.03321599996895, -89.934464],
-                            [-179.934464, -89.934464],
-                        ]
-                    ],
-                },
-                "properties": {
-                    "created": "2023-06-29T15:41:52.472176Z",
-                    "updated": "2023-06-29T15:41:52.472176Z",
-                    "datetime": "2021-12-20T20:00:00Z",
-                    "cube:variables": {
-                        "49459": {
-                            "type": "data",
-                            "dimensions": ["lon", "lat", "time"],
-                        }
-                    },
-                    "cube:dimensions": {
-                        "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
-                        "lon": {
-                            "axis": "x",
-                            "extent": [-179.934464, 189.03321599996895],
-                        },
-                        "time": {
-                            "step": "P0DT0H0M0S",
-                            "extent": [
-                                "2021-12-20T20:00:00+00:00",
-                                "2021-12-20T20:00:00+00:00",
-                            ],
-                        },
-                    },
-                },
-                "collection": "Global weather (ERA5) (ZARR)",
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/0aadbb6b79374ee49e3000e94343aaea",
-                        "type": "application/geo+json",
-                    },
-                    {
-                        "rel": "parent",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "collection",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "root",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
-                        "type": "application/json",
-                        "title": "stac-fastapi",
-                    },
-                ],
-                "assets": {
-                    "data": {
-                        "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
-                        "type": "application/zip+zarr",
-                        "roles": ["data"],
-                        "title": "Total precipitation",
-                    }
-                },
-            },
-            {
-                "stac_version": "1.0.0",
-                "stac_extensions": [],
-                "type": "Feature",
-                "id": "3299076cbb754731bf404f4bba2a3ef2",
-                "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-179.934464, -89.934464],
-                            [-179.934464, 111.261056],
-                            [189.03321599996895, 111.261056],
-                            [189.03321599996895, -89.934464],
-                            [-179.934464, -89.934464],
-                        ]
-                    ],
-                },
-                "properties": {
-                    "created": "2023-06-29T15:41:52.472285Z",
-                    "updated": "2023-06-29T15:41:52.472285Z",
-                    "datetime": "2021-12-20T19:00:00Z",
-                    "cube:variables": {
-                        "49459": {
-                            "type": "data",
-                            "dimensions": ["lon", "lat", "time"],
-                        }
-                    },
-                    "cube:dimensions": {
-                        "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
-                        "lon": {
-                            "axis": "x",
-                            "extent": [-179.934464, 189.03321599996895],
-                        },
-                        "time": {
-                            "step": "P0DT0H0M0S",
-                            "extent": [
-                                "2021-12-20T19:00:00+00:00",
-                                "2021-12-20T19:00:00+00:00",
-                            ],
-                        },
-                    },
-                },
-                "collection": "Global weather (ERA5) (ZARR)",
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/3299076cbb754731bf404f4bba2a3ef2",
-                        "type": "application/geo+json",
-                    },
-                    {
-                        "rel": "parent",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "collection",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "root",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
-                        "type": "application/json",
-                        "title": "stac-fastapi",
-                    },
-                ],
-                "assets": {
-                    "data": {
-                        "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
-                        "type": "application/zip+zarr",
-                        "roles": ["data"],
-                        "title": "Total precipitation",
-                    }
-                },
-            },
-            {
-                "stac_version": "1.0.0",
-                "stac_extensions": [],
-                "type": "Feature",
-                "id": "22ec9312e00f47289826aa30ba5257a5",
-                "bbox": [-179.934464, -89.934464, 189.03321599996895, 111.261056],
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-179.934464, -89.934464],
-                            [-179.934464, 111.261056],
-                            [189.03321599996895, 111.261056],
-                            [189.03321599996895, -89.934464],
-                            [-179.934464, -89.934464],
-                        ]
-                    ],
-                },
-                "properties": {
-                    "created": "2023-06-29T15:41:52.472421Z",
-                    "updated": "2023-06-29T15:41:52.472421Z",
-                    "datetime": "2021-12-20T18:00:00Z",
-                    "cube:variables": {
-                        "49459": {
-                            "type": "data",
-                            "dimensions": ["lon", "lat", "time"],
-                        }
-                    },
-                    "cube:dimensions": {
-                        "lat": {"axis": "y", "extent": [-89.934464, 111.261056]},
-                        "lon": {
-                            "axis": "x",
-                            "extent": [-179.934464, 189.03321599996895],
-                        },
-                        "time": {
-                            "step": "P0DT0H0M0S",
-                            "extent": [
-                                "2021-12-20T18:00:00+00:00",
-                                "2021-12-20T18:00:00+00:00",
-                            ],
-                        },
-                    },
-                },
-                "collection": "Global weather (ERA5) (ZARR)",
-                "links": [
-                    {
-                        "rel": "self",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)/items/22ec9312e00f47289826aa30ba5257a5",
-                        "type": "application/geo+json",
-                    },
-                    {
-                        "rel": "parent",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "collection",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/collections/Global weather (ERA5) (ZARR)",
-                        "type": "application/json",
-                    },
-                    {
-                        "rel": "root",
-                        "href": "http://stac-fastapi-sqlalchemy-geodn-discovery.cimf-staging-9ca4d14d48413d18ce61b80811ba4308-0000.us-south.containers.appdomain.cloud/",
-                        "type": "application/json",
-                        "title": "stac-fastapi",
-                    },
-                ],
-                "assets": {
-                    "data": {
-                        "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/geofm-sampling-strategies/raster/dset_id=190/layer_id=49459/year=2021/data.zarr",
-                        "type": "application/zip+zarr",
-                        "roles": ["data"],
-                        "title": "Total precipitation",
-                    }
-                },
-            },
-        ],
+        "features": STAC_ITEMS,
         "links": [{}],
         "timeStamp": "2023-08-24T19:47:14.625036",
         "numberMatched": 10,
         "numberReturned": 10,
     }
     return s
+
+
+class MockStacSearchResult:
+
+    def __init__(self, items) -> None:
+        self.items = items
+
+    def items_as_dicts(self):
+        return self.items
 
 
 class MockPystacClient:
@@ -1032,6 +1302,19 @@ class MockPystacClient:
 
     def get_collection(self, collection_id):
         return make_pystac_client_collection(collection_id=collection_id)
+
+    def search(
+        self,
+        method: Optional[str] = "POST",
+        max_items: Optional[int] = None,
+        limit: Optional[int] = None,
+        ids: Optional[str] = None,
+        collections: Optional[str] = None,
+        bbox: Optional[List] = None,
+        datetime: Optional[str] = None,
+        fields: Dict[str, Any] = {},
+    ):
+        return MockStacSearchResult(items=HLSS30_ITEMS)
 
 
 class MockSTACClient:

@@ -25,6 +25,8 @@ from tensorlakehouse_openeo_driver.file_reader.netcdf_file_reader import (
     NetCDFFileReader,
 )
 from tensorlakehouse_openeo_driver.file_reader.zarr_file_reader import ZarrFileReader
+from tensorlakehouse_openeo_driver.process_implementations import property_processes
+from openeo_pg_parser_networkx.pg_schema import ParameterReference
 
 
 class AbstractLoadCollection(ABC):
@@ -76,7 +78,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         temporal_extent: TemporalInterval,
         bands: List[str],
         dimensions: Dict[str, str],
-        properties=None,
+        properties: Dict[str, Any] = {},
     ) -> xr.DataArray:
         logger.debug(f"load collection from COS: id={id} bands={bands}")
         bbox_wsg84 = LoadCollectionFromCOS._convert_to_WSG84(
@@ -97,7 +99,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
             collection_id=id,
         )
         items_by_media_type = LoadCollectionFromCOS._group_items_by_media_type(
-            items=item_search, bands=bands
+            items=item_search, bands=bands, properties=properties
         )
         assert (
             len(items_by_media_type) == 1
@@ -184,11 +186,59 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         ), f"Error! No item has been found, please check the params:\
                 collection_id={collection_id} {bbox=} {datetime=} {limit=}\
                 {fields=}"
+
         return items_as_dicts
 
     @staticmethod
+    def _filter_by_properties(item: Dict[str, Any], properties: Dict[str, Any]) -> bool:
+        """filter properties by
+
+        Args:
+            items (List[Dict[str, Any]]): _description_
+            properties (Dict[str, Any]): _description_
+
+        Returns:
+            List[Dict[str, Any]]: _description_
+        """
+        # {'cloud_coverage': {'process_graph': {'lte1': {'process_id': 'lte', 'arguments': {'x': ParameterReference(from_parameter='value'), 'y': 70}, 'result': True}}}}
+        item_properties = item["properties"]
+        if len(properties) == 0:
+            return True
+        else:
+            for property_name, process_graph in properties.items():
+                if property_name in item_properties.keys():
+                    property_value = item_properties[property_name]
+                    for proc_info in process_graph["process_graph"].values():
+                        process_id = proc_info["process_id"]
+                        x = proc_info["arguments"]["x"]
+                        y = proc_info["arguments"]["y"]
+                        result: bool = proc_info["result"]
+                        assert isinstance(result, bool)
+                        func = getattr(property_processes, process_id)
+                        if (
+                            isinstance(x, ParameterReference)
+                            and x.from_parameter == "value"
+                        ):
+
+                            res: bool = func(x=property_value, y=y)
+                        elif (
+                            isinstance(y, ParameterReference)
+                            and y.from_parameter == "value"
+                        ):
+                            res = func(x=x, y=property_value)
+
+                        assert isinstance(res, bool)
+                        if res != result:
+                            return False
+                else:
+                    return False
+            return True
+
+    @staticmethod
     def _group_items_by_media_type(
-        items: List[Dict[str, Any]], bands: List[str]
+        items: List[Dict[str, Any]],
+        bands: List[str],
+        properties: Dict[str, Any],
     ) -> Dict[str, List[Dict[str, Any]]]:
         """group items by media type as it defines a method for load files
 
@@ -201,24 +251,30 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         """
         items_by_media_type: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(list)
         for item in items:
-            item_properties = item["properties"]
-            # get list of available bands, which are stored as cube:variables
-            available_bands = list(item_properties["cube:variables"].keys())
-            for band in bands:
-                if band in available_bands:
-                    assets: Dict[str, Any] = item["assets"]
-                    # if "data" is the key
-                    if LoadCollectionFromCOS.ASSET_DESCRIPTION_DATA in assets.keys():
-                        asset = assets[LoadCollectionFromCOS.ASSET_DESCRIPTION_DATA]
-                    # if band name is the key
-                    elif band in assets.keys():
-                        asset = assets[band]
-                    else:
-                        continue
-                    media_type = asset["type"]
+            if LoadCollectionFromCOS._filter_by_properties(
+                item=item, properties=properties
+            ):
+                item_properties = item["properties"]
+                # get list of available bands, which are stored as cube:variables
+                available_bands = list(item_properties["cube:variables"].keys())
+                for band in bands:
+                    if band in available_bands:
+                        assets: Dict[str, Any] = item["assets"]
+                        # if "data" is the key
+                        if (
+                            LoadCollectionFromCOS.ASSET_DESCRIPTION_DATA
+                            in assets.keys()
+                        ):
+                            asset = assets[LoadCollectionFromCOS.ASSET_DESCRIPTION_DATA]
+                        # if band name is the key
+                        elif band in assets.keys():
+                            asset = assets[band]
+                        else:
+                            continue
+                        media_type = asset["type"]
 
-                    # create dict entry for a media type composed by a list of items and item:properties
-                    items_by_media_type[media_type].append(item)
+                        # create dict entry for a media type composed by a list of items and item:properties
+                        items_by_media_type[media_type].append(item)
         return items_by_media_type
 
     @staticmethod
