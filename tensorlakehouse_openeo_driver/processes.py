@@ -318,7 +318,7 @@ def load_collection(
     spatial_extent: BoundingBox,
     temporal_extent: TemporalInterval,
     bands: Optional[List[str]],
-    properties=None,
+    properties: Dict[str, Any] = {},
 ) -> Union[RasterCube, VectorCube]:
     """pull data from the data source in which the collection is stored
 
@@ -327,7 +327,7 @@ def load_collection(
         spatial_extent (BoundingBox): bounding box specified by users
         temporal_extent (TemporalInterval): time interval
         bands (Optional[List[str]]): band unique ids
-        properties (_type_, optional): _description_. Defaults to None.
+        properties (Dict[str, Any]): property names are the keys and conditions are the values
 
 
     Returns:
@@ -361,13 +361,6 @@ def load_collection(
         msg = f"Error! collection_id={id} spatial_extent={spatial_extent} temporal_extent={temporal_extent} msg={e}"
         logger.error(msg=msg)
         raise e
-        # return _load_collection_from_external_openeo_instance(
-        #     collection_id=id,
-        #     spatial_extent=spatial_extent,
-        #     temporal_extent=temporal_extent,
-        #     bands=bands,
-        #     properties=properties,
-        # )
 
 
 def _get_dimension_names(cube_dimensions: Dict[str, Any]) -> Dict[str, str]:

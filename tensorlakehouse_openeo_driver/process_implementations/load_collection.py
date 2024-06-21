@@ -25,7 +25,6 @@ from tensorlakehouse_openeo_driver.file_reader.netcdf_file_reader import (
     NetCDFFileReader,
 )
 from tensorlakehouse_openeo_driver.file_reader.zarr_file_reader import ZarrFileReader
-from tensorlakehouse_openeo_driver.process_implementations import property_processes
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 
 
@@ -97,9 +96,10 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
             bbox=bbox_wsg84,
             temporal_extent=temporal_extent,
             collection_id=id,
+            properties=properties,
         )
         items_by_media_type = LoadCollectionFromCOS._group_items_by_media_type(
-            items=item_search, bands=bands, properties=properties
+            items=item_search, bands=bands
         )
         assert (
             len(items_by_media_type) == 1
@@ -141,11 +141,74 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         data = reader.load_items()
         return data
 
+    @staticmethod
+    def _parse_process_graph(process_graph: Dict) -> Tuple:
+        """parses process graph, which is part of properties parameter of load_collection process
+
+        Args:
+            process_graph (Dict):
+
+        Returns:
+            Tuple: _description_
+        """
+        map_openeo_cql2_operators = {
+            "lte": "<=",
+            "lt": "<",
+            "gte": ">=",
+            "gt": ">",
+            "eq": "=",
+        }
+        x = process_graph["arguments"]["x"]
+        y = process_graph["arguments"]["y"]
+        if isinstance(x, ParameterReference):
+            value = y
+        else:
+            value = x
+        process_id: str = process_graph["process_id"]
+        assert isinstance(process_id, str)
+        operator = map_openeo_cql2_operators[process_id]
+        return operator, value
+
+    @staticmethod
+    def _convert_properties_to_filter(properties: Dict[str, Any]) -> Dict[str, Any]:
+        """convert properties parameter of load_collection process to a filter parameter of
+        pystac_client search method
+
+        Args:
+            properties (Dict[str, Any]): properties parameter
+
+        Returns:
+            Dict[str, Any]: filter parameter
+        """
+
+        conditions = list()
+        for property_name, process_graph in properties.items():
+            for process_graph_value in process_graph["process_graph"].values():
+
+                operator, value = LoadCollectionFromCOS._parse_process_graph(
+                    process_graph=process_graph_value
+                )
+
+                condition = {
+                    "op": operator,
+                    "args": [
+                        {"property": f"properties.{property_name}"},
+                        value,
+                    ],
+                }
+                conditions.append(condition)
+        if len(conditions) > 1:
+            filter_cql = {"op": "and", "args": conditions}
+        else:
+            filter_cql = conditions.pop()
+        return filter_cql
+
     def _search_items(
         self,
         bbox: Tuple[float, float, float, float],
         temporal_extent: TemporalInterval,
         collection_id: str,
+        properties: Dict[str, Any] = {},
         limit: int = 10000,
     ) -> List[Dict[str, Any]]:
         starttime, endtime = LoadCollectionFromCOS._get_start_and_endtime(
@@ -155,7 +218,9 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         datetime = f"{starttime.strftime(STAC_DATETIME_FORMAT)}/{endtime.strftime(STAC_DATETIME_FORMAT)}"
         logger.debug(f"Connecting to STAC service URL={STAC_URL}")
         stac_catalog = Client.open(STAC_URL)
-
+        filter_cql = LoadCollectionFromCOS._convert_properties_to_filter(
+            properties=properties
+        )
         fields: Dict[str, List[str]] = {
             "includes": [
                 "id",
@@ -168,7 +233,8 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         }
 
         logger.debug(
-            f"Searching STAC items: {bbox=} {datetime=} collections={[collection_id]} {fields=} {limit=}"
+            f"Searching STAC items: {bbox=} {datetime=} collections={[collection_id]}\
+                  {fields=} {limit=} {filter_cql=}"
         )
         # search items
         result = stac_catalog.search(
@@ -177,6 +243,8 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
             datetime=datetime,
             fields=fields,
             limit=limit,
+            filter=filter_cql,
+            filter_lang="cql2-json",
         )
         items_as_dicts = list(result.items_as_dicts())
         matched_items = len(items_as_dicts)
@@ -190,55 +258,9 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         return items_as_dicts
 
     @staticmethod
-    def _filter_by_properties(item: Dict[str, Any], properties: Dict[str, Any]) -> bool:
-        """filter properties by
-
-        Args:
-            items (List[Dict[str, Any]]): _description_
-            properties (Dict[str, Any]): _description_
-
-        Returns:
-            List[Dict[str, Any]]: _description_
-        """
-        # {'cloud_coverage': {'process_graph': {'lte1': {'process_id': 'lte', 'arguments': {'x': ParameterReference(from_parameter='value'), 'y': 70}, 'result': True}}}}
-        item_properties = item["properties"]
-        if len(properties) == 0:
-            return True
-        else:
-            for property_name, process_graph in properties.items():
-                if property_name in item_properties.keys():
-                    property_value = item_properties[property_name]
-                    for proc_info in process_graph["process_graph"].values():
-                        process_id = proc_info["process_id"]
-                        x = proc_info["arguments"]["x"]
-                        y = proc_info["arguments"]["y"]
-                        result: bool = proc_info["result"]
-                        assert isinstance(result, bool)
-                        func = getattr(property_processes, process_id)
-                        if (
-                            isinstance(x, ParameterReference)
-                            and x.from_parameter == "value"
-                        ):
-
-                            res: bool = func(x=property_value, y=y)
-                        elif (
-                            isinstance(y, ParameterReference)
-                            and y.from_parameter == "value"
-                        ):
-                            res = func(x=x, y=property_value)
-
-                        assert isinstance(res, bool)
-                        if res != result:
-                            return False
-                else:
-                    return False
-            return True
-
-    @staticmethod
     def _group_items_by_media_type(
         items: List[Dict[str, Any]],
         bands: List[str],
-        properties: Dict[str, Any],
     ) -> Dict[str, List[Dict[str, Any]]]:
         """group items by media type as it defines a method for load files
 
@@ -251,30 +273,25 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         """
         items_by_media_type: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(list)
         for item in items:
-            if LoadCollectionFromCOS._filter_by_properties(
-                item=item, properties=properties
-            ):
-                item_properties = item["properties"]
-                # get list of available bands, which are stored as cube:variables
-                available_bands = list(item_properties["cube:variables"].keys())
-                for band in bands:
-                    if band in available_bands:
-                        assets: Dict[str, Any] = item["assets"]
-                        # if "data" is the key
-                        if (
-                            LoadCollectionFromCOS.ASSET_DESCRIPTION_DATA
-                            in assets.keys()
-                        ):
-                            asset = assets[LoadCollectionFromCOS.ASSET_DESCRIPTION_DATA]
-                        # if band name is the key
-                        elif band in assets.keys():
-                            asset = assets[band]
-                        else:
-                            continue
-                        media_type = asset["type"]
 
-                        # create dict entry for a media type composed by a list of items and item:properties
-                        items_by_media_type[media_type].append(item)
+            item_properties = item["properties"]
+            # get list of available bands, which are stored as cube:variables
+            available_bands = list(item_properties["cube:variables"].keys())
+            for band in bands:
+                if band in available_bands:
+                    assets: Dict[str, Any] = item["assets"]
+                    # if "data" is the key
+                    if LoadCollectionFromCOS.ASSET_DESCRIPTION_DATA in assets.keys():
+                        asset = assets[LoadCollectionFromCOS.ASSET_DESCRIPTION_DATA]
+                    # if band name is the key
+                    elif band in assets.keys():
+                        asset = assets[band]
+                    else:
+                        continue
+                    media_type = asset["type"]
+
+                    # create dict entry for a media type composed by a list of items and item:properties
+                    items_by_media_type[media_type].append(item)
         return items_by_media_type
 
     @staticmethod

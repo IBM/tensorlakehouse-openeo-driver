@@ -2,18 +2,16 @@ from tensorlakehouse_openeo_driver.process_implementations.load_collection impor
     LoadCollectionFromCOS,
 )
 
-from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
-    HLSS30_ITEMS,
-)
+
 import pytest
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
+import deepdiff
 
 
 @pytest.mark.parametrize(
-    "items, properties, expected_result_list",
+    "properties, expected_filter",
     [
         (
-            HLSS30_ITEMS,
             {
                 "cloud_coverage": {
                     "process_graph": {
@@ -21,17 +19,22 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                             "process_id": "lte",
                             "arguments": {
                                 "x": ParameterReference(from_parameter="value"),
-                                "y": 97,
+                                "y": "97",
                             },
                             "result": True,
                         }
                     }
                 }
             },
-            [False, True, False],
+            {
+                "op": "<=",
+                "args": [
+                    {"property": "properties.cloud_coverage"},
+                    "97",
+                ],
+            },
         ),
         (
-            HLSS30_ITEMS,
             {
                 "cloud_coverage": {
                     "process_graph": {
@@ -39,7 +42,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                             "process_id": "lte",
                             "arguments": {
                                 "x": ParameterReference(from_parameter="value"),
-                                "y": 98,
+                                "y": "97",
                             },
                             "result": True,
                         }
@@ -58,12 +61,31 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                     }
                 },
             },
-            [True, False, False],
+            {
+                "op": "and",
+                "args": [
+                    {
+                        "op": "<=",
+                        "args": [
+                            {"property": "properties.cloud_coverage"},
+                            "97",
+                        ],
+                    },
+                    {
+                        "op": "=",
+                        "args": [
+                            {"property": "properties.tile"},
+                            "T18TYP",
+                        ],
+                    },
+                ],
+            },
         ),
     ],
 )
-def test_group_items_by_media_type(items, properties, expected_result_list):
-    load_coll = LoadCollectionFromCOS()
-    for item, expected_res in zip(items, expected_result_list):
-        result = load_coll._filter_by_properties(item=item, properties=properties)
-        assert result == expected_res
+def test_convert_properties_to_filter(properties, expected_filter):
+    filter_cql = LoadCollectionFromCOS._convert_properties_to_filter(
+        properties=properties
+    )
+    d = deepdiff.DeepDiff(filter_cql, expected_filter)
+    assert len(d) == 0, f"Error! not equal: {d}"
