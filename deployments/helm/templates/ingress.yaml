@@ -1,73 +1,25 @@
-{{ if .Values.applyroutes }}
+{{ if .Values.applyingess }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: tensorlakehouse-ingress
 spec:
   rules:
-  - http:
+  - host: stac.tensorlakehouse
+    http:
       paths:
       - path: /stac-explorer
         pathType: Prefix
         backend:
           service:
-            name: elyra-ai
+            name:  stac-explorer
             port:
-              number: 8888
-      - path: /elyra
+              number: 8080
+      - path: /pgstac
         pathType: Prefix
         backend:
           service:
-            name: elyra-ai
+            name: pgstac-fastapi
             port:
-              number: 8888 
-      - path: /git
-        pathType: Prefix
-        backend:
-          service:
-            name: elyra-ai
-            port:
-              number: 8888 
-      - path: /lsp
-        pathType: Prefix
-        backend:
-          service:
-            name: elyra-ai
-            port:
-              number: 8888 
-      - path: /kernelspecs
-        pathType: Prefix
-        backend:
-          service:
-            name: elyra-ai
-            port:
-              number: 8888 
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: elyra-ai
-            port:
-              number: 8888       
-      - path: /static
-        pathType: Prefix
-        backend:
-          service:
-            name: elyra-ai
-            port:
-              number: 8888
-      - path: /lab
-        pathType: Prefix
-        backend:
-          service:
-            name: elyra-ai
-            port:
-              number: 8888
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: elyra-ai
-            port:
-              number: 8888
+              number: 8080 
 {{ end }}
