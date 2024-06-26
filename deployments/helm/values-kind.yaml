@@ -6,9 +6,9 @@ namespace: default
 stacurl: http://stac-fastapi-sqlalchemy.nasageospatial-dev.svc.cluster.local:8081/
 
 stacdb:
-  postgresHost: pgstacpostgisservice
-  postgresHostReader: pgstacpostgisservice
-  postgresHostWriter: pgstacpostgisservice
+  postgresHost: pgstacpostgisservice.default.svc.cluster.local
+  postgresHostReader: pgstacpostgisservice.default.svc.cluster.local
+  postgresHostWriter: pgstacpostgisservice.default.svc.cluster.local
   port: "5432"
 
 applyroutes: false
