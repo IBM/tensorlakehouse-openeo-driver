@@ -2,22 +2,26 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: stac-fastapi-sqlalchemy
+  name: pgstac-fastapi
   namespace: {{ .Values.namespace }}
   generation: 1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: stac-fastapi-sqlalchemy
+      app: pgstac-fastapi
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app: stac-fastapi-sqlalchemy
+        app: pgstac-fastapi
     spec:
+      initContainers:
+      - name: wait-for-db-to-start
+        image: alpine
+        command: ['sleep', '180']
       containers:
-        - name: stac-fastapi-sqlalchemy
+        - name: pgstac-fastapi
           env:
           - name: APP_HOST
             value: "0.0.0.0"
@@ -42,7 +46,7 @@ spec:
           - name: POSTGRES_PORT
             value: '{{ .Values.stacdb.port }}'
           - name: WEB_CONCURRENCY
-            value: "10"
+            value: "1"
           ports:
             - containerPort: 8080
               protocol: TCP
