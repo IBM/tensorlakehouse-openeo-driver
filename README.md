@@ -70,6 +70,7 @@ Prerequisites:
 
 #### *Step 1* Generate credentials
 
+Create a json file in which the bucket names are the keys and credentials to access the bucket are the values
 ```json
 {
     "<my-bucket-name>": {
@@ -77,12 +78,12 @@ Prerequisites:
         "access_key_id": "<access key>",
         "secret_access_key": "<secret>",
         "region": "<region>"
-    },
+    }
 }
 ```
 then convert it to base64 by running:
 ```shell
-python tensorlakehouse_openeo_driver/util/credentials_manager.py --file <path>
+base64 -i /path/to/the/file
 ```
 The output should be used to set the `CREDENTIALS` env variable
 
