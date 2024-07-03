@@ -83,7 +83,7 @@ Create a json file in which the bucket names are the keys and credentials to acc
 ```
 then convert it to base64 by running:
 ```shell
-base64 -i /path/to/the/file
+python tensorlakehouse_openeo_driver/util/credentials_manager.py --file ~/temp/test.json
 ```
 The output should be used to set the `CREDENTIALS` env variable
 

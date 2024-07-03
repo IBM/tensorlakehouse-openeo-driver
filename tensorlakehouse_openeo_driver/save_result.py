@@ -50,7 +50,6 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
         Returns:
             str: filename
         """
-        engine = "netcdf4"
         logger.debug(f"GeoDNImageCollectionResult::save_result - {filename=}")
         if GTIFF == self.format.upper():
             return self._save_as_geotiff(filename=filename)
@@ -73,7 +72,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                 else:
                     ds = array.to_dataset(name="variable")
                 logger.debug(f"DataSet dimensions {dimensions}")
-                ds.to_netcdf(path=filename, engine=engine)  # type: ignore[call-overload]
+                ds.to_netcdf(path=filename, engine="netcdf4")  # type: ignore[call-overload]
             except TypeError as e:
                 logger.error(
                     f"TypeError: Invalid attr. Exception handling: trying to convert invalid attrs to str: {e}"
@@ -95,7 +94,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                             logger.debug(f"Invalid attr: {attr_key}")
                             ds[variable].attrs[attr_key] = str(attr_value)
 
-                ds.to_netcdf(path=filename, engine=engine)  # type: ignore[call-overload]
+                ds.to_netcdf(path=filename, engine="netcdf4")  # type: ignore[call-overload]
 
         else:
             raise NotImplementedError(f"Support for {format} is not implemented")
