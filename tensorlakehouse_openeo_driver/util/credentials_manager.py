@@ -75,9 +75,6 @@ def generate_base64_credentials(credentials: Path):
         print(encoded)
 
         decoded = decode_credential(encoded_credentials=encoded)
-        # print("*" * 50)
-        # print(decoded)
-        # print("*" * 50)
         assert cred == decoded, f"{cred}\n{decoded}"
 
 

@@ -41,7 +41,7 @@ class TensorlakehouseOpenEoBackendConfig(OpenEoBackendConfig):
     )
 
     capabilities_service_id: Optional[str] = None
-    capabilities_title: str = "GeoDN openEO Backend"
+    capabilities_title: str = "Tensorlakehouse openEO Backend"
     capabilities_description: str = "This is the GeoDN openEO Backend"
     capabilities_backend_version: str = "0.1.0"
     capabilities_deploy_metadata: dict = attrs.Factory(

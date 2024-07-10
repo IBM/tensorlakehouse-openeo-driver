@@ -15,6 +15,7 @@ from tensorlakehouse_openeo_driver.processes import (
     resample_spatial,
     merge_cubes,
     aggregate_temporal_period,
+    run_udf,
 )
 from tensorlakehouse_openeo_driver.processing import TensorlakehouseProcessing
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
@@ -243,3 +244,18 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
         expected_attrs={},
         expected_crs=crs.CRS.from_epsg(4326),
     )
+
+
+def test_runudf():
+    data = generate_xarray(
+        bands=bands_1,
+        lonmin=bbox_1[0],
+        latmin=bbox_1[1],
+        lonmax=bbox_1[2],
+        latmax=bbox_1[3],
+        temporal_extent=spatial_ext_1,
+        freq=None,
+    )
+    udf = "import xarray\n\n\ndef apply_datacube(cube: xarray.DataArray, context: dict) -> xarray.DataArray:\n\n    cube.values = 0.0001 * cube.values\n\n    return cube\n"
+    runtime = "Python"
+    run_udf(udf=udf, data=data, runtime=runtime)
