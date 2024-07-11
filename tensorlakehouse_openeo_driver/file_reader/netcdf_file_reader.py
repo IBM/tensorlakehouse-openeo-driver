@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from tensorlakehouse_openeo_driver.constants import (
+    DEFAULT_BANDS_DIMENSION,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
 )
@@ -46,7 +47,8 @@ class NetCDFFileReader(CloudStorageFileReader):
         href = asset_value["href"]
 
         s3_file_obj = s3fs.open(href, mode="rb")
-        ds = xr.open_dataset(s3_file_obj, engine="h5netcdf")
+        # ds = xr.open_dataset(s3_file_obj, engine="h5netcdf")
+        ds = xr.open_dataset(s3_file_obj, engine="scipy")
         x_dim = CloudStorageFileReader._get_dimension_name(
             item=item, axis=DEFAULT_X_DIMENSION
         )
@@ -60,8 +62,11 @@ class NetCDFFileReader(CloudStorageFileReader):
         assert isinstance(crs_code, int), f"Error! Invalid type: {crs_code=}"
         if ds.rio.crs is None:
             ds.rio.write_crs(f"epsg:{crs_code}", inplace=True)
+        assert all(
+            band in list(ds) for band in self.bands
+        ), f"Error! not all bands={self.bands} are in ds={list(ds)}"
         ds = ds[self.bands]
-        da = ds.to_array()
+        da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
         # filter by area of interest
         reprojected_bbox = reproject_bbox(
             bbox=self.bbox, src_crs=4326, dst_crs=crs_code
