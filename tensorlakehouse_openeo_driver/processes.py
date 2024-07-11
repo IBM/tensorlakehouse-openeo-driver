@@ -3,6 +3,8 @@ import logging
 from collections import namedtuple
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
+import dask
+from dask.array.core import Array   
 from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     LoadCollectionFromCOS,
@@ -44,17 +46,15 @@ from shapely.geometry import shape
 from shapely.geometry.polygon import Polygon
 
 from tensorlakehouse_openeo_driver.constants import (
-    # BANDS,
     DEFAULT_BANDS_DIMENSION,
     GTIFF,
     NETCDF,
     STAC_DATETIME_FORMAT,
     STAC_URL,
     DEFAULT_TIME_DIMENSION,
-    # TIME,
     ZIP,
-    # X,
-    # Y,
+    DEFAULT_X_DIMENSION,
+    DEFAULT_Y_DIMENSION
 )
 from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
@@ -1074,11 +1074,30 @@ def resample_spatial(
 def run_udf(
     data: RasterCube, udf: str, runtime: str, version: Optional[str] = None
 ) -> UdfData:
-    logger.debug(f"run_udf {udf=} {data=}")
-    if not isinstance(data, xr.DataArray):
+    """ run an user-defined function
+
+    Args:
+        data (RasterCube): raster cube
+        udf (str): user-defined function 
+        runtime (str): e.g., python
+        version (Optional[str], optional): _description_. Defaults to None.
+
+    Returns:
+        UdfData: _description_
+    """
+    logger.debug(f"processes::run_udf {udf=} {data=} {runtime=}")
+    if isinstance(data, Array):
         data.compute()
-        # data = xr.DataArray(data=data, coords=data.coords, dims=data.dims)
-    # assert isinstance(data, xr.DataArray), f"Error! {type(data)}"
+        data = xr.DataArray(
+            data,
+            dims=(
+                DEFAULT_TIME_DIMENSION,
+                DEFAULT_BANDS_DIMENSION,
+                DEFAULT_Y_DIMENSION,
+                DEFAULT_X_DIMENSION,
+            ),
+        )
+    assert isinstance(data, xr.DataArray), f"Error! Unexpected data type: {type(data)}"
     udf_data = UdfData(datacube_list=[XarrayDataCube(data)])
     return run_udf_code(code=udf, data=udf_data)
 
