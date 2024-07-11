@@ -182,15 +182,19 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         Returns:
             Dict[str, Any]: filter parameter
         """
+        # TODO this method does not handle all types of filters that can be applied
 
+        # this is the list of conditions/filters that we will pass as filters in the search
         conditions = list()
+        # for each property 
         for property_name, process_graph in properties.items():
+            # for each process graph
             for process_graph_value in process_graph["process_graph"].values():
-
+                # extract operator and value
                 operator, value = LoadCollectionFromCOS._parse_process_graph(
                     process_graph=process_graph_value
                 )
-
+                # set a condition and append it to the list of conditions
                 condition = {
                     "op": operator,
                     "args": [
@@ -199,12 +203,14 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                     ],
                 }
                 conditions.append(condition)
-
+        # if the number of conditions appended is zero then there is no filter
         if len(conditions) == 0:
             filter_cql = None
+        # if the number of conditions is 1, then pop it from the list
         elif len(conditions) == 1:
             filter_cql = conditions.pop()
         else:
+            # if the number of conditions is >= 2, then add 'and' operator
             filter_cql = {"op": "and", "args": conditions}
         return filter_cql
 
