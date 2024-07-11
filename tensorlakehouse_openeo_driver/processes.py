@@ -3,8 +3,7 @@ import logging
 from collections import namedtuple
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
-import dask
-from dask.array.core import Array   
+from dask.array.core import Array
 from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     LoadCollectionFromCOS,
@@ -54,7 +53,7 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_TIME_DIMENSION,
     ZIP,
     DEFAULT_X_DIMENSION,
-    DEFAULT_Y_DIMENSION
+    DEFAULT_Y_DIMENSION,
 )
 from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
@@ -1074,11 +1073,11 @@ def resample_spatial(
 def run_udf(
     data: RasterCube, udf: str, runtime: str, version: Optional[str] = None
 ) -> UdfData:
-    """ run an user-defined function
+    """run an user-defined function
 
     Args:
         data (RasterCube): raster cube
-        udf (str): user-defined function 
+        udf (str): user-defined function
         runtime (str): e.g., python
         version (Optional[str], optional): _description_. Defaults to None.
 

@@ -186,7 +186,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
 
         # this is the list of conditions/filters that we will pass as filters in the search
         conditions = list()
-        # for each property 
+        # for each property
         for property_name, process_graph in properties.items():
             # for each process graph
             for process_graph_value in process_graph["process_graph"].values():

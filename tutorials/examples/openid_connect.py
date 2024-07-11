@@ -7,5 +7,5 @@ connection = openeo.connect("https://open-id-connect-protected-openeo.endpoint")
 connection.authenticate_oidc(
     client_id="your-client-id",
     client_secret="your-client-secret",
-    provider_id="https://your-oidc-provider.url"
+    provider_id="https://your-oidc-provider.url",
 )
