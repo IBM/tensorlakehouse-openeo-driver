@@ -2,7 +2,6 @@ import logging
 import logging.config
 import os
 from pathlib import Path
-from tensorlakehouse_openeo_driver.util.credentials_manager import decode_credential
 
 # set URL of STAC service, which provides collections and items
 STAC_URL = os.environ["STAC_URL"]
@@ -77,7 +76,6 @@ if (
 OPENEO_USERNAME = os.getenv("OPENEO_USERNAME", None)
 OPENEO_PASSWORD = os.getenv("OPENEO_PASSWORD", None)
 
-CREDENTIALS = decode_credential(os.environ["CREDENTIALS"])
 
 # list of media types for STAC
 # https://github.com/radiantearth/stac-spec/blob/master/best-practices.md#working-with-media-types

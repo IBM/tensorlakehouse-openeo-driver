@@ -10,7 +10,6 @@ from tensorlakehouse_openeo_driver.constants import (
 )
 from tensorlakehouse_openeo_driver.file_reader.netcdf_file_reader import (
     NetCDFFileReader,
-    CloudStorageFileReader,
 )
 from datetime import datetime
 from unittest.mock import patch
@@ -20,6 +19,7 @@ from tensorlakehouse_openeo_driver.geospatial_utils import reproject_bbox
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
     generate_xarray,
 )
+import os
 
 
 class FakeS3Filesystem:
@@ -34,7 +34,7 @@ class FakeS3Filesystem:
         (
             [
                 {
-                    "assets": {"data": {"href": "s3://fake-bucket/"}},
+                    "assets": {"data": {"href": "s3://my-bucket/dasfds/dsf.nc"}},
                     "properties": {
                         "cube:dimensions": {
                             DEFAULT_TIME_DIMENSION: {
@@ -76,7 +76,7 @@ class FakeS3Filesystem:
         (
             [
                 {
-                    "assets": {"data": {"href": "s3://fake-bucket/"}},
+                    "assets": {"data": {"href": "s3://my-bucket/fdsfs.nc"}},
                     "properties": {
                         "cube:dimensions": {
                             DEFAULT_TIME_DIMENSION: {
@@ -125,12 +125,11 @@ def test_load_items(
     crs: str,
     expected_dim_size: Dict[str, int],
 ):
-    fake_credentials = {
-        "endpoint": "s3.<region>.<hostname>",
-        "access_key_id": "<access key>",
-        "secret_access_key": "<secret>",
-        "region": "<region>",
-    }
+    os.environ["TLH_MYBUCKET_ACCESS_KEY_ID"] = "my-access-key"
+    os.environ["TLH_MYBUCKET_SECRET_ACCESS_KEY"] = "my-secret-key"
+    os.environ["TLH_MYBUCKET_ENDPOINT"] = (
+        "s3.us-south.cloud-object-storage.appdomain.cloud"
+    )
     # west, south, east, north = spatial_extent
     temporal_ext = (
         pd.Timestamp(temporal_extent[0] - pd.Timedelta(1, unit="D")),
@@ -171,24 +170,20 @@ def test_load_items(
     with patch.object(
         NetCDFFileReader, "create_s3filesystem", return_value=FakeS3Filesystem()
     ):
-        with patch.object(
-            CloudStorageFileReader,
-            "_get_credentials_by_bucket",
-            return_value=fake_credentials,
-        ):
-            with patch.object(xr, "open_dataset", return_value=ds):
-                reader = NetCDFFileReader(
-                    items=items,
-                    bbox=spatial_extent,
-                    temporal_extent=temporal_extent,
-                    bands=bands,
-                    dimension_map=None,
-                )
-                array = reader.load_items()
-                assert isinstance(array, xr.DataArray)
-                for dim, expected_size in expected_dim_size.items():
-                    actual_size = array[dim].size
-                    assert (
-                        actual_size == expected_size
-                    ), f"Error! {dim=} {actual_size=} {expected_size=}"
-                assert array.rio.crs == CRS.from_epsg(dst_crs)
+
+        with patch.object(xr, "open_dataset", return_value=ds):
+            reader = NetCDFFileReader(
+                items=items,
+                bbox=spatial_extent,
+                temporal_extent=temporal_extent,
+                bands=bands,
+                dimension_map=None,
+            )
+            array = reader.load_items()
+            assert isinstance(array, xr.DataArray)
+            for dim, expected_size in expected_dim_size.items():
+                actual_size = array[dim].size
+                assert (
+                    actual_size == expected_size
+                ), f"Error! {dim=} {actual_size=} {expected_size=}"
+            assert array.rio.crs == CRS.from_epsg(dst_crs)

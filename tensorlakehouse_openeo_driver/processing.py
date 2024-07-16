@@ -7,7 +7,9 @@ from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
 from openeo_driver.utils import EvalEnv
 from openeo_pg_parser_networkx import OpenEOProcessGraph
 from openeo_pg_parser_networkx import ProcessRegistry, Process
-from tensorlakehouse_openeo_driver.geodn_process_registry import GeodnProcessRegistry
+from tensorlakehouse_openeo_driver.geodn_process_registry import (
+    TensorLakehouseProcessRegistry,
+)
 import os
 import logging
 from openeo.capabilities import ComparableVersion
@@ -32,7 +34,7 @@ class TensorlakehouseProcessing(ConcreteProcessing):
     def __init__(self) -> None:
         super().__init__()
         # `process` is wrapped around each registered implementation
-        self.process_registry = GeodnProcessRegistry(wrap_funcs=[process])
+        self.process_registry = TensorLakehouseProcessRegistry(wrap_funcs=[process])
 
         process_names = get_process_names()
         # explicit reading rename dimension and rename labels processes specification

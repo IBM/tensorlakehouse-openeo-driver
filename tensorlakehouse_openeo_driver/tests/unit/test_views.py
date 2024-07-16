@@ -459,18 +459,18 @@
 #         }
 #         assert response.headers["Cache-Control"] == "max-age=900, public"
 
-#     @pytest.mark.parametrize("endpoint", [
-#         "/processes",
-#         "/processes/backend"
-#     ])
-#     def test_processes(self, api, endpoint):
-#         resp = api.get(endpoint).assert_status_code(200).json
-#         processes = resp["processes"]
-#         process_ids = set(p['id'] for p in processes)
-#         assert {"load_collection", "min", "max", "sin", "merge_cubes", "mask"}.issubset(process_ids)
-#         expected_keys = {"id", "description", "parameters", "returns"}
-#         for process in processes:
-#             assert all(k in process for k in expected_keys)
+# @pytest.mark.parametrize("endpoint", [
+#     "/processes",
+#     "/processes/backend"
+# ])
+# def test_processes(self, api, endpoint):
+#     resp = api.get(endpoint).assert_status_code(200).json
+#     processes = resp["processes"]
+#     process_ids = set(p['id'] for p in processes)
+#     assert {"load_collection", "min", "max", "sin", "merge_cubes", "mask"}.issubset(process_ids)
+#     expected_keys = {"id", "description", "parameters", "returns"}
+#     for process in processes:
+#         assert all(k in process for k in expected_keys)
 
 #     def test_process_details(self, api100):
 #         spec = api100.get("/processes/backend/add").assert_status_code(200).json

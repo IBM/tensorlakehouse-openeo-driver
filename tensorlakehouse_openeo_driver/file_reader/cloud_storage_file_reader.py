@@ -6,12 +6,14 @@ import pystac
 import s3fs
 import logging
 import logging.config
-from tensorlakehouse_openeo_driver.constants import (
-    CREDENTIALS,
-)
 from boto3.session import Session
 from urllib.parse import urlparse
 from datetime import datetime
+
+from tensorlakehouse_openeo_driver.util.object_storage_util import (
+    get_credentials_by_bucket,
+    parse_region,
+)
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
@@ -63,14 +65,13 @@ class CloudStorageFileReader:
         asset_values = next(iter(assets.values()))
         href = asset_values["href"]
         self.bucket = CloudStorageFileReader._extract_bucket_name_from_url(url=href)
-        credentials = CloudStorageFileReader._get_credentials_by_bucket(
-            bucket=self.bucket
-        )
+        credentials = get_credentials_by_bucket(bucket=self.bucket)
 
         self._endpoint = credentials["endpoint"]
         self.access_key_id = credentials["access_key_id"]
         self.secret_access_key = credentials["secret_access_key"]
-        self.region = credentials["region"]
+        region = parse_region(endpoint=self.endpoint)
+        self.region = region
 
     @property
     def endpoint(self) -> str:
@@ -103,30 +104,6 @@ class CloudStorageFileReader:
             region_name=self.region,
         )
         return session
-
-    @staticmethod
-    def _get_credentials_by_bucket(bucket: str) -> Dict[str, str]:
-        """get the credentials to access the specified bucket
-
-        Args:
-            bucket (str): input bucket name
-
-        Returns:
-            Dict[str, str]: a dict that contains endpoint, access_key_id, secret_access_key, region,
-                endpoint
-        """
-
-        assert bucket is not None
-        assert isinstance(bucket, str)
-        assert (
-            bucket in CREDENTIALS.keys()
-        ), f"Error! Missing credentials to access COS bucket: {bucket}"
-        bucket_credentials: Dict = CREDENTIALS[bucket]
-        assert all(
-            k in bucket_credentials.keys()
-            for k in ["access_key_id", "secret_access_key", "region", "endpoint"]
-        )
-        return bucket_credentials
 
     @staticmethod
     def _get_dimension_description(item: pystac.Item, axis: str) -> Optional[str]:

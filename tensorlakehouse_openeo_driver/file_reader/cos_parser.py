@@ -3,13 +3,14 @@ from ibm_botocore.config import Config
 from botocore.exceptions import ClientError
 import os
 from pathlib import Path
-from typing import Dict
 import logging
 import logging.config
-from tensorlakehouse_openeo_driver.constants import (
-    CREDENTIALS,
-)
+
 from urllib.parse import urlparse
+
+from tensorlakehouse_openeo_driver.util.object_storage_util import (
+    get_credentials_by_bucket,
+)
 
 
 assert os.path.isfile("logging.conf")
@@ -23,7 +24,7 @@ class COSConnector:
     def __init__(self, bucket: str) -> None:
         self.bucket = bucket
 
-        credentials = COSConnector.get_credentials_by_bucket(bucket=bucket)
+        credentials = get_credentials_by_bucket(bucket=bucket)
         self._endpoint = credentials["endpoint"]
         self.access_key_id = credentials["access_key_id"]
         self.secret_access_key = credentials["secret_access_key"]
@@ -31,30 +32,6 @@ class COSConnector:
     @property
     def endpoint(self) -> str:
         return self._endpoint.lower()
-
-    @staticmethod
-    def get_credentials_by_bucket(bucket: str) -> Dict[str, str]:
-        """get the credentials to access the specified bucket
-
-        Args:
-            bucket (str): input bucket name
-
-        Returns:
-            Dict[str, str]: a dict that contains endpoint, access_key_id, secret_access_key, region,
-                endpoint
-        """
-
-        assert bucket is not None
-        assert isinstance(bucket, str)
-        assert (
-            bucket in CREDENTIALS.keys()
-        ), f"Error! Missing credentials to access COS bucket: {bucket}"
-        bucket_credentials: Dict = CREDENTIALS[bucket]
-        assert all(
-            k in bucket_credentials.keys()
-            for k in ["access_key_id", "secret_access_key", "region", "endpoint"]
-        )
-        return bucket_credentials
 
     def _make_ibm_boto3_client(self, endpoint: str, access_key_id: str, secret: str):
         client = ibm_boto3.client(
@@ -112,6 +89,82 @@ class COSConnector:
         ), f"Error! Unable to find object name: {url}"
         object_name = url_parsed.path[slash_index:]
         return object_name
+
+    def get_bucket_contents_v2(self, max_keys):
+        """list bucket contents and
+
+        https://cloud.ibm.com/apidocs/cos/cos-compatibility?code=python#listobjects
+
+        Args:
+            max_keys (_type_): _description_
+
+        Raises:
+            e: _description_
+
+        Returns:
+            _type_: _description_
+        """
+        bucket_name = self.bucket
+        print("Retrieving bucket contents from: {0}".format(bucket_name))
+        try:
+            # create client object
+            cos_cli = ibm_boto3.client(
+                "s3",
+                endpoint_url=f"https://{self.endpoint}",
+                aws_access_key_id=self.access_key_id,
+                aws_secret_access_key=self.secret_access_key,
+                verify=False,
+                config=Config(tcp_keepalive=True),
+            )
+            more_results = True
+            next_token = ""
+
+            while more_results:
+                response = cos_cli.list_objects_v2(
+                    Bucket=bucket_name, MaxKeys=max_keys, ContinuationToken=next_token
+                )
+                files = response["Contents"]
+                for file in files:
+                    print("Item: {0} ({1} bytes).".format(file["Key"], file["Size"]))
+
+                if response["IsTruncated"]:
+                    next_token = response["NextContinuationToken"]
+                    print("...More results in next batch!\n")
+                else:
+                    more_results = False
+                    next_token = ""
+
+        except ClientError as be:
+            print("CLIENT ERROR: {0}\n".format(be))
+        except Exception as e:
+            print("Unable to retrieve bucket contents: {0}".format(e))
+
+    def get_bucket_contents(self, max_keys: int = 10):
+        """
+        https://cloud.ibm.com/apidocs/cos/cos-compatibility?code=python#listobjects
+        """
+        print("Retrieving bucket contents from: {0}".format(self.bucket))
+        try:
+            s3 = ibm_boto3.resource(
+                "s3",
+                endpoint_url=f"https://{self.endpoint}",
+                aws_access_key_id=self.access_key_id,
+                aws_secret_access_key=self.secret_access_key,
+                verify=False,
+                config=Config(tcp_keepalive=True),
+            )
+            files = s3.Bucket(self.bucket).objects.all()
+
+            i = 0
+            file_list = list(files)
+            while i < len(file_list) and i < max_keys:
+                file = file_list[i]
+                i += 1
+                print("Item: {0}".format(file.key))
+        except ClientError as be:
+            print("CLIENT ERROR: {0}\n".format(be))
+        except Exception as e:
+            print("Unable to retrieve bucket contents: {0}".format(e))
 
     def upload_fileobj(
         self,
@@ -171,25 +224,3 @@ class COSConnector:
         # The response contains the presigned URL
         assert isinstance(response, str), f"Error! Unexpected response: {response}"
         return response
-
-
-# def main():
-#     bucket = "openeo-geodn-driver-output"
-#     path = Path(
-#         "/Users/ltizzei/Projects/Orgs/GeoDN-Discovery/openeo-geodn-driver/examples/test/openeo_data.tif"
-#     )
-#     assert path.exists()
-#     from datetime import datetime
-#     import uuid
-
-#     now = datetime.now().strftime("%Y%m%dT%H%M%S")
-#     random_str = uuid.uuid4().hex
-#     new_object_name = f"{now}-{random_str}-output.tif"
-#     cos = COSConnector(bucket=bucket)
-#     cos.upload_fileobj(key=new_object_name, path=path)
-#     resp = cos.create_presigned_link(key=new_object_name)
-#     print(resp)
-
-
-# if __name__ == "__main__":
-#     main()

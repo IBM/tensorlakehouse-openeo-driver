@@ -8,11 +8,14 @@ import pystac
 import s3fs
 import logging
 import logging.config
-from tensorlakehouse_openeo_driver.constants import (
-    CREDENTIALS,
-)
+
 from boto3.session import Session
 from urllib.parse import urlparse
+
+from tensorlakehouse_openeo_driver.util.object_storage_util import (
+    get_credentials_by_bucket,
+    parse_region,
+)
 
 
 assert os.path.isfile("logging.conf")
@@ -26,14 +29,11 @@ class COSConnector:
     def __init__(self, bucket: str) -> None:
         assert bucket is not None
         assert isinstance(bucket, str)
-        assert (
-            bucket in CREDENTIALS.keys()
-        ), f"Error! Missing credentials to access COS bucket: {bucket}"
-        bucket_credentials = CREDENTIALS[bucket]
+        bucket_credentials = get_credentials_by_bucket(bucket)
         self._access_key_id = bucket_credentials["access_key_id"]
         self._secret = bucket_credentials["secret_access_key"]
         self._endpoint = bucket_credentials["endpoint"]
-        self._region_name = bucket_credentials["region"]
+        self._region_name = parse_region(endpoint=self._endpoint)
         self.bucket = bucket
 
     def _make_ibm_boto3_client(self):

@@ -40,7 +40,7 @@ Using a virtual environment for all commands in this guide is strongly recommend
 
  - `PYTHONPATH` for instance, `PYTHONPATH=/Users/alice/tensorlakehouse-openeo-driver/`
  - `STAC_URL` URL to the STAC service that you want to connect to (e.g., `https://stac-fastapi-sqlalchemy-nasageospatial-dev.cash.sl.cloud9.ibm.com`)
- - `CREDENTIALS` is a set of credentials (encoded in base64) that allows this service to access COS S3 buckets
+ - `TLH_<bucket>_*` is a set of credentials that allows this service to access COS S3 buckets
  - `BROKER_URL` - URL to the broker, which mediates communication between clients and workers.
  - `RESULT_BACKEND` - URL to the backend, which is necessary when we want to keep track of the tasks' states or retrieve results from tasks
  - if you want to implement OIDC authentication you need:
@@ -70,27 +70,32 @@ Prerequisites:
 
 #### *Step 1* Generate credentials
 
-Create a json file in which the bucket names are the keys and credentials to access the bucket are the values
-```json
-{
-    "<my-bucket-name>": {
-        "endpoint": "s3.<region>.<hostname>",
-        "access_key_id": "<access key>",
-        "secret_access_key": "<secret>",
-        "region": "<region>"
-    }
-}
+In order to access a COS bucket, tensorlakehouse needs to set 3 environment variables:
+  
+* access key id 
+* secret access key
+* endpoint e.g., `s3.us-south.cloud-object-storage.appdomain.cloud`
+
+Since each bucket might have different credentials to access it, tensorlakehouse uses the bucket name to define the environment variable name. E.g. if you have a bucket called `my-bucket` , the environment variables will be:
+
+* `TLH_MYBUCKET_ACCESS_KEY_ID`
+* `TLH_MYBUCKET_SECRET_ACCESS_KEY` 
+* `TLH_MYBUCKET_ENDPOINT`
+
+That is, `TLH_` is a prefix for all environment variables and each one has a different suffix: `_ACCESS_KEY_ID` , `_SECRET_ACCESS_KEY` or `_ENDPOINT`. The function that converts a bucket name to the core of the environment variable name is: 
+```python
+def convert_bucket(bucket: str) -> str:
+    env_var = "".join([i.upper() if str.isalnum(i) or i == '_' else "" for i in bucket])
+    return env_var
 ```
-then convert it to base64 by running:
-```shell
-python tensorlakehouse_openeo_driver/util/credentials_manager.py --file ~/temp/test.json
-```
-The output should be used to set the `CREDENTIALS` env variable
+
 
 #### *Step 2.* Set the environment variables and create  `.env` file
 ```
 # credentials to access cloud object store 
-CREDENTIALS=<see step 1>
+TLH_MYBUCKET_ACCESS_KEY_ID=my-access-key
+TLH_MYBUCKET_SECRET_ACCESS_KEY=my-secret-key 
+TLH_MYBUCKET_ENDPOINT=s3.us-south.cloud-object-storage.appdomain.cloud
 
 BROKER_URL=<redis database url>
 RESULT_BACKEND=<redis database url>
