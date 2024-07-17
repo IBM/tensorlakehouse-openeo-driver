@@ -295,8 +295,10 @@ def reproject_bbox(
     Returns:
         Tuple[float, float, float, float]: reprojected bbox
     """
-    crs_from = _get_epsg(crs_code=src_crs)
-    crs_to = _get_epsg(crs_code=dst_crs)
+    crs_from: CRS = _get_epsg(crs_code=src_crs)
+    crs_to: CRS = _get_epsg(crs_code=dst_crs)
+    if crs_from.to_epsg() == crs_to.to_epsg():
+        return bbox
 
     transformer = pyproj.Transformer.from_crs(
         crs_from=crs_from, crs_to=crs_to, always_xy=True

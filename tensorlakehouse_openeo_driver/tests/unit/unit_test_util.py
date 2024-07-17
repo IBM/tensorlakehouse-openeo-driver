@@ -1800,3 +1800,36 @@ def validate_raster_datacube(
     assert (
         cube.rio.crs == expected_crs
     ), f"Error! Invalid crs = {cube.rio.crs}, but the expected CRS is {expected_crs}"
+
+
+def generate_files():
+    da = generate_xarray(
+        bands=["tasmax"],
+        latmin=51.0,
+        latmax=52.0,
+        lonmin=-1.0,
+        lonmax=0.0,
+        temporal_extent=[pd.Timestamp(2000, 1, 1), pd.Timestamp(2001, 1, 1)],
+        freq="D",
+        num_periods=None,
+    )
+    da.to_netcdf("filename_2000_2001.nc", format="NETCDF3_CLASSIC")
+    da = generate_xarray(
+        bands=["tasmax"],
+        latmin=51.0,
+        latmax=52.0,
+        lonmin=-1.0,
+        lonmax=0.0,
+        temporal_extent=[pd.Timestamp(2001, 1, 1), pd.Timestamp(2002, 1, 1)],
+        freq="D",
+        num_periods=None,
+    )
+    da.to_netcdf("filename_2001_2002.nc", format="NETCDF3_CLASSIC")
+
+
+def main():
+    generate_files()
+
+
+if __name__ == "__main__":
+    main()

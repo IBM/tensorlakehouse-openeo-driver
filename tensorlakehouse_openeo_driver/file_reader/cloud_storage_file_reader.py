@@ -10,10 +10,7 @@ from boto3.session import Session
 from urllib.parse import urlparse
 from datetime import datetime
 
-from tensorlakehouse_openeo_driver.util.object_storage_util import (
-    get_credentials_by_bucket,
-    parse_region,
-)
+from tensorlakehouse_openeo_driver.util import object_storage_util
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
@@ -65,12 +62,12 @@ class CloudStorageFileReader:
         asset_values = next(iter(assets.values()))
         href = asset_values["href"]
         self.bucket = CloudStorageFileReader._extract_bucket_name_from_url(url=href)
-        credentials = get_credentials_by_bucket(bucket=self.bucket)
+        credentials = object_storage_util.get_credentials_by_bucket(bucket=self.bucket)
 
         self._endpoint = credentials["endpoint"]
         self.access_key_id = credentials["access_key_id"]
         self.secret_access_key = credentials["secret_access_key"]
-        region = parse_region(endpoint=self.endpoint)
+        region = object_storage_util.parse_region(endpoint=self.endpoint)
         self.region = region
 
     @property
