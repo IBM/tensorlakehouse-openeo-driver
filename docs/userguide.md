@@ -3,7 +3,8 @@
 ## Tutorials
 We recommend the following notebooks to learn more about openEO:
 - [HLSS30.ipynb](../tutorials/HLSS30.ipynb) shows how to pull HLSS30 data from COS and compute temporal aggregation
-- [ERA5-hbase.ipynb](../tutorials/ERA5-hbase.ipynb) shows how to pull ERA5 data 
+- [ERA5-hbase.ipynb](../tutorials/ERA5-hbase.ipynb) shows how to pull ERA5 data from hBase
+- [ERA5-COS.ipynb](../tutorials/ERA5-COS.ipynb) shows how to pull ERA5 data from COS
 - [local_connection.ipynb](../tutorials/local_connection.ipynb) shows how to load local netcdf file as openEO datacube, clip area of interest and compute temporal aggregation 
 
 ### Setup
