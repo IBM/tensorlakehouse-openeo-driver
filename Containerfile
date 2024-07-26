@@ -36,7 +36,7 @@ RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 # copy app
 COPY tensorlakehouse_openeo_driver tensorlakehouse_openeo_driver
-COPY libs libs
+#COPY libs libs
 COPY logging.conf .
 COPY pyproject.toml .
 COPY setup.py .
