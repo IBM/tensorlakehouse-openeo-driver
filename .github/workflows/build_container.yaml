@@ -1,0 +1,7 @@
+name: 'Build Container'
+description: 'Builds container and pushes to registry'
+runs:
+  using: 'docker'
+  image: 'Containerfile'
+  args:
+    - docker.io/tensorlakehouse//openeo-geodn-driver:0.2.1
