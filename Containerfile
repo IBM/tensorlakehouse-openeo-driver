@@ -1,4 +1,4 @@
-FROM registry.cirrus.ibm.com/public/python-39:latest
+FROM docker.io/python:3.9
 # setup
 LABEL "name"="tensorlakehouse_openeo_driver"
 LABEL "vendor"="IBM"
