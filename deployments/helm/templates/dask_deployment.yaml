@@ -14,11 +14,13 @@ spec:
       labels:
         app: dask-scheduler
     spec:
+      {{ if .Values.use_pull_secret }}
       imagePullSecrets:
-      - name: us.icr.io
+      - name: {{ .Values.pull_secret }}
+      {{ end }}
       containers:
       - name: dask-scheduler
-        image: quay.io/tensorlakehouse/dask:0.11
+        image: docker.io/tensorlakehouse/dask:0.11
         imagePullPolicy: Always
         command: ["dask-scheduler"]
         ports:
@@ -53,7 +55,7 @@ spec:
       {{ end }}
       containers:
       - name: dask-worker
-        image: quay.io/tensorlakehouse/dask:0.11
+        image: docker.io/tensorlakehouse/dask:0.11
         imagePullPolicy: Always
         command: ["dask-worker", "dask-scheduler:8786"]
         resources:
