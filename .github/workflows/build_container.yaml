@@ -1,7 +1,20 @@
-name: 'Build Container'
-description: 'Builds container and pushes to registry'
-runs:
-  using: 'docker'
-  image: 'Containerfile'
-  args:
-    - docker.io/tensorlakehouse//openeo-geodn-driver:0.2.1
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push
+        run: |
+          docker build --platform linux/amd64 \
+            -t docker.io/tensorlakehouse/openeo-geodn-driver:${{ github.sha }} -f Containerfile .
