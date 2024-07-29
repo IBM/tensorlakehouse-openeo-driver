@@ -37,6 +37,6 @@ spec:
               value: password
             - name: PGDATABASE
               value: postgis
-          image: quay.io/tensorlakehouse/stac-fastapi-pgstac:latest
+          image: docker.io/tensorlakehouse/stac-fastapi-pgstac:0.1.4
           imagePullPolicy: Always
       restartPolicy: Always

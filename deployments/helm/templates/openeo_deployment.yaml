@@ -24,7 +24,7 @@ spec:
       {{ end }}
       containers:
         - name: openeo-geodn-driver
-          image: 'docker.io/tensorlakehouse/openeo-geodn-driver:0.1.4'
+          image: 'docker.io/tensorlakehouse/openeo-geodn-driver:0.2.0'
           ports:
             - containerPort: 9091
               protocol: TCP
@@ -40,7 +40,32 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: openeo-geodn-driver-secret
-                  key: GEODN_DISCOVERY_API_KEY
+                  key: GEODN_DISCOVERY_API_KEY            
+            - name: GEODN_DISCOVERY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: openeo-geodn-driver-secret
+                  key: GEODN_DISCOVERY_USERNAME
+            - name: GEODN_DISCOVERY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openeo-geodn-driver-secret
+                  key: GEODN_DISCOVERY_PASSWORD
+            - name: OPENEO_AUTH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: openeo-geodn-driver-secret
+                  key: OPENEO_AUTH_CLIENT_ID
+            - name: OPENEO_AUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: openeo-geodn-driver-secret
+                  key: OPENEO_AUTH_CLIENT_SECRET
+            - name: RESULT_BACKEND
+              valueFrom:
+                secretKeyRef:
+                  name: openeo-geodn-driver-secret
+                  key: RESULT_BACKEND
             - name: CREDENTIALS
               valueFrom:
                 secretKeyRef:

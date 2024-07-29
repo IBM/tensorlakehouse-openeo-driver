@@ -1,4 +1,4 @@
-FROM registry.cirrus.ibm.com/public/python-39:latest
+FROM docker.io/python:3.9
 # setup
 LABEL "name"="tensorlakehouse_openeo_driver"
 LABEL "vendor"="IBM"
@@ -36,7 +36,7 @@ RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 # copy app
 COPY tensorlakehouse_openeo_driver tensorlakehouse_openeo_driver
-COPY libs libs
+#COPY libs libs
 COPY logging.conf .
 COPY pyproject.toml .
 COPY setup.py .

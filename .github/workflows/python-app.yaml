@@ -30,4 +30,4 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Test with pytest
       run: |
-        crosshair watch ./component-library
+        crosshair watch ./tensorlakehouse_openeo_driver
