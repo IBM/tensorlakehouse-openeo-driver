@@ -25,5 +25,5 @@ jobs:
       - name: Build and push
         run: |
           docker build --platform linux/amd64 \
-            -t docker.io/tensorlakehouse/openeo-geodn-driver:${{ github.sha }} -f Containerfile .
-          docker push docker.io/tensorlakehouse/openeo-geodn-driver:${{ github.sha }}
+            -t docker.io/tensorlakehouse/openeo-geodn-driver:latest_dev -f Containerfile .
+          docker push docker.io/tensorlakehouse/openeo-geodn-driver:latest_dev
