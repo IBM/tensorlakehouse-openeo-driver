@@ -15,4 +15,4 @@ result_serializer = "json"
 accept_content = ["json"]
 task_track_started = True
 task_routes = {"*": {"queue": "openeo-pgstac-queue"}}
-CELERY_TASK_ACKS_LATE = True
+task_acks_late = True
