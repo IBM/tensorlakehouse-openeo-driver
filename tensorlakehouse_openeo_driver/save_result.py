@@ -1,6 +1,8 @@
 from numbers import Number
 from pathlib import Path
 import uuid
+import dask_geopandas
+import geopandas
 import numpy as np
 import pandas as pd
 from openeo_driver.save_result import ImageCollectionResult
@@ -14,6 +16,7 @@ from tensorlakehouse_openeo_driver.constants import (
     GTIFF,
     NETCDF,
     DEFAULT_TIME_DIMENSION,
+    PARQUET,
 )
 import logging
 import logging.config
@@ -51,7 +54,23 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
             str: filename
         """
         logger.debug(f"GeoDNImageCollectionResult::save_result - {filename=}")
-        if GTIFF == self.format.upper():
+        logger.debug(
+            f"GeoDNImageCollectionResult::save_result Type of cube.data: {type(self.cube.data)}"
+        )
+
+        if PARQUET == self.format.upper():
+            if isinstance(self.cube.data, (dask_geopandas.GeoDataFrame)):
+                try:
+                    data: dask_geopandas.GeoDataFrame = self.cube.data.compute()
+                    data.to_parquet(filename)
+                except FileExistsError as e:
+                    raise e
+            elif isinstance(self.cube.data, (geopandas.GeoDataFrame)):
+                self.cube.data.to_parquet(filename)
+            else:
+                data_type = type(self.cube.data)
+                raise ValueError(f"Error! Unexpected data format: {data_type}")
+        elif GTIFF == self.format.upper():
             return self._save_as_geotiff(filename=filename)
         elif NETCDF == self.format.upper():
             array = self.cube.data
