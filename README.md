@@ -34,7 +34,42 @@ Using a virtual environment for all commands in this guide is strongly recommend
 2. Install *tensorlakehouse-openeo-driver* dependencies: `pip install -r requirements.txt`. Optionally, you can install other dependencies for development purpose: `pip install -r dev_requirements.txt`
 3. Optional, but strongly suggested: follow the step describe [here](https://github.com/ibm/detect-secrets) to setup detect-secrets tool
 
-## Running locally using containers
+## Running locally using KIND (Kubernetes In Docker) - RECOMMENDED
+Prerequisites:
+- docker/podman installation (e.g., 'docker ps' should run without error)
+- kubectl: Follow the [instructions](https://kubernetes.io/docs/tasks/tools/) for your platform
+- KIND (Just pick a [release](https://github.com/kubernetes-sigs/kind/releases) for your platform, it is just one binary you need to add to you system's path)
+
+Commands:  
+- `git clone https://github.com/IBM/tensorlakehouse-openeo-driver.git`  
+- `cd tensorlakehouse-openeo-driver/deployments/helm`  
+- `./create_kind_cluster.sh`  
+- `./deploy_to_kind.sh`  
+
+You can use `watch -n 1 kubectl get po` to follow process on installation. After quite some time, you should see all pods in running or completed state.
+
+This is an example output:
+```
+dask-worker-f5c5c4896-jwdm4            1/1     Running   0          46h  
+openeo-geodn-driver-7f5c6f498c-p8r7w   1/1     Running   0          46h  
+pgstac-fastapi-6c8bb56b96-b4jct        1/1     Running   0          46h  
+pgstacpostgis-64c49bdfdd-rjpw2         1/1     Running   0          46h  
+stac-explorer-7cd65d9bf7-zhzv7         1/1     Running   0          46h  
+```
+
+You sould be able to access the following services now:  
+dask-scheduler: http://localhost:8787  
+openeo-geodn-driver: http://localhost:9091  
+pgstac-fastapi: http://localhost:8080  
+stac-explorer: http://localhost:8081  
+pgstacpostgisservice: http://localhost:5432  
+
+
+Optionally, you can add some STAC entries using:  
+`./init_stac.sh`
+
+
+## Running locally using containers (deprecated)
 
 ### Setting environment varibles:
 
