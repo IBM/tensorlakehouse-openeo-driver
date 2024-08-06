@@ -6,7 +6,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from dask.array.core import Array
 from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
+    AbstractLoadCollection,
     LoadCollectionFromCOS,
+    LoadCollectionFromHBase,
 )
 import geopandas as gpd
 import numpy as np
@@ -39,7 +41,6 @@ from openeo_processes_dask.process_implementations.math import (
 )
 
 from pyproj import Transformer
-from pystac_client import Client
 from rasterio import crs
 from shapely.geometry import shape
 from shapely.geometry.polygon import Polygon
@@ -48,6 +49,7 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     GTIFF,
     NETCDF,
+    PARQUET,
     STAC_DATETIME_FORMAT,
     STAC_URL,
     DEFAULT_TIME_DIMENSION,
@@ -58,6 +60,7 @@ from tensorlakehouse_openeo_driver.constants import (
 from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
 from tensorlakehouse_openeo_driver.geospatial_utils import reproject_cube
+from tensorlakehouse_openeo_driver.stac import make_stac_client
 
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
@@ -235,7 +238,7 @@ def save_result(
     data: Union[RasterCube, GeoDNImageCollectionResult],
     format: str,
     options: Dict = {},
-) -> bool:
+) -> GeoDNImageCollectionResult:
     """creates a GeoDNImageCollectionResult object that will later be saved. If necessary
     manipulates xr.Dataset to facilitate the storage according to the file format
 
@@ -279,6 +282,10 @@ def save_result(
             data.attrs["reduced_dimensions_min_values"] = pd.Timestamp(
                 attr[DEFAULT_TIME_DIMENSION]
             ).isoformat()
+        return GeoDNImageCollectionResult(
+            cube=TensorLakehouseDataCube(data=data), format=format, options=options
+        )
+    elif format == PARQUET:
         return GeoDNImageCollectionResult(
             cube=TensorLakehouseDataCube(data=data), format=format, options=options
         )
@@ -335,7 +342,7 @@ def load_collection(
     logger.debug(
         f"Running load_collection process: collectiond ID={id} STAC URL={STAC_URL}"
     )
-    stac_catalog = Client.open(STAC_URL)
+    stac_catalog = make_stac_client(url=STAC_URL)
     # extract coordinates from BoundingBox object
     try:
         collection = stac_catalog.get_collection(id)
@@ -346,7 +353,10 @@ def load_collection(
         ), f"Error! Unexpected type {cube_dimensions}"
         assert isinstance(bands, list), f"Error! Unexpected type: {bands}"
         dimension_names = _get_dimension_names(cube_dimensions=cube_dimensions)
-        loader = LoadCollectionFromCOS()
+        if _is_data_on_hbase(collection=collection):
+            loader: AbstractLoadCollection = LoadCollectionFromHBase()
+        else:
+            loader = LoadCollectionFromCOS()
         data = loader.load_collection(
             id=id,
             spatial_extent=spatial_extent,
@@ -433,48 +443,170 @@ def aggregate_spatial(
     target_dimension: str = "result",
     **kwargs,
 ) -> VectorCube:
-    """compute spatial aggregation by applying reducer over the area of interest
-
-    Adapted from:
+    """Compute spatial aggregation by applying the reducer function to the data array clipped to
+    the iterable geometries argument which is a List[ (Geojson representation: Polygon, Line, Multipolygon,...).
+    The clipping operation is defined in the rasterio function described here:
     https://corteva.github.io/rioxarray/html/rioxarray.html#rioxarray.raster_array.RasterArray
+
+
+    The function returns a stacked GeoDataFrame object
+    	time	bands	spatial_ref	count	reduced	geometry
+0	2022-01-02 19:12:02	B02	0	42736	2049.484650	POLYGON ((-2716931.681 5751311.779, -2713046.0...
+1	2022-01-02 19:12:16	B02	0	45230	2030.256644	POLYGON ((-2716931.681 5751311.779, -2713046.0...
+.
+.
+6	2022-01-02 19:12:02	B8A	0	42736	2732.596616	POLYGON ((-2716931.681 5751311.779, -2713046.0...
+7	2022-01-02 19:12:16	B8A	0	45230	2701.098806	POLYGON ((-2716931.681 5751311.779, -2713046.0..
+
+    The 'reduced' column is the stacked timeseries of applying the reducer for each band
+    The 'count' column is the count of NaN pixels in each band at each timestamp in the clipped geometry
+
+    Currently, this function clips over the Union of shapes in the geometries, and the entries in the 'geometry'\
+    column is simply the first on in the List of input geometries.
+    This will be improved in a subsequent version of the function that will iterate over the geometries,
+    returning a stacked dataframe having the (reducer & count) timeseries for each band and geometry in the
+    stacked GDF
+
+    Notes:
+    When the CRS of the the clip area differs from that of the data, the clip area is
+    reprojected to that of the data.
+    Alternatively, the data could be reprojected to the CRS of the clipping area. However, this latter choice
+    seems less natural and efficient
+            # data_array.rio.write_crs(clip_area.crs.to_string(), inplace=True) # sample code to reproject the data
+
+    TODO: If the queried data array spans multiple CRS (e.g. UTM) we
+    may have to reproject the data to a common CRS. This issue should be revisited.
 
     Args:
         data (RasterCube): _description_
-        geometries (VectorCube): _description_
+        geometries (VectorCube): A  multi-polygon clip area, type GeoDataFrame or GeoJson
         reducer (Callable): _description_
         target_dimension (str, optional): _description_. Defaults to "result".
 
     Returns:
-        VectorCube: _description_
+        VectorCube: GeopandasDataFrame
+
+    TODO:
+        the var: str applicable_band_dim can probably be replaced in favor of
+        constants.py:: DEFAULT_BANDS_DIMENSION as I think thats now standard dim name 'bands'
     """
-    logger.debug("Running aggregate_spatial process")
+    logger.debug(f"Running aggregate_spatial process; geometries: {geometries}")
+    logger.debug(f"kwargs: {kwargs}")
+
+    result: VectorCube = None
+
+    # Validate inputs
+    assert isinstance(
+        data, xr.DataArray
+    ), f"Expecting xr.DataArray and not {type(data)}"
+
+    # Accept geometries argument as GeoDataFrame or GeoJson
+    # If geojson, convert to GeoDataFrame
+    clip_area: gpd.GeoDataFrame
+    if isinstance(geometries, gpd.GeoDataFrame):
+        clip_area = geometries
+    elif isinstance(geometries, Dict):  # GeoJson
+        # clip_area = shapely.geometry.shape(geometries)
+        clip_area = geojson_dict_to_geodataframe(geometries)
+    else:
+        raise ValueError(
+            f"Invalid input; 'geometries' must be GeoDataFrame or GeoJson type: {type(geometries)}, value: {geometries}"
+        )
+
+    # If no crs associated with geometries, set to 4326
+    if not hasattr(clip_area, "crs") or clip_area.crs is None:
+        clip_area.set_crs(crs=CRS_EPSG_4326, inplace=True)
+    print(f"clip_area.crs: {clip_area.crs}")
+
     y_dim = data.openeo.y_dim
     x_dim = data.openeo.x_dim
     band_dims = data.openeo.band_dims
     applicable_band_dim = band_dims[0]
+
+    time_dims = data.openeo.temporal_dims[0]
     logger.debug(f"Dimensions: y={y_dim} x={x_dim} band={applicable_band_dim}")
-    clip_area = _make_geodataframe(geometries)
+    print(f"agg_spatial_data dimensions: {[band_dims, time_dims, x_dim, y_dim]}")
+
+    # Reproject Clip area CRS to match Data CRS
+    clip_crs = clip_area.crs.to_string()
+    data_crs = data.rio.crs.to_string()
+
+    if clip_crs != data_crs:
+        clip_area = clip_area.to_crs({"init": data_crs})
+
+    concat_data_array: xr.DataArray = None
     if target_dimension == "result":
-        assert isinstance(
-            data, xr.DataArray
-        ), f"Expecting xr.DataArray and not {type(data)}"
+        # check if clipping area is within bbox
+        _check_geometries_within_data_boundaries(clip_area=clip_area, data=data)
+
         data_arrays = list()
-        # for each variable
-        for band_index in range(0, data[applicable_band_dim].size):
-            data_array = data[{applicable_band_dim: band_index}]
-            # check if clipping area is within bbox
-            _check_geometries_within_data_boundaries(clip_area=clip_area, data=data)
-            # specify a CRS for data array ot make sure it has the same CRS of clipping area
-            data_array.rio.write_crs(CRS_EPSG_4326, inplace=True)
-            # clip data
-            clipped = data_array.rio.clip(
-                clip_area.geometry.values, clip_area.crs, drop=True, invert=False
-            )
-            # apply reducer function over clipped data
-            aggdata = clipped.reduce(reducer, dim=[x_dim, y_dim], data=clipped)
-            data_arrays.append(aggdata)
-        agg_dataarray = xr.concat(data_arrays, dim=applicable_band_dim)
-        return agg_dataarray
+        # data = data.compute()  # Retrieves the data from dask, no need for 'data' argument clipped.reduce(reducer=, dim=, data=clipped)
+        # print(f"type of data after compute: {type(data)}")
+        # for each geometry in geometries
+
+        clipped = data.rio.clip(clip_area.geometry.values, clip_area.crs)
+        count = clipped.count(dim=[x_dim, y_dim])
+        count.name = "count"
+        print(f"count_data_array: {count}")
+
+        aggdata = clipped.reduce(
+            reducer, dim=[x_dim, y_dim], keepdims=False, data=clipped
+        )
+        aggdata.name = "reduced"
+        print(f"aggdata_data_array: {aggdata}")
+
+        aggdata = xr.merge([count, aggdata])
+        print(f"merge result: {aggdata}")
+
+        result = _dataset_to_GPDF(aggdata, clip_area, [applicable_band_dim, time_dims])
+
+    else:
+        raise Exception(
+            f"Invalid argument value for target_dimension: {target_dimension}, default is: {applicable_band_dim}"
+        )
+
+    # r = [type(x) for x in result.columns]
+    # print(f"GDF columns: {r}, {result.columns}")
+    print(f"spatial_aggregation result:\n{result.to_dict()}")
+
+    return result
+
+
+def _dataset_to_GPDF(
+    dataset: xr.Dataset,
+    geometries: gpd.GeoDataFrame,
+    dims: List[str],
+) -> gpd.GeoDataFrame:
+    """
+    Convert the xarray.Dataset to Geopandas as this is the format expected on the openeo_client side.
+    This GDF is serialized to a temp file on the backend as part of the sae_result/download processing of
+    the process graph. The temp file is streamed to the client as part of the download() process graph operation
+    The columns of the DataFrame will be ['time', 'geometry'] + [bands]
+
+    Args:
+        data (RasterCube): _description_
+        geometries (VectorCube): Multipolygon GeoJson
+
+    Returns:
+        VectorCube: GeopandasDataFrame
+
+    """
+    logger.debug("Converting dataarray to GeoDataFrame")
+
+    # pdf = dataarray.to_pandas()
+    df = dataset.to_dataframe().reset_index()
+    # print(f"xarray2pandas: {pdf}")
+    print(f"dataset2df: {df}")
+
+    crs = geometries.crs.to_string()
+    geometry = [geometries.iloc[0][0]] * len(df)
+    gpdf = gpd.GeoDataFrame(df, crs=crs, geometry=geometry)
+
+    gpdf = gpdf.sort_values(by=dims).reset_index(drop=True)
+
+    # gpdf.columns.name = 'statistic'
+
+    return gpdf
 
 
 def _check_geometries_within_data_boundaries(
@@ -499,18 +631,56 @@ def _check_geometries_within_data_boundaries(
     max_y = data.coords[y_dim].max()
     min_y = data.coords[y_dim].min()
     boundaries = Polygon(
-        [[min_x, min_y], [max_x, min_y], [max_x, max_y], [min_x, max_y]]
+        [[min_x, min_y], [max_x, min_y], [max_x, max_y], [min_x, max_y], [min_x, min_y]]
     )
     for aoi in clip_area.geometry:
         # aoi = Polygon(geom["coordinates"][0])
         if not aoi.within(boundaries):
             raise ValueError(f"Error! {aoi.wkt} is not within {boundaries.wkt}")
+
     return True
 
 
-def _make_geodataframe(geometries: Dict[str, Any]) -> gpd.GeoDataFrame:
-    shape_list = [shape(i.get("geometry")) for i in geometries["features"]]
-    return gpd.GeoDataFrame(geometry=shape_list)
+def geojson_dict_to_geodataframe(geometries: Dict[str, Any]) -> gpd.GeoDataFrame:
+    """
+    Convert a python dictionary that is nominally 'geojson' to Geodataframe
+
+    Accepts a couple different variations on geojson as the python client/backend can munge
+    the Dict a little before invoking us
+
+    If the dict has 'features' collect and convert all features
+    If a single type, use the coordinates values
+
+    ARGS:
+        geometries: Dict of geojson
+
+    RETURNS:
+        gpd.GeoDataFrame
+
+    Full Geojson
+    '{"type": "FeatureCollection", "features": [{"id": "0", "type": "Feature", "properties": {}, "geometry": {"type": "Polygon", "coordinates": [[[-121.5, 44.0], [-121.5, 44.025], [-121.475, 44.025], [-121.475, 44.0], [-121.5, 44.0]]]}, "bbox": [-121.5, 44.0, -121.475, 44.025]}], "bbox": [-121.5, 44.0, -121.475, 44.025]}'
+    What is to aggregate_spatial() geometries is generally just features
+
+    geom_dict["features"][0]["geometry"]
+
+    geom_dict = { "type": "Polygon","coordinates": [ [[-121.5, 44.0], [-121.5, 44.025], [-121.475, 44.025],
+                [-121.475, 44.0], [-121.5, 44.0]], ],}
+    """
+
+    gpdf: gpd.GeoDataFrame = None
+
+    if "features" in geometries:
+        shape_list = [shape(i.get("geometry")) for i in geometries["features"]]
+        gpdf = gpd.GeoDataFrame(geometry=shape_list)
+    elif "type" in geometries:
+        poly = shape(geometries)
+        gpdf = gpd.GeoDataFrame(geometry=poly)
+
+    assert (
+        gpdf is not None
+    ), f"Cannot convert geometry to gpdf: geometries: {geometries}"
+
+    return gpdf
 
 
 def aggregate_temporal(
