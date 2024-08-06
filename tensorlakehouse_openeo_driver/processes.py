@@ -8,6 +8,7 @@ from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     AbstractLoadCollection,
     LoadCollectionFromCOS,
+    LoadCollectionFromHBase,
 )
 import geopandas as gpd
 import numpy as np
@@ -326,7 +327,10 @@ def load_collection(
         ), f"Error! Unexpected type {cube_dimensions}"
         assert isinstance(bands, list), f"Error! Unexpected type: {bands}"
         dimension_names = _get_dimension_names(cube_dimensions=cube_dimensions)
-        loader = LoadCollectionFromCOS()
+        if _is_data_on_hbase(collection=collection):
+            loader: AbstractLoadCollection = LoadCollectionFromHBase()
+        else:
+            loader = LoadCollectionFromCOS()
         data = loader.load_collection(
             id=id,
             spatial_extent=spatial_extent,
@@ -455,6 +459,10 @@ def aggregate_spatial(
 
     Returns:
         VectorCube: GeopandasDataFrame
+
+    TODO:
+        the var: str applicable_band_dim can probably be replaced in favor of
+        constants.py:: DEFAULT_BANDS_DIMENSION as I think thats now standard dim name 'bands'
     """
     logger.debug(f"Running aggregate_spatial process; geometries: {geometries}")
     logger.debug(f"kwargs: {kwargs}")
@@ -605,48 +613,6 @@ def _check_geometries_within_data_boundaries(
             raise ValueError(f"Error! {aoi.wkt} is not within {boundaries.wkt}")
 
     return True
-
-
-def geojson_dict_to_geodataframe(geometries: Dict[str, Any]) -> gpd.GeoDataFrame:
-    """
-    Convert a python dictionary that is nominally 'geojson' to Geodataframe
-
-    Accepts a couple different variations on geojson as the python client/backend can munge
-    the Dict a little before invoking us
-
-    If the dict has 'features' collect and convert all features
-    If a single type, use the coordinates values
-
-    ARGS:
-        geometries: Dict of geojson
-
-    RETURNS:
-        gpd.GeoDataFrame
-
-    Full Geojson
-    '{"type": "FeatureCollection", "features": [{"id": "0", "type": "Feature", "properties": {}, "geometry": {"type": "Polygon", "coordinates": [[[-121.5, 44.0], [-121.5, 44.025], [-121.475, 44.025], [-121.475, 44.0], [-121.5, 44.0]]]}, "bbox": [-121.5, 44.0, -121.475, 44.025]}], "bbox": [-121.5, 44.0, -121.475, 44.025]}'
-    What is to aggregate_spatial() geometries is generally just features
-
-    geom_dict["features"][0]["geometry"]
-
-    geom_dict = { "type": "Polygon","coordinates": [ [[-121.5, 44.0], [-121.5, 44.025], [-121.475, 44.025],
-                [-121.475, 44.0], [-121.5, 44.0]], ],}
-    """
-
-    gpdf: gpd.GeoDataFrame = None
-
-    if "features" in geometries:
-        shape_list = [shape(i.get("geometry")) for i in geometries["features"]]
-        gpdf = gpd.GeoDataFrame(geometry=shape_list)
-    elif "type" in geometries:
-        poly = shape(geometries)
-        gpdf = gpd.GeoDataFrame(geometry=poly)
-
-    assert (
-        gpdf is not None
-    ), f"Cannot convert geometry to gpdf: geometries: {geometries}"
-
-    return gpdf
 
 
 def geojson_dict_to_geodataframe(geometries: Dict[str, Any]) -> gpd.GeoDataFrame:
