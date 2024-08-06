@@ -6,14 +6,20 @@ boto3==1.26.161
 botocore==1.29.161
 bottleneck
 celery==5.3.6
+# cfgrib is required to read grib2 files
+cfgrib
 dask==2023.5.0
 dask-geopandas
 dask-image
 distributed
+# ecmwflibs is required to fix this issue https://github.com/ecmwf/eccodes-python/issues/54#issuecomment-925036724
+ecmwflibs
 filetype
 Fiona
 Flask
 Flask-Cors
+# fstd2nc is required to read FSTD
+fstd2nc
 GeoAlchemy2
 geojson-pydantic
 geopandas

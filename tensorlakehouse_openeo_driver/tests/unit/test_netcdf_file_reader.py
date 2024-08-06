@@ -25,12 +25,6 @@ class FakeS3Filesystem:
         return href
 
 
-def mock_open_dataset(filename_or_obj: str) -> xr.Dataset:
-    path = Path(filename_or_obj)
-    ds = xr.open_dataset(path)
-    return ds
-
-
 @pytest.mark.parametrize(
     "items, spatial_extent, temporal_extent, bands, crs, expected_dim_size",
     [

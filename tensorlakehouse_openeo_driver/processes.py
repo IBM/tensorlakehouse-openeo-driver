@@ -6,17 +6,15 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from dask.array.core import Array
 from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
-    AbstractLoadCollection,
     LoadCollectionFromCOS,
-    LoadCollectionFromHBase,
 )
 import geopandas as gpd
-import shapely
 import numpy as np
 import openeo
 import pandas as pd
 import pyproj
 import pystac
+from pystac_client import Client
 import xarray as xr
 from openeo_driver.errors import ProcessParameterInvalidException
 from openeo_pg_parser_networkx.graph import Callable
@@ -50,7 +48,6 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     GTIFF,
     NETCDF,
-    PARQUET,
     STAC_DATETIME_FORMAT,
     STAC_URL,
     DEFAULT_TIME_DIMENSION,
@@ -61,7 +58,6 @@ from tensorlakehouse_openeo_driver.constants import (
 from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
 from tensorlakehouse_openeo_driver.geospatial_utils import reproject_cube
-from tensorlakehouse_openeo_driver.stac import make_stac_client
 
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
@@ -286,10 +282,6 @@ def save_result(
         return GeoDNImageCollectionResult(
             cube=TensorLakehouseDataCube(data=data), format=format, options=options
         )
-    elif format == PARQUET:
-        return GeoDNImageCollectionResult(
-            cube=TensorLakehouseDataCube(data=data), format=format, options=options
-        )
     else:
         raise NotImplementedError(f"Support for {format} is not implemented")
 
@@ -343,7 +335,7 @@ def load_collection(
     logger.debug(
         f"Running load_collection process: collectiond ID={id} STAC URL={STAC_URL}"
     )
-    stac_catalog = make_stac_client(url=STAC_URL)
+    stac_catalog = Client.open(url=STAC_URL)
     # extract coordinates from BoundingBox object
     try:
         collection = stac_catalog.get_collection(id)
@@ -354,10 +346,7 @@ def load_collection(
         ), f"Error! Unexpected type {cube_dimensions}"
         assert isinstance(bands, list), f"Error! Unexpected type: {bands}"
         dimension_names = _get_dimension_names(cube_dimensions=cube_dimensions)
-        if _is_data_on_hbase(collection=collection):
-            loader: AbstractLoadCollection = LoadCollectionFromHBase()
-        else:
-            loader = LoadCollectionFromCOS()
+        loader = LoadCollectionFromCOS()
         data = loader.load_collection(
             id=id,
             spatial_extent=spatial_extent,
@@ -632,7 +621,7 @@ def geojson_dict_to_geodataframe(geometries: Dict[str, Any]) -> gpd.GeoDataFrame
         gpdf = gpd.GeoDataFrame(geometry=poly)
 
     assert (
-        not gpdf is None
+        gpdf is not None
     ), f"Cannot convert geometry to gpdf: geometries: {geometries}"
 
     return gpdf
