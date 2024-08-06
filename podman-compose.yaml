@@ -29,7 +29,7 @@ services:
     worker:
       image: tensorlakehouse-openeo-driver:latest
       container_name: worker
-      command: celery -A tensorlakehouse_openeo_driver.tasks worker -s /tmp/celerybeat-schedule --concurrency 2 --prefetch-multiplier 1 -Ofair -B  -Q openeo-pgstac-queue --loglevel=info
+      command: celery -A tensorlakehouse_openeo_driver.tasks worker -s /tmp/celerybeat-schedule --concurrency 2 --prefetch-multiplier 1 -Ofair -B  -Q tensorlakehouse-queue --loglevel=info
       environment:
         - PYTHONPATH=/opt/app-root/src/tensorlakehouse-openeo-driver
         - BROKER_URL=${BROKER_URL}

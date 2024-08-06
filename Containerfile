@@ -33,6 +33,8 @@ RUN python3 -m pip install -U pip
 # install requirements
 COPY requirements.txt .
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
+COPY dev_requirements.txt .
+RUN python3 -m pip install --no-cache-dir -r dev_requirements.txt
 
 # copy app
 COPY tensorlakehouse_openeo_driver tensorlakehouse_openeo_driver
