@@ -1,10 +1,45 @@
 from typing import Any, Dict, List, Optional
 
 import urllib.parse
-from tensorlakehouse_openeo_driver.constants import STAC_URL, logger
+from tensorlakehouse_openeo_driver.constants import (
+    APPID_ISSUER,
+    APPID_PASSWORD,
+    APPID_USERNAME,
+    OPENEO_AUTH_CLIENT_ID,
+    OPENEO_AUTH_CLIENT_SECRET,
+    STAC_URL,
+    logger,
+)
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from pystac_client import Client
+
+
+def sign_request(request: requests.Request) -> requests.Request:
+    client_id = OPENEO_AUTH_CLIENT_ID
+    client_secret = OPENEO_AUTH_CLIENT_SECRET
+    token_url = APPID_ISSUER
+    payload = {
+        "grant_type": "password",
+        "client_id": client_id,
+        "username": APPID_USERNAME,
+        "password": APPID_PASSWORD,
+        "client_secret": client_secret,
+    }
+
+    response = requests.post(token_url, data=payload)
+    access_token = response.json().get("access_token")
+    request.headers["Authorization"] = f"Bearer {access_token}"
+    return request
+
+
+def make_stac_client(url):
+    if "osprey.hartree.stfc.ac.uk" in url:
+        catalog = Client.open(url=STAC_URL, request_modifier=sign_request)
+    else:
+        catalog = Client.open(STAC_URL)
+    return catalog
 
 
 class STAC:

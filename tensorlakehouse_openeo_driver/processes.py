@@ -8,7 +8,6 @@ from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     AbstractLoadCollection,
     LoadCollectionFromCOS,
-    LoadCollectionFromHBase,
 )
 import geopandas as gpd
 import numpy as np
@@ -73,7 +72,6 @@ Overlap = namedtuple("Overlap", ["only_in_cube1", "only_in_cube2", "in_both"])
 GEOJSON = "GEOJSON"
 # TODO remove hardcoded EPSG
 CRS_EPSG_4326 = "epsg:4326"
-HBASE = "hbase"
 
 
 def rename_dimension(data: RasterCube, source: str, target: str) -> RasterCube:
@@ -293,31 +291,6 @@ def save_result(
         raise NotImplementedError(f"Support for {format} is not implemented")
 
 
-def _is_data_on_hbase(collection: pystac.Collection) -> bool:
-    """use keywords of STAC collection object to find out whether the data is available on hBase
-      or not
-
-    Args:
-        collection (pystac.Collection): collection of interest
-
-    Raises:
-        an: _description_
-        ValueError: _description_
-
-    Returns:
-        bool: True if data is available on hBase, otherwise False
-    """
-
-    if (
-        collection.keywords is not None
-        and isinstance(collection.keywords, list)
-        and len(collection.keywords)
-    ):
-        if HBASE in collection.keywords:
-            return True
-
-    return False
-
 
 def load_collection(
     id: str,
@@ -353,10 +326,7 @@ def load_collection(
         ), f"Error! Unexpected type {cube_dimensions}"
         assert isinstance(bands, list), f"Error! Unexpected type: {bands}"
         dimension_names = _get_dimension_names(cube_dimensions=cube_dimensions)
-        if _is_data_on_hbase(collection=collection):
-            loader: AbstractLoadCollection = LoadCollectionFromHBase()
-        else:
-            loader = LoadCollectionFromCOS()
+        loader = LoadCollectionFromCOS()
         data = loader.load_collection(
             id=id,
             spatial_extent=spatial_extent,
