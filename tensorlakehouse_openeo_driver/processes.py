@@ -292,7 +292,6 @@ def save_result(
         raise NotImplementedError(f"Support for {format} is not implemented")
 
 
-
 def load_collection(
     id: str,
     spatial_extent: BoundingBox,
@@ -605,7 +604,6 @@ def _check_geometries_within_data_boundaries(
         if not aoi.within(boundaries):
             raise ValueError(f"Error! {aoi.wkt} is not within {boundaries.wkt}")
 
-
     return True
 
 
@@ -649,6 +647,8 @@ def geojson_dict_to_geodataframe(geometries: Dict[str, Any]) -> gpd.GeoDataFrame
     ), f"Cannot convert geometry to gpdf: geometries: {geometries}"
 
     return gpdf
+
+
 def geojson_dict_to_geodataframe(geometries: Dict[str, Any]) -> gpd.GeoDataFrame:
     """
     Convert a python dictionary that is nominally 'geojson' to Geodataframe
