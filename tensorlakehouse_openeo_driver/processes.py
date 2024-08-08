@@ -6,17 +6,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from dask.array.core import Array
 from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
-    AbstractLoadCollection,
     LoadCollectionFromCOS,
-    LoadCollectionFromHBase,
 )
 import geopandas as gpd
 import numpy as np
 import openeo
 import pandas as pd
 import pyproj
-import pystac
-from pystac_client import Client
 import xarray as xr
 from openeo_driver.errors import ProcessParameterInvalidException
 from openeo_pg_parser_networkx.graph import Callable
@@ -327,10 +323,7 @@ def load_collection(
         ), f"Error! Unexpected type {cube_dimensions}"
         assert isinstance(bands, list), f"Error! Unexpected type: {bands}"
         dimension_names = _get_dimension_names(cube_dimensions=cube_dimensions)
-        if _is_data_on_hbase(collection=collection):
-            loader: AbstractLoadCollection = LoadCollectionFromHBase()
-        else:
-            loader = LoadCollectionFromCOS()
+        loader = LoadCollectionFromCOS()
         data = loader.load_collection(
             id=id,
             spatial_extent=spatial_extent,
@@ -421,10 +414,7 @@ def aggregate_spatial(
     the iterable geometries argument which is a List[ (Geojson representation: Polygon, Line, Multipolygon,...).
     The clipping operation is defined in the rasterio function described here:
     https://corteva.github.io/rioxarray/html/rioxarray.html#rioxarray.raster_array.RasterArray
-
-
-    The function returns a stacked GeoDataFrame object
-    	time	bands	spatial_ref	count	reduced	geometry
+    The function returns a stacked GeoDataFrame object time	bands	spatial_ref	count	reduced	geometry
 0	2022-01-02 19:12:02	B02	0	42736	2049.484650	POLYGON ((-2716931.681 5751311.779, -2713046.0...
 1	2022-01-02 19:12:16	B02	0	45230	2030.256644	POLYGON ((-2716931.681 5751311.779, -2713046.0...
 .
@@ -508,15 +498,9 @@ def aggregate_spatial(
     if clip_crs != data_crs:
         clip_area = clip_area.to_crs({"init": data_crs})
 
-    concat_data_array: xr.DataArray = None
     if target_dimension == "result":
         # check if clipping area is within bbox
         _check_geometries_within_data_boundaries(clip_area=clip_area, data=data)
-
-        data_arrays = list()
-        # data = data.compute()  # Retrieves the data from dask, no need for 'data' argument clipped.reduce(reducer=, dim=, data=clipped)
-        # print(f"type of data after compute: {type(data)}")
-        # for each geometry in geometries
 
         clipped = data.rio.clip(clip_area.geometry.values, clip_area.crs)
         count = clipped.count(dim=[x_dim, y_dim])

@@ -34,7 +34,7 @@ class FakeS3Filesystem:
                     "assets": {
                         "data": {
                             "href": Path(
-                                "./tensorlakehouse_openeo_driver/tests/test_data/filename_2000_2001.nc"
+                                "./tensorlakehouse_openeo_driver/tests/unit_test_data/filename_2000_2001.nc"
                             )
                         }
                     },
@@ -68,7 +68,7 @@ class FakeS3Filesystem:
                     "assets": {
                         "data": {
                             "href": Path(
-                                "./tensorlakehouse_openeo_driver/tests/test_data/filename_2001_2002.nc"
+                                "./tensorlakehouse_openeo_driver/tests/unit_test_data/filename_2001_2002.nc"
                             )
                         }
                     },

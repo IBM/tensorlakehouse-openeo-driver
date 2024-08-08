@@ -10,11 +10,13 @@ from pystac_client import Client
 import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
     COG_MEDIA_TYPE,
+    GRIB2_MEDIA_TYPE,
     JPG2000_MEDIA_TYPE,
     NETCDF_MEDIA_TYPE,
     STAC_DATETIME_FORMAT,
     STAC_URL,
     ZIP_ZARR_MEDIA_TYPE,
+    FSTD_MEDIA_TYPE,
     logger,
 )
 import pandas as pd
@@ -25,6 +27,10 @@ from tensorlakehouse_openeo_driver.file_reader.netcdf_file_reader import (
     NetCDFFileReader,
 )
 from tensorlakehouse_openeo_driver.file_reader.zarr_file_reader import ZarrFileReader
+from tensorlakehouse_openeo_driver.file_reader.grib2_file_reader import Grib2FileReader
+from tensorlakehouse_openeo_driver.file_reader.standard_file_reader import (
+    FSTDFileReader,
+)
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 
 
@@ -110,14 +116,18 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         media_type = next(iter(items_by_media_type.keys()))
         items = next(iter(items_by_media_type.values()))
         if media_type in [COG_MEDIA_TYPE, JPG2000_MEDIA_TYPE]:
-            reader: Union[COGFileReader, ZarrFileReader, NetCDFFileReader] = (
-                COGFileReader(
-                    items=items,
-                    bbox=bbox_wsg84,
-                    bands=bands,
-                    temporal_extent=temporal_ext,
-                    dimension_map=None,
-                )
+            reader: Union[
+                COGFileReader,
+                ZarrFileReader,
+                NetCDFFileReader,
+                Grib2FileReader,
+                FSTDFileReader,
+            ] = COGFileReader(
+                items=items,
+                bbox=bbox_wsg84,
+                bands=bands,
+                temporal_extent=temporal_ext,
+                dimension_map=None,
             )
 
         elif media_type == ZIP_ZARR_MEDIA_TYPE:
@@ -130,6 +140,22 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
             )
         elif media_type == NETCDF_MEDIA_TYPE:
             reader = NetCDFFileReader(
+                items=items,
+                bbox=bbox_wsg84,
+                bands=bands,
+                temporal_extent=temporal_ext,
+                dimension_map=None,
+            )
+        elif media_type == GRIB2_MEDIA_TYPE:
+            reader = Grib2FileReader(
+                items=items,
+                bbox=bbox_wsg84,
+                bands=bands,
+                temporal_extent=temporal_ext,
+                dimension_map=None,
+            )
+        elif media_type == FSTD_MEDIA_TYPE:
+            reader = FSTDFileReader(
                 items=items,
                 bbox=bbox_wsg84,
                 bands=bands,

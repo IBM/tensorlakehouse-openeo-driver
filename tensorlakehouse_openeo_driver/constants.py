@@ -89,6 +89,8 @@ COG_MEDIA_TYPE = "image/tiff; application=geotiff; profile=cloud-optimized"
 JPG2000_MEDIA_TYPE = "image/jp2"
 GEOTIFF_MEDIA_TYPE = "image/tiff; application=geotiff"
 PARQUET_MEDIA_TYPE = "table/parquet; application=geoparquet; profile=cloud-optimized"
+GRIB2_MEDIA_TYPE = "application/x-grib2"
+FSTD_MEDIA_TYPE = "application/x-fstd"
 
 # default reference system
 EPSG_4326 = "EPSG:4326"
