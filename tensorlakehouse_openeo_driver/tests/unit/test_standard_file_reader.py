@@ -11,6 +11,7 @@ from datetime import datetime
 from rasterio.crs import CRS
 
 
+@pytest.mark.skip("Missing example")
 @pytest.mark.parametrize(
     "items, spatial_extent, temporal_extent, bands, crs, expected_dim_size",
     [
@@ -20,7 +21,7 @@ from rasterio.crs import CRS
                     "assets": {
                         "data": {
                             "href": Path(
-                                "./tensorlakehouse_openeo_driver/tests/unit_test_data/hrdps_geophy_IC3.fst"
+                                "./tensorlakehouse_openeo_driver/tests/unit_test_data/example.fst"
                             )
                         }
                     },
