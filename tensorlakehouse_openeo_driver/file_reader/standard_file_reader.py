@@ -1,5 +1,4 @@
 from pathlib import Path
-import fstd2nc
 import warnings
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -31,6 +30,7 @@ class FSTDFileReader(CloudStorageFileReader):
         temporal_extent: Tuple[datetime, Optional[datetime]],
         dimension_map: Optional[Dict[str, str]],
     ) -> None:
+
         assert isinstance(items, list)
         assert len(items) > 0
         self.items = items
@@ -58,6 +58,8 @@ class FSTDFileReader(CloudStorageFileReader):
         Returns:
             xr.DataArray: raster data cube
         """
+        import fstd2nc
+
         # initialize array and crs variables
         da = None
         crs_code = None

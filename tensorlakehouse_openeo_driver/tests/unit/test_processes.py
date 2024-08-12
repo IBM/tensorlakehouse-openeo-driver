@@ -13,6 +13,7 @@ from tensorlakehouse_openeo_driver.processes import (
     rename_labels,
     aggregate_temporal,
     resample_spatial,
+    resample_cube_spatial,
     merge_cubes,
     aggregate_temporal_period,
 )
@@ -243,3 +244,38 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
         expected_attrs={},
         expected_crs=crs.CRS.from_epsg(4326),
     )
+
+
+@pytest.mark.parametrize(
+    "source_data, target_data",
+    [
+        ((40, -91, 41, -90, 100, 100), (40, -91, 41, -90, 50, 50)),
+        ((40, -91, 41, -90, 100, 100), (40.2, -91.2, 41.2, -90.2, 50, 50)),
+    ],
+)
+def test_resample_cube_spatial(source_data, target_data):
+    data_list = list()
+    for input_params in [source_data, target_data]:
+        lonmin, latmin, lonmax, latmax, size_x, size_y = input_params
+        data = generate_xarray(
+            bands=["B02"],
+            latmax=latmax,
+            latmin=latmin,
+            size_x=size_x,
+            lonmax=lonmax,
+            lonmin=lonmin,
+            size_y=size_y,
+            temporal_extent=(pd.Timestamp(2020, 1, 1), pd.Timestamp(2020, 1, 7)),
+            freq="D",
+            num_periods=None,
+        )
+        data_list.append(data)
+    data = data_list[0]
+    target = data_list[1]
+    aligned = resample_cube_spatial(data=data, target=target)
+    assert target.x.size == aligned.x.size
+    assert target.y.size == aligned.y.size
+    for dim in ["x", "y"]:
+        aligned_coords = aligned[dim].values
+        target_coords = target[dim].values
+        assert np.array_equal(aligned_coords, target_coords)

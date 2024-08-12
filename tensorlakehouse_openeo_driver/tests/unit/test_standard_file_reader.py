@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 import pytest
 import xarray as xr
 
-import fstd2nc  # noqa: F401
+
 from tensorlakehouse_openeo_driver.file_reader.standard_file_reader import (
     FSTDFileReader,
 )

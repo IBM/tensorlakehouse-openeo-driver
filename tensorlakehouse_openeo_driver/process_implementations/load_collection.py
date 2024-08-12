@@ -26,11 +26,15 @@ from tensorlakehouse_openeo_driver.file_reader.cog_file_reader import COGFileRea
 from tensorlakehouse_openeo_driver.file_reader.netcdf_file_reader import (
     NetCDFFileReader,
 )
-from tensorlakehouse_openeo_driver.file_reader.zarr_file_reader import ZarrFileReader
-from tensorlakehouse_openeo_driver.file_reader.grib2_file_reader import Grib2FileReader
 from tensorlakehouse_openeo_driver.file_reader.standard_file_reader import (
     FSTDFileReader,
 )
+from tensorlakehouse_openeo_driver.file_reader.zarr_file_reader import ZarrFileReader
+from tensorlakehouse_openeo_driver.file_reader.grib2_file_reader import Grib2FileReader
+
+# from tensorlakehouse_openeo_driver.file_reader.standard_file_reader import (
+#     FSTDFileReader,
+# )
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 
 
