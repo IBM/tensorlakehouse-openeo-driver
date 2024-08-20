@@ -16,6 +16,7 @@ from tensorlakehouse_openeo_driver.geospatial_utils import (
     filter_by_time,
     reproject_bbox,
 )
+from urllib.parse import urlparse
 
 
 class Grib2FileReader(CloudStorageFileReader):
@@ -26,7 +27,7 @@ class Grib2FileReader(CloudStorageFileReader):
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
-        dimension_map: Optional[Dict[str, str]],
+        properties: Optional[Dict[str, Any]],
     ) -> None:
         assert isinstance(items, list)
         assert len(items) > 0
@@ -47,7 +48,7 @@ class Grib2FileReader(CloudStorageFileReader):
                 assert isinstance(temporal_extent[1], datetime)
                 assert temporal_extent[0] <= temporal_extent[1]
         self.temporal_extent = temporal_extent
-        self.dimension_map = dimension_map
+        self.properties = properties
 
     def load_items(self) -> xr.DataArray:
         """load items that are associated with grib2 files
@@ -66,11 +67,29 @@ class Grib2FileReader(CloudStorageFileReader):
             assets: Dict[str, Any] = item["assets"]
             asset_value = next(iter(assets.values()))
             # initial implementation assumes that file is local
-            file_path = asset_value["href"]
-            assert Path(file_path).exists(), f"Error! File does not exist: {file_path}"
-            # this is better than xr.open_dataset(engine="cfgrib") because of this
-            # issue https://github.com/ecmwf/cfgrib/issues/66#issuecomment-496268903
-            ds = cfgrib.open_dataset(file_path)
+            # href field can be either URL (a link to a file on COS) or a path to a local file
+            path_or_url = asset_value["href"]
+            parse_url = urlparse(path_or_url)
+            if parse_url.scheme == "":
+                # this is better than xr.open_dataset(engine="cfgrib") because of this
+                # issue https://github.com/ecmwf/cfgrib/issues/66#issuecomment-496268903
+                assert Path(
+                    path_or_url
+                ).exists(), f"Error! File does not exist: {path_or_url}"
+                ds = cfgrib.open_dataset(path_or_url)
+            else:
+                s3fs = self.create_s3filesystem()
+                s3_file_obj = s3fs.open(path_or_url, mode="rb")
+                ds = xr.open_dataset(s3_file_obj, engine="cfgrib")
+
+            x_dim_name = Grib2FileReader._get_dimension_name(item=item, axis="x")
+            max_x = item["properties"]["cube:dimensions"][x_dim_name]["extent"][1]
+            if max_x > 180:
+                ds = ds.assign_coords(
+                    {x_dim_name: (((ds[x_dim_name] + 180) % 360) - 180)}
+                )
+                y_dim_name = Grib2FileReader._get_dimension_name(item=item, axis="y")
+                ds = ds.sortby([x_dim_name, y_dim_name])
             assert isinstance(ds, xr.Dataset), f"Error! Unexpected type={type(ds)}"
             # get dimension names
             x_dim = CloudStorageFileReader._get_dimension_name(
@@ -91,6 +110,8 @@ class Grib2FileReader(CloudStorageFileReader):
             ), f"Error! not all bands={self.bands} are in ds={list(ds)}"
             # drop bands that were not required
             ds = ds[self.bands]
+
+            ds = self._filter_by_extra_dimensions(dataset=ds)
             # if bands is already one of the dimensions, use default 'variable'
             if DEFAULT_BANDS_DIMENSION in dict(ds.dims).keys():
                 da = ds.to_array()

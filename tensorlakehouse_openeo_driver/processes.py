@@ -294,7 +294,7 @@ def load_collection(
     spatial_extent: BoundingBox,
     temporal_extent: TemporalInterval,
     bands: Optional[List[str]],
-    properties: Dict[str, Any] = {},
+    properties: Optional[Dict[str, Any]] = {},
 ) -> Union[RasterCube, VectorCube]:
     """pull data from the data source in which the collection is stored
 

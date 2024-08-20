@@ -15,6 +15,7 @@ from tensorlakehouse_openeo_driver.geospatial_utils import (
     filter_by_time,
     reproject_bbox,
 )
+from urllib.parse import urlparse
 
 
 class NetCDFFileReader(CloudStorageFileReader):
@@ -25,9 +26,15 @@ class NetCDFFileReader(CloudStorageFileReader):
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
-        dimension_map: Optional[Dict[str, str]],
+        properties: Optional[Dict[str, Any]],
     ) -> None:
-        super().__init__(items, bands, bbox, temporal_extent, dimension_map)
+        super().__init__(
+            items=items,
+            bands=bands,
+            bbox=bbox,
+            temporal_extent=temporal_extent,
+            properties=properties,
+        )
 
     def _concat_bucket_and_path(self, path) -> str:
         url = f"s3://{self.bucket}/{path}"
@@ -39,7 +46,6 @@ class NetCDFFileReader(CloudStorageFileReader):
         Returns:
             xr.DataArray: raster data cube
         """
-        s3fs = self.create_s3filesystem()
         # initialize array and crs variables
         da = None
         crs_code = None
@@ -48,10 +54,15 @@ class NetCDFFileReader(CloudStorageFileReader):
         for item in self.items:
             assets: Dict[str, Any] = item["assets"]
             asset_value = next(iter(assets.values()))
-            href = asset_value["href"]
-
-            s3_file_obj = s3fs.open(href, mode="rb")
-            ds = xr.open_dataset(s3_file_obj, engine="scipy")
+            # href field can be either URL (a link to a file on COS) or a path to a local file
+            path_or_url = asset_value["href"]
+            parse_url = urlparse(path_or_url)
+            if parse_url.scheme == "":
+                ds = xr.open_dataset(path_or_url, engine="netcdf4")
+            else:
+                s3fs = self.create_s3filesystem()
+                s3_file_obj = s3fs.open(path_or_url, mode="rb")
+                ds = xr.open_dataset(s3_file_obj, engine="scipy")
             # get dimension names
             x_dim = CloudStorageFileReader._get_dimension_name(
                 item=item, axis=DEFAULT_X_DIMENSION
@@ -71,6 +82,7 @@ class NetCDFFileReader(CloudStorageFileReader):
             ), f"Error! not all bands={self.bands} are in ds={list(ds)}"
             # drop bands that were not required
             ds = ds[self.bands]
+            ds = self._filter_by_extra_dimensions(ds)
             # if bands is already one of the dimensions, use default 'variable'
             if DEFAULT_BANDS_DIMENSION in dict(ds.dims).keys():
                 da = ds.to_array()

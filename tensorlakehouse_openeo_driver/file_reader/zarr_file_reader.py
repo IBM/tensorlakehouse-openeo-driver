@@ -29,14 +29,14 @@ class ZarrFileReader(CloudStorageFileReader):
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
-        dimension_map: Optional[Dict[str, str]],
+        properties: Optional[Dict[str, Any]],
     ) -> None:
         super().__init__(
             items=items,
             bbox=bbox,
             bands=bands,
             temporal_extent=temporal_extent,
-            dimension_map=dimension_map,
+            properties=properties,
         )
 
     def load_items(

@@ -87,7 +87,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         temporal_extent: TemporalInterval,
         bands: List[str],
         dimensions: Dict[str, str],
-        properties: Dict[str, Any] = {},
+        properties: Optional[Dict[str, Any]] = {},
     ) -> xr.DataArray:
         logger.debug(f"load collection from COS: id={id} bands={bands}")
         bbox_wsg84 = LoadCollectionFromCOS._convert_to_WSG84(
@@ -131,7 +131,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 bbox=bbox_wsg84,
                 bands=bands,
                 temporal_extent=temporal_ext,
-                dimension_map=None,
+                properties=properties,
             )
 
         elif media_type == ZIP_ZARR_MEDIA_TYPE:
@@ -140,7 +140,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 bbox=bbox_wsg84,
                 bands=bands,
                 temporal_extent=temporal_ext,
-                dimension_map=None,
+                properties=properties,
             )
         elif media_type == NETCDF_MEDIA_TYPE:
             reader = NetCDFFileReader(
@@ -148,7 +148,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 bbox=bbox_wsg84,
                 bands=bands,
                 temporal_extent=temporal_ext,
-                dimension_map=None,
+                properties=properties,
             )
         elif media_type == GRIB2_MEDIA_TYPE:
             reader = Grib2FileReader(
@@ -156,7 +156,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 bbox=bbox_wsg84,
                 bands=bands,
                 temporal_extent=temporal_ext,
-                dimension_map=None,
+                properties=properties,
             )
         elif media_type == FSTD_MEDIA_TYPE:
             reader = FSTDFileReader(
@@ -164,7 +164,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 bbox=bbox_wsg84,
                 bands=bands,
                 temporal_extent=temporal_ext,
-                dimension_map=None,
+                properties=properties,
             )
         else:
             raise ValueError(f"Error! {media_type=} is not supported")
@@ -201,7 +201,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
 
     @staticmethod
     def _convert_properties_to_filter(
-        properties: Dict[str, Any]
+        properties: Optional[Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
         """convert properties parameter of load_collection process to a filter parameter of
         pystac_client search method
@@ -216,23 +216,24 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
 
         # this is the list of conditions/filters that we will pass as filters in the search
         conditions = list()
-        # for each property
-        for property_name, process_graph in properties.items():
-            # for each process graph
-            for process_graph_value in process_graph["process_graph"].values():
-                # extract operator and value
-                operator, value = LoadCollectionFromCOS._parse_process_graph(
-                    process_graph=process_graph_value
-                )
-                # set a condition and append it to the list of conditions
-                condition = {
-                    "op": operator,
-                    "args": [
-                        {"property": f"properties.{property_name}"},
-                        value,
-                    ],
-                }
-                conditions.append(condition)
+        if properties is not None and isinstance(properties, dict):
+            # for each property
+            for property_name, process_graph in properties.items():
+                # for each process graph
+                for process_graph_value in process_graph["process_graph"].values():
+                    # extract operator and value
+                    operator, value = LoadCollectionFromCOS._parse_process_graph(
+                        process_graph=process_graph_value
+                    )
+                    # set a condition and append it to the list of conditions
+                    condition = {
+                        "op": operator,
+                        "args": [
+                            {"property": f"properties.{property_name}"},
+                            value,
+                        ],
+                    }
+                    conditions.append(condition)
         # if the number of conditions appended is zero then there is no filter
         if len(conditions) == 0:
             filter_cql = None
@@ -249,7 +250,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         bbox: Tuple[float, float, float, float],
         temporal_extent: TemporalInterval,
         collection_id: str,
-        properties: Dict[str, Any] = {},
+        properties: Optional[Dict[str, Any]] = {},
         limit: int = 10000,
     ) -> List[Dict[str, Any]]:
         starttime, endtime = LoadCollectionFromCOS._get_start_and_endtime(

@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import pytest
 import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
@@ -14,7 +13,7 @@ from tensorlakehouse_openeo_driver.file_reader.netcdf_file_reader import (
 from datetime import datetime
 from unittest.mock import patch
 from rasterio.crs import CRS
-
+from openeo_pg_parser_networkx.pg_schema import ParameterReference
 from tensorlakehouse_openeo_driver.util import object_storage_util
 import os
 
@@ -26,16 +25,14 @@ class FakeS3Filesystem:
 
 
 @pytest.mark.parametrize(
-    "items, spatial_extent, temporal_extent, bands, crs, expected_dim_size",
+    "items, spatial_extent, temporal_extent, properties, bands, crs, expected_dim_size",
     [
         (
             [
                 {
                     "assets": {
                         "data": {
-                            "href": Path(
-                                "./tensorlakehouse_openeo_driver/tests/unit_test_data/filename_2000_2001.nc"
-                            )
+                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/filename_2000_2001.nc"
                         }
                     },
                     "properties": {
@@ -67,9 +64,7 @@ class FakeS3Filesystem:
                 {
                     "assets": {
                         "data": {
-                            "href": Path(
-                                "./tensorlakehouse_openeo_driver/tests/unit_test_data/filename_2001_2002.nc"
-                            )
+                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/filename_2001_2002.nc"
                         }
                     },
                     "properties": {
@@ -100,7 +95,8 @@ class FakeS3Filesystem:
                 },
             ],
             (-1.0, 51, 0.0, 52),
-            (datetime(2000, 1, 1), datetime(2001, 1, 1)),
+            (datetime(2000, 11, 30), datetime(2000, 11, 30)),
+            None,
             ["tasmax"],
             4326,
             {
@@ -109,12 +105,78 @@ class FakeS3Filesystem:
                 "lat": 100,
             },
         ),
+        (
+            [
+                {
+                    "assets": {
+                        "data": {
+                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/no_time_dim_data_.nc"
+                        }
+                    },
+                    "properties": {
+                        "cube:dimensions": {
+                            "longitude": {
+                                "axis": "x",
+                                "step": 0.039572477064220186,
+                                "type": "spatial",
+                                "extent": [-18, 17],
+                                "reference_system": 4326,
+                            },
+                            "latitude": {
+                                "axis": "y",
+                                "step": 0.017471758104738153,
+                                "type": "spatial",
+                                "extent": [-9, 8],
+                                "reference_system": 4326,
+                            },
+                            "level": {
+                                "type": "spatial",
+                                "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                            },
+                            "time": {
+                                "type": "temporal",
+                                "extent": [
+                                    "2000-11-30T00:00:00Z",
+                                    "2000-11-30T00:00:00Z",
+                                ],
+                            },
+                        }
+                    },
+                },
+            ],
+            (-15.0, -1.0, -13.0, 2.0),
+            (datetime(2000, 11, 30), datetime(2000, 11, 30)),
+            {
+                "cube:dimensions.level.values": {
+                    "process_graph": {
+                        "eq1": {
+                            "process_id": "eq",
+                            "arguments": {
+                                "x": ParameterReference(from_parameter="value"),
+                                "y": 7,
+                            },
+                            "result": True,
+                        }
+                    }
+                },
+            },
+            ["temperature"],
+            4326,
+            {
+                "time": 1,
+                "longitude": 3,
+                "latitude": 4,
+                "bands": 1,
+                "level": 1,
+            },
+        ),
     ],
 )
 def test_load_items(
     items: List[Dict],
     spatial_extent: Tuple[float, float, float, float],
     temporal_extent: Tuple[datetime, datetime],
+    properties: Optional[Dict[str, Any]],
     bands: List[str],
     crs: str,
     expected_dim_size: Dict[str, int],
@@ -150,7 +212,7 @@ def test_load_items(
                         bbox=spatial_extent,
                         temporal_extent=temporal_extent,
                         bands=bands,
-                        dimension_map=None,
+                        properties=properties,
                     )
                     array = reader.load_items()
                     assert isinstance(array, xr.DataArray)

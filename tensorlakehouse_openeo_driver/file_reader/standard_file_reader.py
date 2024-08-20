@@ -28,7 +28,7 @@ class FSTDFileReader(CloudStorageFileReader):
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
-        dimension_map: Optional[Dict[str, str]],
+        properties: Optional[Dict[str, Any]],
     ) -> None:
 
         assert isinstance(items, list)
@@ -50,7 +50,6 @@ class FSTDFileReader(CloudStorageFileReader):
                 assert isinstance(temporal_extent[1], datetime)
                 assert temporal_extent[0] <= temporal_extent[1]
         self.temporal_extent = temporal_extent
-        self.dimension_map = dimension_map
 
     def load_items(self) -> xr.DataArray:
         """load items that are associated with FSTD files

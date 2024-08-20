@@ -137,7 +137,7 @@ def test_load_items(
                 bbox=bbox,
                 temporal_extent=temporal_extent,
                 bands=bands,
-                dimension_map=None,
+                properties=None,
             )
 
             array = reader.load_items()
