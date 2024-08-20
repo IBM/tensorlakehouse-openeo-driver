@@ -172,14 +172,15 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         return data
 
     @staticmethod
-    def _parse_process_graph(process_graph: Dict) -> Tuple:
+    def _parse_process_graph(process_graph: Dict, property_name: str) -> Tuple[str, Union[str, int, float]]:
         """parses process graph, which is part of properties parameter of load_collection process
 
         Args:
-            process_graph (Dict):
+            process_graph (Dict): process graph in which nodes are either operators or conditions
+            property_name (str): name of the property that user wants to filter 
 
         Returns:
-            Tuple: _description_
+            Tuple[str, Union[str, int, float]]: operator and value
         """
         map_openeo_cql2_operators = {
             "lte": "<=",
@@ -196,12 +197,18 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
             value = x
         process_id: str = process_graph["process_id"]
         assert isinstance(process_id, str)
-        operator = map_openeo_cql2_operators[process_id]
+        # extra-dimensions (e.g., forecast horizon, issue time) are stored as lists, but openEO 
+        # client does not allow user to use "contains" operator, e.g., if 1 is in [1, 2, 3] 
+        if property_name.startswith("cube:dimensions."):
+            operator = "a_contains"
+        else:
+            operator = map_openeo_cql2_operators[process_id]
         return operator, value
+
 
     @staticmethod
     def _convert_properties_to_filter(
-        properties: Optional[Dict[str, Any]]
+        properties: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """convert properties parameter of load_collection process to a filter parameter of
         pystac_client search method
@@ -216,24 +223,23 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
 
         # this is the list of conditions/filters that we will pass as filters in the search
         conditions = list()
-        if properties is not None and isinstance(properties, dict):
-            # for each property
-            for property_name, process_graph in properties.items():
-                # for each process graph
-                for process_graph_value in process_graph["process_graph"].values():
-                    # extract operator and value
-                    operator, value = LoadCollectionFromCOS._parse_process_graph(
-                        process_graph=process_graph_value
-                    )
-                    # set a condition and append it to the list of conditions
-                    condition = {
-                        "op": operator,
-                        "args": [
-                            {"property": f"properties.{property_name}"},
-                            value,
-                        ],
-                    }
-                    conditions.append(condition)
+        # for each property
+        for property_name, process_graph in properties.items():
+            # for each process graph
+            for process_graph_value in process_graph["process_graph"].values():
+                # extract operator and value
+                operator, value = LoadCollectionFromCOS._parse_process_graph(
+                    process_graph=process_graph_value, property_name=property_name
+                )
+                # set a condition and append it to the list of conditions
+                condition = {
+                    "op": operator,
+                    "args": [
+                        {"property": f"properties.{property_name}"},
+                        value,
+                    ],
+                }
+                conditions.append(condition)
         # if the number of conditions appended is zero then there is no filter
         if len(conditions) == 0:
             filter_cql = None
