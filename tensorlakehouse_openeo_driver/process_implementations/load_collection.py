@@ -172,12 +172,14 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         return data
 
     @staticmethod
-    def _parse_process_graph(process_graph: Dict, property_name: str) -> Tuple[str, Union[str, int, float]]:
+    def _parse_process_graph(
+        process_graph: Dict, property_name: str
+    ) -> Tuple[str, Union[str, int, float]]:
         """parses process graph, which is part of properties parameter of load_collection process
 
         Args:
             process_graph (Dict): process graph in which nodes are either operators or conditions
-            property_name (str): name of the property that user wants to filter 
+            property_name (str): name of the property that user wants to filter
 
         Returns:
             Tuple[str, Union[str, int, float]]: operator and value
@@ -197,14 +199,13 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
             value = x
         process_id: str = process_graph["process_id"]
         assert isinstance(process_id, str)
-        # extra-dimensions (e.g., forecast horizon, issue time) are stored as lists, but openEO 
-        # client does not allow user to use "contains" operator, e.g., if 1 is in [1, 2, 3] 
+        # extra-dimensions (e.g., forecast horizon, issue time) are stored as lists, but openEO
+        # client does not allow user to use "contains" operator, e.g., if 1 is in [1, 2, 3]
         if property_name.startswith("cube:dimensions."):
             operator = "a_contains"
         else:
             operator = map_openeo_cql2_operators[process_id]
         return operator, value
-
 
     @staticmethod
     def _convert_properties_to_filter(

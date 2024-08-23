@@ -113,9 +113,7 @@ class Grib2FileReader(CloudStorageFileReader):
             y_dim = CloudStorageFileReader._get_dimension_name(
                 item=item, axis=DEFAULT_Y_DIMENSION
             )
-            time_dim = CloudStorageFileReader._get_dimension_name(
-                item=item, dim_type="temporal"
-            )
+
             # get CRS
             crs_code = CloudStorageFileReader._get_epsg(item=item)
             if ds.rio.crs is None:
@@ -134,7 +132,13 @@ class Grib2FileReader(CloudStorageFileReader):
                 # else export array using bands
                 da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
             data_arrays.append(da)
+        # get temporal dimension name from an arbitrary item. Assumption that all items
+        # have the same temporal dimension name
+        time_dim = CloudStorageFileReader._get_dimension_name(
+            item=self.items[0], dim_type="temporal"
+        )
         if len(data_arrays) > 1:
+
             # concatenate all xarray.DataArray objects
             data_array = xr.concat(data_arrays, dim=time_dim)
         else:
@@ -152,8 +156,9 @@ class Grib2FileReader(CloudStorageFileReader):
             crs=crs_code,
         )
         # remove timestamps that have not been selected by end-user
-        da = filter_by_time(
-            data=da, temporal_extent=self.temporal_extent, temporal_dim=time_dim
-        )
+        if time_dim is not None and time_dim in da.dims:
+            da = filter_by_time(
+                data=da, temporal_extent=self.temporal_extent, temporal_dim=time_dim
+            )
 
         return da

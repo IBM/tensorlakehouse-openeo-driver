@@ -78,7 +78,7 @@ def test_load_items(
         bbox=spatial_extent,
         temporal_extent=temporal_extent,
         bands=bands,
-        properties=None
+        properties=None,
     )
     array = reader.load_items()
     assert isinstance(array, xr.DataArray)

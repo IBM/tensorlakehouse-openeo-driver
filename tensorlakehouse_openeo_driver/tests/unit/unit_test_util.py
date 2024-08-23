@@ -1882,7 +1882,7 @@ def main():
         extra_dims={"isobaricInhPa": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
         x_dim_name="longitude",
         y_dim_name="latitude",
-        temporal_extent=None
+        temporal_extent=None,
     )
 
 

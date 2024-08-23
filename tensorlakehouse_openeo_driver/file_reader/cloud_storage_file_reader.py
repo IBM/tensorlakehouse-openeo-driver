@@ -224,7 +224,7 @@ class CloudStorageFileReader:
         item: Dict[str, Any],
         axis: Optional[str] = None,
         dim_type: Optional[str] = None,
-    ) -> str:
+    ) -> Optional[str]:
         """get dimension name of the specified axis or the specified dim_type. Otherwise, it throws an
         exception
 
@@ -232,11 +232,6 @@ class CloudStorageFileReader:
             item (Dict[str, Any]): STAC item
             axis (Optional[str], optional): axis name (e.g., x, y)
             dim_type (Optional[str], optional): dimension type (e.g., temporal, spatial)
-
-        Raises:
-            ValueError: _description_
-            ValueError: _description_
-            ValueError: _description_
 
         Returns:
             str: dimension name
@@ -263,12 +258,7 @@ class CloudStorageFileReader:
             ):
                 dimension_name = k
                 found = True
-        if found and isinstance(dimension_name, str):
-            return dimension_name
-        else:
-            raise ValueError(
-                f"Error! Unable to dimension name - axis={axis} dim_type={dim_type}"
-            )
+        return dimension_name
 
     def _filter_by_extra_dimensions(self, dataset: xr.Dataset) -> xr.Dataset:
         """extract only dimensions (cube:dimension) from properties
@@ -301,6 +291,6 @@ class CloudStorageFileReader:
                             value = arguments["x"]
                         # apply filter
                         if process_id in ["eq", "="]:
-                            dataset = dataset.sel({dimension_name: value})
+                            dataset = dataset.sel({dimension_name: [value]})
 
         return dataset

@@ -34,15 +34,15 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                                 "type": "spatial",
                                 "extent": [0, 270],
                                 "reference_system": 4326,
-                                "unit": "degrees_east"
+                                "unit": "degrees_east",
                             },
-                            "time": {
-                                "type": "temporal",
-                                "extent": [
-                                    "2017-01-01T00:00:00Z",
-                                    "2017-01-02T00:00:00Z",
-                                ],
-                            },
+                            # "time": {
+                            #     "type": "temporal",
+                            #     "extent": [
+                            #         "2017-01-01T00:00:00Z",
+                            #         "2017-01-02T00:00:00Z",
+                            #     ],
+                            # },
                         }
                     },
                 },
@@ -74,7 +74,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                                 "type": "spatial",
                                 "extent": [51, 52],
                                 "reference_system": 4326,
-                                "unit": "degrees"
+                                "unit": "degrees",
                             },
                             "longitude": {
                                 "axis": "x",
@@ -82,20 +82,29 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                                 "type": "spatial",
                                 "extent": [-1, 0],
                                 "reference_system": 4326,
-                                "unit": "degrees_east"
+                                "unit": "degrees_east",
                             },
-                            "time": {
-                                "type": "temporal",
-                                "extent": [
-                                    "2019-01-01T00:00:00Z",
-                                    "2019-01-01T00:00:00Z",
-                                ],
-                            },
+                            # "time": {
+                            #     "type": "temporal",
+                            #     "extent": [
+                            #         "2019-01-01T00:00:00Z",
+                            #         "2019-01-01T00:00:00Z",
+                            #     ],
+                            # },
                             "isobaricInhPa": {
                                 "type": "spatial",
                                 "extent": [1, 2, 3, 4, 5, 6, 7, 8, 9],
                             },
-                        }
+                        },
+                        "cube:variables": {
+                            "t": {
+                                "type": "data",
+                                "unit": "",
+                                "description": "2-meter air temperature",
+                                "values": [],
+                                "dimensions": ["x", "y", "time", "isobaricInhPa"],
+                            }
+                        },
                     },
                 },
             ],
@@ -118,7 +127,6 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
             ["t"],
             4326,
             {
-                "time": 1,
                 "longitude": 31,
                 "latitude": 70,
                 "isobaricInhPa": 1,
@@ -147,6 +155,7 @@ def test_load_items(
     array = reader.load_items()
     assert isinstance(array, xr.DataArray)
     for dim, expected_size in expected_dim_size.items():
+        assert dim in array.dims, f"Error! {dim=} not in {array.dims}"
         actual_size = array[dim].size
         assert (
             actual_size == expected_size
