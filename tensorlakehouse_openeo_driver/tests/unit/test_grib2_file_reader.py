@@ -34,6 +34,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                                 "type": "spatial",
                                 "extent": [0, 270],
                                 "reference_system": 4326,
+                                "unit": "degrees_east"
                             },
                             "time": {
                                 "type": "temporal",
@@ -62,7 +63,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                 {
                     "assets": {
                         "data": {
-                            "href": "/Users/ltizzei/Downloads/ECCC_dont_share/gfs_4_20190101_0000_039.pl.grb2"
+                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/test_extra_dim.grib2"
                         }
                     },
                     "properties": {
@@ -71,15 +72,17 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                                 "axis": "y",
                                 "step": 1,
                                 "type": "spatial",
-                                "extent": [-90, 90],
+                                "extent": [51, 52],
                                 "reference_system": 4326,
+                                "unit": "degrees"
                             },
                             "longitude": {
                                 "axis": "x",
                                 "step": 1,
                                 "type": "spatial",
-                                "extent": [0, 360],
+                                "extent": [-1, 0],
                                 "reference_system": 4326,
+                                "unit": "degrees_east"
                             },
                             "time": {
                                 "type": "temporal",
@@ -90,45 +93,13 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                             },
                             "isobaricInhPa": {
                                 "type": "spatial",
-                                "extent": [
-                                    1000.0,
-                                    975.0,
-                                    950.0,
-                                    925.0,
-                                    900.0,
-                                    850.0,
-                                    800.0,
-                                    750.0,
-                                    700.0,
-                                    650.0,
-                                    600.0,
-                                    550.0,
-                                    500.0,
-                                    450.0,
-                                    400.0,
-                                    350.0,
-                                    300.0,
-                                    250.0,
-                                    200.0,
-                                    150.0,
-                                    100.0,
-                                    70.0,
-                                    50.0,
-                                    30.0,
-                                    20.0,
-                                    10.0,
-                                    7.0,
-                                    5.0,
-                                    3.0,
-                                    2.0,
-                                    1.0,
-                                ],
+                                "extent": [1, 2, 3, 4, 5, 6, 7, 8, 9],
                             },
                         }
                     },
                 },
             ],
-            (0, 0, 180, 90),
+            (-0.5, 51.2, -0.2, 51.9),
             (datetime(2019, 1, 1), datetime(2019, 1, 1)),
             {
                 "cube:dimensions.isobaricInhPa.values": {
@@ -137,21 +108,21 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                             "process_id": "eq",
                             "arguments": {
                                 "x": ParameterReference(from_parameter="value"),
-                                "y": 100,
+                                "y": 1,
                             },
                             "result": True,
                         }
                     }
                 },
             },
-            ["gh", "t"],
+            ["t"],
             4326,
             {
                 "time": 1,
-                "longitude": 360,
-                "latitude": 181,
+                "longitude": 31,
+                "latitude": 70,
                 "isobaricInhPa": 1,
-                "bands": 2,
+                "bands": 1,
             },
         ),
     ],

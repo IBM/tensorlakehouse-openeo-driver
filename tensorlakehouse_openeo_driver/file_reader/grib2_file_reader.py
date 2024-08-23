@@ -83,8 +83,23 @@ class Grib2FileReader(CloudStorageFileReader):
                 ds = xr.open_dataset(s3_file_obj, engine="cfgrib")
 
             x_dim_name = Grib2FileReader._get_dimension_name(item=item, axis="x")
-            max_x = item["properties"]["cube:dimensions"][x_dim_name]["extent"][1]
-            if max_x > 180:
+            units = item["properties"]["cube:dimensions"][x_dim_name].get("unit")
+
+            # cfgrib follows NetCDF Climate and Forecast (CF) Metadata Conventions and because of
+            # that longitude is represented as degrees east,i.e., from 0 to 360
+            if (
+                units is not None
+                and isinstance(units, str)
+                and units.lower()
+                in [
+                    "degrees_east",
+                    "degree_east",
+                    "degree_e",
+                    "degrees_e",
+                    "degreee",
+                    "degreesE",
+                ]
+            ):
                 ds = ds.assign_coords(
                     {x_dim_name: (((ds[x_dim_name] + 180) % 360) - 180)}
                 )
