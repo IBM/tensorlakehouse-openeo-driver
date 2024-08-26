@@ -60,6 +60,7 @@ class Grib2FileReader(CloudStorageFileReader):
         Returns:
             xr.DataArray: raster data cube
         """
+        logger.debug(f"Loading GRIB2 files: bands={self.bands} bbox={self.bbox}")
         # initialize array and crs variables
         da = None
         crs_code = None

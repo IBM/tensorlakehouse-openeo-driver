@@ -67,7 +67,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                         }
                     },
                     "properties": {
-                        "datetime" : "2000-01-01T00:00:00Z",
+                        "datetime": "2000-01-01T00:00:00Z",
                         "cube:dimensions": {
                             "latitude": {
                                 "axis": "y",
@@ -115,7 +115,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                         }
                     },
                     "properties": {
-                        "datetime" : "2000-01-02T00:00:00Z",
+                        "datetime": "2000-01-02T00:00:00Z",
                         "cube:dimensions": {
                             "latitude": {
                                 "axis": "y",
@@ -180,7 +180,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                 "latitude": 70,
                 "isobaricInhPa": 1,
                 "bands": 1,
-                "time": 2
+                "time": 2,
             },
         ),
     ],

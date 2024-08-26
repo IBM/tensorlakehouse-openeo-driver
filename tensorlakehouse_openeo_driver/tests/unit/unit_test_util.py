@@ -1875,7 +1875,10 @@ def generate_file(
 
 
 def main():
-    for filename in ["mock_extra_dim_2000_01_01.grib2", "mock_extra_dim_2000_01_02.grib2"]:
+    for filename in [
+        "mock_extra_dim_2000_01_01.grib2",
+        "mock_extra_dim_2000_01_02.grib2",
+    ]:
         generate_file(
             bands=["gh", "t", "r", "u", "v"],
             filename=filename,
