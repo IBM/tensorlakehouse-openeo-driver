@@ -16,7 +16,7 @@ from tensorlakehouse_openeo_driver.geospatial_utils import (
     reproject_bbox,
 )
 from urllib.parse import urlparse
-
+import pandas as pd
 
 class NetCDFFileReader(CloudStorageFileReader):
 
@@ -89,6 +89,17 @@ class NetCDFFileReader(CloudStorageFileReader):
             else:
                 # else export array using bands
                 da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
+            # add temporal dimension if it does not exist on dataarray
+            time_dim = CloudStorageFileReader._get_dimension_name(
+                item=item, dim_type="temporal"
+            )
+            if time_dim is None:
+                raise ValueError(f"Error! {item=}")
+            elif time_dim not in da.dims:
+                dt_str = item["properties"].get("datetime")
+                dt = pd.Timestamp(dt_str).to_datetime64()
+
+                da = da.expand_dims({time_dim: [dt]})
             data_arrays.append(da)
         if len(data_arrays) > 1:
             # concatenate all xarray.DataArray objects
@@ -100,6 +111,7 @@ class NetCDFFileReader(CloudStorageFileReader):
         reprojected_bbox = reproject_bbox(
             bbox=self.bbox, src_crs=4326, dst_crs=crs_code
         )
+        assert x_dim is not None and y_dim is not None
         da = clip_box(
             data=data_array,
             bbox=reprojected_bbox,
@@ -108,8 +120,9 @@ class NetCDFFileReader(CloudStorageFileReader):
             crs=crs_code,
         )
         # remove timestamps that have not been selected by end-user
-        da = filter_by_time(
-            data=da, temporal_extent=self.temporal_extent, temporal_dim=time_dim
-        )
+        if time_dim is not None:
+            da = filter_by_time(
+                data=da, temporal_extent=self.temporal_extent, temporal_dim=time_dim
+            )
 
         return da

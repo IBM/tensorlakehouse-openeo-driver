@@ -114,6 +114,7 @@ class FSTDFileReader(CloudStorageFileReader):
         reprojected_bbox = reproject_bbox(
             bbox=self.bbox, src_crs=4326, dst_crs=crs_code
         )
+        assert x_dim is not None and y_dim is not None
         da = clip_box(
             data=data_array,
             bbox=reprojected_bbox,
@@ -122,8 +123,9 @@ class FSTDFileReader(CloudStorageFileReader):
             crs=crs_code,
         )
         # remove timestamps that have not been selected by end-user
-        da = filter_by_time(
-            data=da, temporal_extent=self.temporal_extent, temporal_dim=time_dim
-        )
+        if time_dim is not None:
+            da = filter_by_time(
+                data=da, temporal_extent=self.temporal_extent, temporal_dim=time_dim
+            )
 
         return da

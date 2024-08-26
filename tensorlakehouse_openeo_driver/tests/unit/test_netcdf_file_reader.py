@@ -114,6 +114,7 @@ class FakeS3Filesystem:
                         }
                     },
                     "properties": {
+                        "datetime": "2000-11-30T00:00:00Z",
                         "cube:dimensions": {
                             "longitude": {
                                 "axis": "x",

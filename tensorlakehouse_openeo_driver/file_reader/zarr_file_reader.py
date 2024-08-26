@@ -74,9 +74,12 @@ class ZarrFileReader(CloudStorageFileReader):
         array = dataset[self.bands]
         array = array.to_array(dim=DEFAULT_BANDS_DIMENSION)
         # filter by temporal_extent
-        array = filter_by_time(
-            data=array, temporal_extent=self.temporal_extent, temporal_dim=t_axis_name
-        )
+        if t_axis_name is not None:
+            array = filter_by_time(
+                data=array,
+                temporal_extent=self.temporal_extent,
+                temporal_dim=t_axis_name,
+            )
 
         # Filter by spatial extent
         crs_code = CloudStorageFileReader._get_epsg(item=item)

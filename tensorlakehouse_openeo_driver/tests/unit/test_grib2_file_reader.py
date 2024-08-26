@@ -36,13 +36,13 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                                 "reference_system": 4326,
                                 "unit": "degrees_east",
                             },
-                            # "time": {
-                            #     "type": "temporal",
-                            #     "extent": [
-                            #         "2017-01-01T00:00:00Z",
-                            #         "2017-01-02T00:00:00Z",
-                            #     ],
-                            # },
+                            "time": {
+                                "type": "temporal",
+                                "extent": [
+                                    "2017-01-01T00:00:00Z",
+                                    "2017-01-02T00:00:00Z",
+                                ],
+                            },
                         }
                     },
                 },
@@ -63,10 +63,11 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                 {
                     "assets": {
                         "data": {
-                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/test_extra_dim.grib2"
+                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/mock_extra_dim_2000_01_01.grib2"
                         }
                     },
                     "properties": {
+                        "datetime" : "2000-01-01T00:00:00Z",
                         "cube:dimensions": {
                             "latitude": {
                                 "axis": "y",
@@ -84,16 +85,64 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                                 "reference_system": 4326,
                                 "unit": "degrees_east",
                             },
-                            # "time": {
-                            #     "type": "temporal",
-                            #     "extent": [
-                            #         "2019-01-01T00:00:00Z",
-                            #         "2019-01-01T00:00:00Z",
-                            #     ],
-                            # },
                             "isobaricInhPa": {
                                 "type": "spatial",
                                 "extent": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                            },
+                            "time": {
+                                "type": "temporal",
+                                "extent": [
+                                    "2000-01-01T00:00:00Z",
+                                    "2000-01-01T00:00:00Z",
+                                ],
+                            },
+                        },
+                        "cube:variables": {
+                            "t": {
+                                "type": "data",
+                                "unit": "",
+                                "description": "2-meter air temperature",
+                                "values": [],
+                                "dimensions": ["x", "y", "time", "isobaricInhPa"],
+                            }
+                        },
+                    },
+                },
+                {
+                    "assets": {
+                        "data": {
+                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/mock_extra_dim_2000_01_02.grib2"
+                        }
+                    },
+                    "properties": {
+                        "datetime" : "2000-01-02T00:00:00Z",
+                        "cube:dimensions": {
+                            "latitude": {
+                                "axis": "y",
+                                "step": 1,
+                                "type": "spatial",
+                                "extent": [51, 52],
+                                "reference_system": 4326,
+                                "unit": "degrees",
+                            },
+                            "longitude": {
+                                "axis": "x",
+                                "step": 1,
+                                "type": "spatial",
+                                "extent": [-1, 0],
+                                "reference_system": 4326,
+                                "unit": "degrees_east",
+                            },
+                            "isobaricInhPa": {
+                                "type": "spatial",
+                                "extent": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                            },
+                            "time": {
+                                "type": "temporal",
+                                "extent": [
+                                    "2000-01-02T00:00:00Z",
+                                    "2000-01-02T00:00:00Z",
+                                ],
                             },
                         },
                         "cube:variables": {
@@ -109,7 +158,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                 },
             ],
             (-0.5, 51.2, -0.2, 51.9),
-            (datetime(2019, 1, 1), datetime(2019, 1, 1)),
+            (datetime(2000, 1, 1), datetime(2000, 1, 3)),
             {
                 "cube:dimensions.isobaricInhPa.values": {
                     "process_graph": {
@@ -131,6 +180,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                 "latitude": 70,
                 "isobaricInhPa": 1,
                 "bands": 1,
+                "time": 2
             },
         ),
     ],

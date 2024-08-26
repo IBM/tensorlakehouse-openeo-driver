@@ -209,7 +209,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
 
     @staticmethod
     def _convert_properties_to_filter(
-        properties: Dict[str, Any]
+        properties: Optional[Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
         """convert properties parameter of load_collection process to a filter parameter of
         pystac_client search method
@@ -223,24 +223,25 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         # TODO this method does not handle all types of filters that can be applied
 
         # this is the list of conditions/filters that we will pass as filters in the search
-        conditions = list()
-        # for each property
-        for property_name, process_graph in properties.items():
-            # for each process graph
-            for process_graph_value in process_graph["process_graph"].values():
-                # extract operator and value
-                operator, value = LoadCollectionFromCOS._parse_process_graph(
-                    process_graph=process_graph_value, property_name=property_name
-                )
-                # set a condition and append it to the list of conditions
-                condition = {
-                    "op": operator,
-                    "args": [
-                        {"property": f"properties.{property_name}"},
-                        value,
-                    ],
-                }
-                conditions.append(condition)
+        conditions: List[Dict[str, Any]] = list()
+        if properties is not None:
+            # for each property
+            for property_name, process_graph in properties.items():
+                # for each process graph
+                for process_graph_value in process_graph["process_graph"].values():
+                    # extract operator and value
+                    operator, value = LoadCollectionFromCOS._parse_process_graph(
+                        process_graph=process_graph_value, property_name=property_name
+                    )
+                    # set a condition and append it to the list of conditions
+                    condition = {
+                        "op": operator,
+                        "args": [
+                            {"property": f"properties.{property_name}"},
+                            value,
+                        ],
+                    }
+                    conditions.append(condition)
         # if the number of conditions appended is zero then there is no filter
         if len(conditions) == 0:
             filter_cql = None

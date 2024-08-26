@@ -143,9 +143,9 @@ def filter_by_time(
     if isinstance(data, xr.Dataset):
         data = data.to_array()
     # if temporal dimension does not exist in the dataarray, add temporal dimension
-    if temporal_dim not in data.dims:
-        time_coords = list(set([ts for ts in temporal_extent if ts is not None]))
-        data = data.expand_dims({temporal_dim: time_coords})
+    # if temporal_dim not in data.dims:
+    #     time_coords = list(set([ts for ts in temporal_extent if ts is not None]))
+    #     data = data.expand_dims({temporal_dim: time_coords})
 
     # convert 360 calendar to gregorian
     if isinstance(data[temporal_dim].values[0], Datetime360Day):
@@ -169,8 +169,10 @@ def filter_by_time(
     timestamps = _convert_to_datetime(datetime_index=ts)
     start_index = bisect.bisect_left(timestamps, start_datetime)
     end_index = bisect.bisect_right(timestamps, end_datetime)
-
-    data = data.isel({temporal_dim: slice(start_index, end_index)})
+    if start_index == end_index:
+        data = data.isel({temporal_dim: [start_index]})
+    else:
+        data = data.isel({temporal_dim: slice(start_index, end_index)})
     return data
 
 

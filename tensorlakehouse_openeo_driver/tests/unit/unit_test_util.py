@@ -1875,15 +1875,16 @@ def generate_file(
 
 
 def main():
-    generate_file(
-        bands=["gh", "t", "r", "u", "v"],
-        filename="test_extra_dim.grib2",
-        file_format=GRIB2,
-        extra_dims={"isobaricInhPa": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
-        x_dim_name="longitude",
-        y_dim_name="latitude",
-        temporal_extent=None,
-    )
+    for filename in ["mock_extra_dim_2000_01_01.grib2", "mock_extra_dim_2000_01_02.grib2"]:
+        generate_file(
+            bands=["gh", "t", "r", "u", "v"],
+            filename=filename,
+            file_format=GRIB2,
+            extra_dims={"isobaricInhPa": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
+            x_dim_name="longitude",
+            y_dim_name="latitude",
+            temporal_extent=None,
+        )
 
 
 if __name__ == "__main__":

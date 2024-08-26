@@ -5,10 +5,12 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
+    logger,
 )
 from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import (
     CloudStorageFileReader,
 )
+import pandas as pd
 import xarray as xr
 import cfgrib
 from tensorlakehouse_openeo_driver.geospatial_utils import (
@@ -71,8 +73,6 @@ class Grib2FileReader(CloudStorageFileReader):
             path_or_url = asset_value["href"]
             parse_url = urlparse(path_or_url)
             if parse_url.scheme == "":
-                # this is better than xr.open_dataset(engine="cfgrib") because of this
-                # issue https://github.com/ecmwf/cfgrib/issues/66#issuecomment-496268903
                 assert Path(
                     path_or_url
                 ).exists(), f"Error! File does not exist: {path_or_url}"
@@ -83,8 +83,11 @@ class Grib2FileReader(CloudStorageFileReader):
                 ds = xr.open_dataset(s3_file_obj, engine="cfgrib")
 
             x_dim_name = Grib2FileReader._get_dimension_name(item=item, axis="x")
-            units = item["properties"]["cube:dimensions"][x_dim_name].get("unit")
-
+            try:
+                units = item["properties"]["cube:dimensions"][x_dim_name].get("unit")
+            except KeyError as e:
+                msg = f"Error! Missing key: {item=} {e=}"
+                raise KeyError(msg)
             # cfgrib follows NetCDF Climate and Forecast (CF) Metadata Conventions and because of
             # that longitude is represented as degrees east,i.e., from 0 to 360
             if (
@@ -131,12 +134,22 @@ class Grib2FileReader(CloudStorageFileReader):
             else:
                 # else export array using bands
                 da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
+
+            # add temporal dimension if it does not exist on dataarray
+            time_dim = CloudStorageFileReader._get_dimension_name(
+                item=item, dim_type="temporal"
+            )
+            if time_dim is None:
+                raise ValueError(f"Error! {item=}")
+            elif time_dim not in da.dims:
+                dt_str = item["properties"].get("datetime")
+                dt = pd.Timestamp(dt_str).to_datetime64()
+
+                da = da.expand_dims({time_dim: [dt]})
             data_arrays.append(da)
         # get temporal dimension name from an arbitrary item. Assumption that all items
         # have the same temporal dimension name
-        time_dim = CloudStorageFileReader._get_dimension_name(
-            item=self.items[0], dim_type="temporal"
-        )
+
         if len(data_arrays) > 1:
 
             # concatenate all xarray.DataArray objects
@@ -148,6 +161,8 @@ class Grib2FileReader(CloudStorageFileReader):
         reprojected_bbox = reproject_bbox(
             bbox=self.bbox, src_crs=4326, dst_crs=crs_code
         )
+        assert x_dim is not None
+        assert y_dim is not None
         da = clip_box(
             data=data_array,
             bbox=reprojected_bbox,
