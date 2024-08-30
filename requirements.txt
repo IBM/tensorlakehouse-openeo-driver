@@ -14,6 +14,7 @@ dask-image
 distributed
 # ecmwflibs is required to fix this issue https://github.com/ecmwf/eccodes-python/issues/54#issuecomment-925036724
 ecmwflibs
+eccodes
 filetype
 Fiona
 Flask
