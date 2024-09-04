@@ -124,6 +124,7 @@ def _convert_to_datetime(
             timestamps.append(ts.to_pydatetime())
     elif isinstance(dt, int):
         for dt in datetime_index:
+            assert isinstance(dt, int)
             timestamps.append(
                 pd.Timestamp.fromtimestamp(dt / 1e9, tz="UTC").to_pydatetime()
             )
