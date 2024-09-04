@@ -92,7 +92,7 @@ def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):
 
 
 def _convert_to_datetime(
-    datetime_index: List[Union[str, datetime, np.datetime64, Datetime360Day]]
+    datetime_index: List[Union[str, datetime, np.datetime64, Datetime360Day, int]]
 ) -> List[datetime]:
     """convert a list of datetime values to native datetime
 
@@ -122,6 +122,11 @@ def _convert_to_datetime(
             if ts.tzinfo is None:
                 ts = ts.tz_localize(tz="UTC")
             timestamps.append(ts.to_pydatetime())
+    elif isinstance(dt, int):
+        for dt in datetime_index:
+            timestamps.append(
+                pd.Timestamp.fromtimestamp(dt / 1e9, tz="UTC").to_pydatetime()
+            )
     return timestamps
 
 

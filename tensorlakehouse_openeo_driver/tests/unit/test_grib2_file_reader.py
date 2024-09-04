@@ -1,7 +1,9 @@
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import pytest
 import xarray as xr
 
+from tensorlakehouse_openeo_driver.constants import DEFAULT_BANDS_DIMENSION, TEST_DATA_ROOT
 from tensorlakehouse_openeo_driver.file_reader.grib2_file_reader import Grib2FileReader
 from datetime import datetime
 from rasterio.crs import CRS
@@ -179,7 +181,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
                 "longitude": 31,
                 "latitude": 70,
                 "isobaricInhPa": 1,
-                "bands": 1,
+                DEFAULT_BANDS_DIMENSION: 1,
                 "time": 2,
             },
         ),
@@ -211,3 +213,10 @@ def test_load_items(
             actual_size == expected_size
         ), f"Error! {dim=} {actual_size=} {expected_size=}"
     assert array.rio.crs == CRS.from_epsg(crs)
+    ds = array.to_dataset(dim=DEFAULT_BANDS_DIMENSION)
+    path = TEST_DATA_ROOT / "test_convert_grib2_to_netcdf.nc"
+    if Path(path).exists():
+        Path(path).unlink()
+    ds.to_netcdf(path=path, engine="netcdf4")  # type: ignore[call-overload]
+    if Path(path).exists():
+        Path(path).unlink()

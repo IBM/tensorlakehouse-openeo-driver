@@ -144,9 +144,9 @@ class Grib2FileReader(CloudStorageFileReader):
                 raise ValueError(f"Error! {item=}")
             elif time_dim not in da.dims:
                 dt_str = item["properties"].get("datetime")
-                dt = pd.Timestamp(dt_str).to_datetime64()
+                timestamps = pd.to_datetime([pd.Timestamp(dt_str)])
 
-                da = da.expand_dims({time_dim: [dt]})
+                da = da.expand_dims({time_dim: timestamps})
             data_arrays.append(da)
         # get temporal dimension name from an arbitrary item. Assumption that all items
         # have the same temporal dimension name
