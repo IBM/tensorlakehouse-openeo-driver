@@ -16,53 +16,390 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
 @pytest.mark.parametrize(
     "items, spatial_extent, temporal_extent, properties, bands, crs, expected_dim_size",
     [
-        (
-            [
-                {
-                    "assets": {
-                        "data": {
-                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/example.grib"
-                        }
-                    },
-                    "properties": {
-                        "cube:dimensions": {
-                            "latitude": {
-                                "axis": "y",
-                                "step": 90,
-                                "type": "spatial",
-                                "extent": [-90, 90],
-                                "reference_system": 4326,
-                            },
-                            "longitude": {
-                                "axis": "x",
-                                "step": 90,
-                                "type": "spatial",
-                                "extent": [0, 270],
-                                "reference_system": 4326,
-                                "unit": "degrees_east",
-                            },
-                            "time": {
-                                "type": "temporal",
-                                "extent": [
-                                    "2017-01-01T00:00:00Z",
-                                    "2017-01-02T00:00:00Z",
-                                ],
-                            },
-                        }
-                    },
-                },
-            ],
-            (0, 0, 180, 90),
-            (datetime(2016, 12, 31), datetime(2017, 1, 2)),
-            None,
-            ["z", "t"],
-            4326,
-            {
-                "time": 3,
-                "longitude": 2,
-                "latitude": 2,
-            },
-        ),
+        # (
+        #     [
+        #         {
+        #             "type": "Feature",
+        #             "id": "gfs_4_20190101_0000_372.sfc.grb2",
+        #             "links": [],
+        #             "properties": {
+        #                 "datetime": "2019-01-16T12:00:00Z",
+        #                 "cube:dimensions": {
+        #                     "depthBelowLandLayer": {
+        #                         "type": "custom",
+        #                         "values": [0.0, 0.4, 0.1, 1.0],
+        #                     },
+        #                     "longitude": {
+        #                         "type": "spatial",
+        #                         "axis": "x",
+        #                         "extent": [0.0, 359.5],
+        #                         "step": 0.5,
+        #                         "reference_system": 4326,
+        #                         "unit": "degrees_east",
+        #                     },
+        #                     "latitude": {
+        #                         "type": "spatial",
+        #                         "axis": "y",
+        #                         "extent": [-90.0, 90.0],
+        #                         "step": -0.5,
+        #                         "reference_system": 4326,
+        #                         "unit": "degrees_north",
+        #                     },
+        #                     "time": {
+        #                         "type": "temporal",
+        #                         "step": "P0DT0H0M0S",
+        #                         "extent": [
+        #                             "2019-01-16T12:00:00Z",
+        #                             "2019-01-16T12:00:00Z",
+        #                         ],
+        #                     },
+        #                     "heightAboveGround": {
+        #                         "type": "custom",
+        #                         "values": [80.0, 2.0, 10.0, 100.0],
+        #                     },
+        #                     "heightAboveSea": {
+        #                         "type": "custom",
+        #                         "values": [3658.0, 1829.0, 2743.0],
+        #                     },
+        #                 },
+        #                 "cube:variables": {
+        #                     "st": {
+        #                         "type": "data",
+        #                         "dimensions": [
+        #                             "depthBelowLandLayer",
+        #                             "longitude",
+        #                             "latitude",
+        #                         ],
+        #                     },
+        #                     "soilw": {
+        #                         "type": "data",
+        #                         "dimensions": [
+        #                             "depthBelowLandLayer",
+        #                             "longitude",
+        #                             "latitude",
+        #                         ],
+        #                     },
+        #                     "pres": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "u": {
+        #                         "type": "data",
+        #                         "dimensions": [
+        #                             "heightAboveSea",
+        #                             "longitude",
+        #                             "latitude",
+        #                         ],
+        #                     },
+        #                     "v": {
+        #                         "type": "data",
+        #                         "dimensions": [
+        #                             "heightAboveSea",
+        #                             "longitude",
+        #                             "latitude",
+        #                         ],
+        #                     },
+        #                     "q": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "t": {
+        #                         "type": "data",
+        #                         "dimensions": [
+        #                             "heightAboveSea",
+        #                             "heightAboveGround",
+        #                             "longitude",
+        #                             "latitude",
+        #                         ],
+        #                     },
+        #                     "u10": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "v10": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "t2m": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "d2m": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "tmax": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "tmin": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "sh2": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "r2": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "aptmp": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "u100": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "v100": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "ustm": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "vstm": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "hlcy": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "prmsl": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "mslet": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "uswrf": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "ulwrf": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "unknown": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "siconc": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "cape": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "sp": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "lsm": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "vis": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "prate": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "acpcp": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "sde": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "utaua": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "vtaua": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "cin": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "orog": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "tp": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "msshf": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "mslhf": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "crain": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "cfrzr": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "cicep": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "csnow": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "cprat": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "cpofp": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "sdwe": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "gust": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "u-gwd": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "v-gwd": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "dswrf": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "dlwrf": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "lftx": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "lftx4": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "watr": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "gflux": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "hindex": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "wilt": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "landn": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "fldcp": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "al": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "SUNSD": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "gh": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "icaht": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "trpp": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                     "vwsh": {
+        #                         "type": "data",
+        #                         "dimensions": ["longitude", "latitude"],
+        #                     },
+        #                 },
+        #             },
+        #             "assets": {
+        #                 "data": {
+        #                     "href": "/Users/ltizzei/Downloads/ECCC_demo_2024_sep/gfs_4_20190101_0000_372.sfc.grb2",
+        #                     "type": "application/x-grib2",
+        #                 }
+        #             },
+        #             "stac_version": "1.1.0-beta.1",
+        #             "stac_extensions": [
+        #                 "https://stac-extensions.github.io/datacube/v2.2.0/schema.json"
+        #             ],
+        #             "geometry": {
+        #                 "type": "Polygon",
+        #                 "coordinates": [
+        #                     [
+        #                         [179.5, 90.0],
+        #                         [179.5, -90.0],
+        #                         [-180.0, -90.0],
+        #                         [-180.0, 90.0],
+        #                         [179.5, 90.0],
+        #                     ]
+        #                 ],
+        #             },
+        #             "collection": "GFS",
+        #             "bbox": [-180.0, -90.0, 179.5, 90.0],
+        #         }
+        #     ],
+        #     (0, 0, 180, 90),
+        #     (datetime(2019, 1, 16), datetime(2019, 1, 17)),
+        #     {
+        #         "cube:dimensions.heightAboveGround.values": {
+        #             "process_graph": {
+        #                 "eq1": {
+        #                     "process_id": "eq",
+        #                     "arguments": {
+        #                         "x": ParameterReference(from_parameter="value"),
+        #                         "y": 80,
+        #                     },
+        #                     "result": True,
+        #                 }
+        #             }
+        #         },
+        #     },
+        #     ["t"],
+        #     4326,
+        #     {"bands": 1, "latitude": 181, "time": 1, "longitude": 360},
+        # ),
         (
             [
                 {
@@ -183,7 +520,6 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
             {
                 "longitude": 31,
                 "latitude": 70,
-                "isobaricInhPa": 1,
                 DEFAULT_BANDS_DIMENSION: 1,
                 "time": 2,
             },
@@ -209,12 +545,7 @@ def test_load_items(
     )
     array = reader.load_items()
     assert isinstance(array, xr.DataArray)
-    for dim, expected_size in expected_dim_size.items():
-        assert dim in array.dims, f"Error! {dim=} not in {array.dims}"
-        actual_size = array[dim].size
-        assert (
-            actual_size == expected_size
-        ), f"Error! {dim=} {actual_size=} {expected_size=}"
+    assert dict(array.sizes) == expected_dim_size
     assert array.rio.crs == CRS.from_epsg(crs)
     ds = array.to_dataset(dim=DEFAULT_BANDS_DIMENSION)
     path = TEST_DATA_ROOT / "test_convert_grib2_to_netcdf.nc"

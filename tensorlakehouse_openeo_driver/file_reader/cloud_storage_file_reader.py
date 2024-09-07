@@ -83,6 +83,42 @@ class CloudStorageFileReader:
     def end_datetime(self) -> Optional[datetime]:
         return self.temporal_extent[1]
 
+    def get_extra_dimensions_filter(self) -> Dict:
+        """parse properties specified by end-user and extract the extra-dimension filters, e.g.,
+        if level is 100
+
+        Returns:
+            Dict: keys are extra-dimension names and values are extra-dimension values
+        """
+        extra_dim_filter = dict()
+        if self.properties is not None and isinstance(self.properties, dict):
+            # iterate over properties
+            for property_name, property_values in self.properties.items():
+                # ignore if property is not a dimension
+                if property_name.startswith("cube:dimensions"):
+                    # split property name into fields
+                    fields = property_name.split(".")
+                    assert len(fields) >= 2, f"Error! Unexpected fields: {fields=}"
+                    # get dimension name
+                    dimension_name = fields[1]
+                    process_graph = property_values["process_graph"]
+                    assert isinstance(
+                        process_graph, dict
+                    ), f"Error! Unexpected type: {process_graph=}"
+                    for process_graph_values in process_graph.values():
+                        # get process id which is the filter operation to be applied
+                        process_id = process_graph_values["process_id"]
+                        # get value
+                        arguments = process_graph_values["arguments"]
+                        if isinstance(arguments["x"], ParameterReference):
+                            value = arguments["y"]
+                        else:
+                            value = arguments["x"]
+                        # apply filter
+                        if process_id in ["eq", "="]:
+                            extra_dim_filter[dimension_name] = value
+        return extra_dim_filter
+
     def get_polygon(self) -> Polygon:
         """convert the bbox associated with this instance of the s3reader to a polygon
 
