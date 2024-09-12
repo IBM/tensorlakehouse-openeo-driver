@@ -5,11 +5,13 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
+    TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR,
     logger,
 )
 from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import (
     CloudStorageFileReader,
 )
+import uuid
 import pandas as pd
 import xarray as xr
 import cfgrib
@@ -135,10 +137,16 @@ class Grib2FileReader(CloudStorageFileReader):
             path_or_url = asset_value["href"]
             parse_url = urlparse(path_or_url)
             if parse_url.scheme == "":
-                assert Path(
-                    path_or_url
-                ).exists(), f"Error! File does not exist: {path_or_url}"
-                datasets = cfgrib.open_datasets(path_or_url)
+                path = Path(path_or_url)
+                assert path.exists(), f"Error! File does not exist: {path_or_url}"
+                hex_code = uuid.uuid4().hex
+                indexpath = (
+                    TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR
+                    / f"{path.name}.{hex_code}.idx"
+                )
+                datasets = cfgrib.open_datasets(
+                    path_or_url, backend_kwargs={"indexpath": str(indexpath)}
+                )
             else:
                 s3fs = self.create_s3filesystem()
                 s3_file_obj = s3fs.open(path_or_url, mode="rb")

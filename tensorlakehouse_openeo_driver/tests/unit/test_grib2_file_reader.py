@@ -389,7 +389,7 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
         #                     "process_id": "eq",
         #                     "arguments": {
         #                         "x": ParameterReference(from_parameter="value"),
-        #                         "y": 80,
+        #                         "y": 2.0,
         #                     },
         #                     "result": True,
         #                 }
