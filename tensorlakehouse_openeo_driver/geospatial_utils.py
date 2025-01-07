@@ -26,7 +26,7 @@ def clip_box(
 
     Args:
         data (xr.Dataset): data cube obtained from COS
-        bbox (List[float]): area of interest
+        bbox (List[float]): area of interest (west, south, east, north)
         crs (int): reference system
         items (List[Item]): list of STAC items
 
@@ -41,12 +41,13 @@ def clip_box(
     minx, miny, maxx, maxy = bbox
     # rename dimensions because clip_box accepts only x and y
     data = rename_dimension(data=data, rename_dict={x_dim: "x", y_dim: "y"})
-    # clip data
+    # adjust user input based on the limits of the data coordinates
     minx = max(minx, min(data["x"].values))
     maxx = min(maxx, max(data["x"].values))
 
     miny = max(miny, min(data["y"].values))
     maxy = min(maxy, max(data["y"].values))
+
     try:
         data = data.rio.clip_box(minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs)
     except OneDimensionalRaster:
@@ -91,7 +92,7 @@ def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):
 
 
 def _convert_to_datetime(
-    datetime_index: List[Union[str, datetime, np.datetime64, Datetime360Day]]
+    datetime_index: List[Union[str, datetime, np.datetime64, Datetime360Day, int]]
 ) -> List[datetime]:
     """convert a list of datetime values to native datetime
 
@@ -121,6 +122,12 @@ def _convert_to_datetime(
             if ts.tzinfo is None:
                 ts = ts.tz_localize(tz="UTC")
             timestamps.append(ts.to_pydatetime())
+    elif isinstance(dt, int):
+        for dt in datetime_index:
+            assert isinstance(dt, int)
+            timestamps.append(
+                pd.Timestamp.fromtimestamp(dt / 1e9, tz="UTC").to_pydatetime()
+            )
     return timestamps
 
 
@@ -136,12 +143,16 @@ def filter_by_time(
         temporal_extent (Tuple[datetime, datetime]): start and end datetime
         temporal_dim (str): name of the temporal dimension
 
-
     Returns:
         xr.DataArray: datacube
     """
     if isinstance(data, xr.Dataset):
         data = data.to_array()
+    # if temporal dimension does not exist in the dataarray, add temporal dimension
+    # if temporal_dim not in data.dims:
+    #     time_coords = list(set([ts for ts in temporal_extent if ts is not None]))
+    #     data = data.expand_dims({temporal_dim: time_coords})
+
     # convert 360 calendar to gregorian
     if isinstance(data[temporal_dim].values[0], Datetime360Day):
         data = data.convert_calendar(
@@ -164,8 +175,10 @@ def filter_by_time(
     timestamps = _convert_to_datetime(datetime_index=ts)
     start_index = bisect.bisect_left(timestamps, start_datetime)
     end_index = bisect.bisect_right(timestamps, end_datetime)
-
-    data = data.isel({temporal_dim: slice(start_index, end_index)})
+    if start_index == end_index:
+        data = data.isel({temporal_dim: [start_index]})
+    else:
+        data = data.isel({temporal_dim: slice(start_index, end_index)})
     return data
 
 

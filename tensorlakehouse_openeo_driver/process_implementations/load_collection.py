@@ -10,11 +10,13 @@ from pystac_client import Client
 import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
     COG_MEDIA_TYPE,
+    GRIB2_MEDIA_TYPE,
     JPG2000_MEDIA_TYPE,
     NETCDF_MEDIA_TYPE,
     STAC_DATETIME_FORMAT,
     STAC_URL,
     ZIP_ZARR_MEDIA_TYPE,
+    FSTD_MEDIA_TYPE,
     logger,
 )
 import pandas as pd
@@ -24,7 +26,15 @@ from tensorlakehouse_openeo_driver.file_reader.cog_file_reader import COGFileRea
 from tensorlakehouse_openeo_driver.file_reader.netcdf_file_reader import (
     NetCDFFileReader,
 )
+from tensorlakehouse_openeo_driver.file_reader.standard_file_reader import (
+    FSTDFileReader,
+)
 from tensorlakehouse_openeo_driver.file_reader.zarr_file_reader import ZarrFileReader
+from tensorlakehouse_openeo_driver.file_reader.grib2_file_reader import Grib2FileReader
+
+# from tensorlakehouse_openeo_driver.file_reader.standard_file_reader import (
+#     FSTDFileReader,
+# )
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 
 
@@ -77,7 +87,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         temporal_extent: TemporalInterval,
         bands: List[str],
         dimensions: Dict[str, str],
-        properties: Dict[str, Any] = {},
+        properties: Optional[Dict[str, Any]] = {},
     ) -> xr.DataArray:
         logger.debug(f"load collection from COS: id={id} bands={bands}")
         bbox_wsg84 = LoadCollectionFromCOS._convert_to_WSG84(
@@ -110,14 +120,18 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         media_type = next(iter(items_by_media_type.keys()))
         items = next(iter(items_by_media_type.values()))
         if media_type in [COG_MEDIA_TYPE, JPG2000_MEDIA_TYPE]:
-            reader: Union[COGFileReader, ZarrFileReader, NetCDFFileReader] = (
-                COGFileReader(
-                    items=items,
-                    bbox=bbox_wsg84,
-                    bands=bands,
-                    temporal_extent=temporal_ext,
-                    dimension_map=None,
-                )
+            reader: Union[
+                COGFileReader,
+                ZarrFileReader,
+                NetCDFFileReader,
+                Grib2FileReader,
+                FSTDFileReader,
+            ] = COGFileReader(
+                items=items,
+                bbox=bbox_wsg84,
+                bands=bands,
+                temporal_extent=temporal_ext,
+                properties=properties,
             )
 
         elif media_type == ZIP_ZARR_MEDIA_TYPE:
@@ -126,7 +140,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 bbox=bbox_wsg84,
                 bands=bands,
                 temporal_extent=temporal_ext,
-                dimension_map=None,
+                properties=properties,
             )
         elif media_type == NETCDF_MEDIA_TYPE:
             reader = NetCDFFileReader(
@@ -134,7 +148,23 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 bbox=bbox_wsg84,
                 bands=bands,
                 temporal_extent=temporal_ext,
-                dimension_map=None,
+                properties=properties,
+            )
+        elif media_type == GRIB2_MEDIA_TYPE:
+            reader = Grib2FileReader(
+                items=items,
+                bbox=bbox_wsg84,
+                bands=bands,
+                temporal_extent=temporal_ext,
+                properties=properties,
+            )
+        elif media_type == FSTD_MEDIA_TYPE:
+            reader = FSTDFileReader(
+                items=items,
+                bbox=bbox_wsg84,
+                bands=bands,
+                temporal_extent=temporal_ext,
+                properties=properties,
             )
         else:
             raise ValueError(f"Error! {media_type=} is not supported")
@@ -142,14 +172,17 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         return data
 
     @staticmethod
-    def _parse_process_graph(process_graph: Dict) -> Tuple:
+    def _parse_process_graph(
+        process_graph: Dict, property_name: str
+    ) -> Tuple[str, Union[str, int, float]]:
         """parses process graph, which is part of properties parameter of load_collection process
 
         Args:
-            process_graph (Dict):
+            process_graph (Dict): process graph in which nodes are either operators or conditions
+            property_name (str): name of the property that user wants to filter
 
         Returns:
-            Tuple: _description_
+            Tuple[str, Union[str, int, float]]: operator and value
         """
         map_openeo_cql2_operators = {
             "lte": "<=",
@@ -166,12 +199,17 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
             value = x
         process_id: str = process_graph["process_id"]
         assert isinstance(process_id, str)
-        operator = map_openeo_cql2_operators[process_id]
+        # extra-dimensions (e.g., forecast horizon, issue time) are stored as lists, but openEO
+        # client does not allow user to use "contains" operator, e.g., if 1 is in [1, 2, 3]
+        if property_name.startswith("cube:dimensions."):
+            operator = "a_contains"
+        else:
+            operator = map_openeo_cql2_operators[process_id]
         return operator, value
 
     @staticmethod
     def _convert_properties_to_filter(
-        properties: Dict[str, Any]
+        properties: Optional[Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
         """convert properties parameter of load_collection process to a filter parameter of
         pystac_client search method
@@ -185,24 +223,25 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         # TODO this method does not handle all types of filters that can be applied
 
         # this is the list of conditions/filters that we will pass as filters in the search
-        conditions = list()
-        # for each property
-        for property_name, process_graph in properties.items():
-            # for each process graph
-            for process_graph_value in process_graph["process_graph"].values():
-                # extract operator and value
-                operator, value = LoadCollectionFromCOS._parse_process_graph(
-                    process_graph=process_graph_value
-                )
-                # set a condition and append it to the list of conditions
-                condition = {
-                    "op": operator,
-                    "args": [
-                        {"property": f"properties.{property_name}"},
-                        value,
-                    ],
-                }
-                conditions.append(condition)
+        conditions: List[Dict[str, Any]] = list()
+        if properties is not None:
+            # for each property
+            for property_name, process_graph in properties.items():
+                # for each process graph
+                for process_graph_value in process_graph["process_graph"].values():
+                    # extract operator and value
+                    operator, value = LoadCollectionFromCOS._parse_process_graph(
+                        process_graph=process_graph_value, property_name=property_name
+                    )
+                    # set a condition and append it to the list of conditions
+                    condition = {
+                        "op": operator,
+                        "args": [
+                            {"property": f"properties.{property_name}"},
+                            value,
+                        ],
+                    }
+                    conditions.append(condition)
         # if the number of conditions appended is zero then there is no filter
         if len(conditions) == 0:
             filter_cql = None
@@ -219,7 +258,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         bbox: Tuple[float, float, float, float],
         temporal_extent: TemporalInterval,
         collection_id: str,
-        properties: Dict[str, Any] = {},
+        properties: Optional[Dict[str, Any]] = {},
         limit: int = 10000,
     ) -> List[Dict[str, Any]]:
         starttime, endtime = LoadCollectionFromCOS._get_start_and_endtime(

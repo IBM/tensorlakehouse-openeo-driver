@@ -7,9 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from zipfile import ZipFile
 import matplotlib.pyplot as plt
 
-# from openeo_processes_dask.process_implementations.cubes._xr_interop import (
-#     OpenEOExtensionDa,
-# )
+from cfgrib.xarray_to_grib import to_grib
 import numpy as np
 import pandas as pd
 import rioxarray
@@ -29,6 +27,7 @@ from tensorlakehouse_openeo_driver.constants import (
     ZIP,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
+    logger,
 )
 from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
 from tensorlakehouse_openeo_driver.layer import LayerMetadata
@@ -48,7 +47,7 @@ TEMPORAL_GUESSES = [
 X_GUESSES = ["x", "lon", "longitude"]
 Y_GUESSES = ["y", "lat", "latitude"]
 BANDS_GUESSES = ["b", "bands", "band"]
-
+GRIB2 = "GRIB2"
 HLSS30_ITEMS = (
     {
         "id": "HLS.S30.T18TYQ.2023242T153821.v2.0.Fmask",
@@ -1329,7 +1328,8 @@ def generate_xarray(
     latmin: float,
     lonmax: float,
     lonmin: float,
-    temporal_extent: Tuple[pd.Timestamp, pd.Timestamp],
+    temporal_extent: Optional[Tuple[pd.Timestamp, pd.Timestamp]],
+    extra_dimensions: Dict[str, List[str]] = {},
     size_x: int = 100,
     size_y: int = 100,
     num_periods: Optional[int] = 10,
@@ -1360,31 +1360,51 @@ def generate_xarray(
         Union[xr.DataArray, xr.Dataset]: raster data cube
     """
     np.random.seed(0)
-    start, stop = temporal_extent
-
     x = np.linspace(lonmin, lonmax, size_x).tolist()
     y = np.linspace(latmin, latmax, size_y).tolist()
+    if temporal_extent is not None:
+        start, stop = temporal_extent
+        timestamps = pd.date_range(
+            start=start, end=stop, periods=num_periods, freq=freq
+        )
+        if num_periods is None:
+            num_periods = len(timestamps)
+        assert isinstance(num_periods, int)
+        dims = [DEFAULT_TIME_DIMENSION, DEFAULT_Y_DIMENSION, DEFAULT_X_DIMENSION]
+        coords = {
+            DEFAULT_TIME_DIMENSION: timestamps.values,
+            DEFAULT_Y_DIMENSION: y,
+            DEFAULT_X_DIMENSION: x,
+        }
+    else:
+        dims = [DEFAULT_Y_DIMENSION, DEFAULT_X_DIMENSION]
+        num_periods = None
+        coords = {
+            DEFAULT_Y_DIMENSION: y,
+            DEFAULT_X_DIMENSION: x,
+        }
 
-    timestamps = pd.date_range(start=start, end=stop, periods=num_periods, freq=freq)
-    if num_periods is None:
-        num_periods = len(timestamps)
-    assert isinstance(num_periods, int)
     arrays = list()
     for band_name in bands:
-        band_data = 15 + 8 * np.random.randn(num_periods, size_y, size_x)
+        if num_periods is None:
+            band_data = 15 + 8 * np.random.randn(size_y, size_x)
+        else:
+            band_data = 15 + 8 * np.random.randn(num_periods, size_y, size_x)
         # reference_time = pd.Timestamp("2014-09-05")
         da = xr.DataArray(
             name=band_name,
             data=band_data,
-            dims=[DEFAULT_TIME_DIMENSION, DEFAULT_Y_DIMENSION, DEFAULT_X_DIMENSION],
-            coords={
-                DEFAULT_TIME_DIMENSION: timestamps.values,
-                DEFAULT_Y_DIMENSION: y,
-                DEFAULT_X_DIMENSION: x,
-            },
+            dims=dims,
+            coords=coords,
         )
-        da = da.expand_dims({DEFAULT_BANDS_DIMENSION: 1})
-        da = da.assign_coords({DEFAULT_BANDS_DIMENSION: [band_name]})
+        map_dims = {DEFAULT_BANDS_DIMENSION: 1}
+        coords_map = {DEFAULT_BANDS_DIMENSION: [band_name]}
+        for k, v in extra_dimensions.items():
+            size = len(v)
+            map_dims = map_dims | {k: size}
+            coords_map = coords_map | {k: v}
+        da = da.expand_dims(map_dims)
+        da = da.assign_coords(coords_map)
         arrays.append(da)
     da = xr.concat(arrays, pd.Index(bands, name=DEFAULT_BANDS_DIMENSION))
     if crs is not None:
@@ -1802,33 +1822,72 @@ def validate_raster_datacube(
     ), f"Error! Invalid crs = {cube.rio.crs}, but the expected CRS is {expected_crs}"
 
 
-def generate_files():
+def generate_file(
+    bands: List[str],
+    filename: str,
+    temporal_extent: Optional[Tuple[pd.Timestamp, pd.Timestamp]],
+    file_format: str,
+    directory: str = "./tensorlakehouse_openeo_driver/tests/unit/unit_test_data",
+    extra_dims: Dict[str, List] = {},
+    x_dim_name: str = DEFAULT_X_DIMENSION,
+    y_dim_name: str = DEFAULT_Y_DIMENSION,
+    time_dim_name: str = DEFAULT_TIME_DIMENSION,
+):
+    """generate files for testing purposes
+
+    Args:
+        bands (List[str]): _description_
+        filename (str): _description_
+        temporal_extent (Tuple[pd.Timestamp, pd.Timestamp]): _description_
+        file_format (str): _description_
+        directory (str, optional): _description_. Defaults to "./tensorlakehouse_openeo_driver/tests/unit/unit_test_data".
+        x_dim_name (str, optional): _description_. Defaults to DEFAULT_X_DIMENSION.
+        y_dim_name (str, optional): _description_. Defaults to DEFAULT_Y_DIMENSION.
+        time_dim_name (str, optional): _description_. Defaults to DEFAULT_TIME_DIMENSION.
+    """
     da = generate_xarray(
-        bands=["tasmax"],
+        bands=bands,
         latmin=51.0,
         latmax=52.0,
         lonmin=-1.0,
         lonmax=0.0,
-        temporal_extent=[pd.Timestamp(2000, 1, 1), pd.Timestamp(2001, 1, 1)],
+        temporal_extent=temporal_extent,
         freq="D",
         num_periods=None,
+        extra_dimensions=extra_dims,
     )
-    da.to_netcdf("filename_2000_2001.nc", format="NETCDF3_CLASSIC")
-    da = generate_xarray(
-        bands=["tasmax"],
-        latmin=51.0,
-        latmax=52.0,
-        lonmin=-1.0,
-        lonmax=0.0,
-        temporal_extent=[pd.Timestamp(2001, 1, 1), pd.Timestamp(2002, 1, 1)],
-        freq="D",
-        num_periods=None,
-    )
-    da.to_netcdf("filename_2001_2002.nc", format="NETCDF3_CLASSIC")
+    dims_map = dict()
+    if x_dim_name not in da.dims:
+        dims_map[DEFAULT_X_DIMENSION] = x_dim_name
+    if y_dim_name not in da.dims:
+        dims_map[DEFAULT_Y_DIMENSION] = y_dim_name
+    if time_dim_name not in da.dims and temporal_extent is not None:
+        dims_map[DEFAULT_TIME_DIMENSION] = time_dim_name
+    if len(dims_map) > 0:
+        da = da.rename(dims_map)
+    path = Path(directory) / filename
+    if file_format == NETCDF:
+        da.to_dataset(path)
+    elif file_format == GRIB2:
+        ds = da.to_dataset(dim=DEFAULT_BANDS_DIMENSION)
+        to_grib(ds, path)
+    logger.info(f"Save file: {path}")
 
 
 def main():
-    generate_files()
+    for filename in [
+        "mock_extra_dim_2000_01_01.grib2",
+        "mock_extra_dim_2000_01_02.grib2",
+    ]:
+        generate_file(
+            bands=["gh", "t", "r", "u", "v"],
+            filename=filename,
+            file_format=GRIB2,
+            extra_dims={"isobaricInhPa": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
+            x_dim_name="longitude",
+            y_dim_name="latitude",
+            temporal_extent=None,
+        )
 
 
 if __name__ == "__main__":

@@ -29,14 +29,14 @@ class ZarrFileReader(CloudStorageFileReader):
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
-        dimension_map: Optional[Dict[str, str]],
+        properties: Optional[Dict[str, Any]],
     ) -> None:
         super().__init__(
             items=items,
             bbox=bbox,
             bands=bands,
             temporal_extent=temporal_extent,
-            dimension_map=dimension_map,
+            properties=properties,
         )
 
     def load_items(
@@ -74,9 +74,12 @@ class ZarrFileReader(CloudStorageFileReader):
         array = dataset[self.bands]
         array = array.to_array(dim=DEFAULT_BANDS_DIMENSION)
         # filter by temporal_extent
-        array = filter_by_time(
-            data=array, temporal_extent=self.temporal_extent, temporal_dim=t_axis_name
-        )
+        if t_axis_name is not None:
+            array = filter_by_time(
+                data=array,
+                temporal_extent=self.temporal_extent,
+                temporal_dim=t_axis_name,
+            )
 
         # Filter by spatial extent
         crs_code = CloudStorageFileReader._get_epsg(item=item)

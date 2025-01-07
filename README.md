@@ -32,13 +32,14 @@ Using a virtual environment for all commands in this guide is strongly recommend
 
 1. Go to `tensorlakehouse-openeo-driver` directory
 2. Install *tensorlakehouse-openeo-driver* dependencies: `pip install -r requirements.txt`. Optionally, you can install other dependencies for development purpose: `pip install -r dev_requirements.txt`
-3. Optional, but strongly suggested: follow the step describe [here](https://github.com/ibm/detect-secrets) to setup detect-secrets tool
+3. Optional, but strongly suggested: follow the step described [here](https://github.com/ibm/detect-secrets) to setup detect-secrets tool
 
 ## Running locally using KIND (Kubernetes In Docker) - RECOMMENDED
 Prerequisites:
 - docker/podman installation (e.g., 'docker ps' should run without error)
 - kubectl: Follow the [instructions](https://kubernetes.io/docs/tasks/tools/) for your platform
 - KIND (Just pick a [release](https://github.com/kubernetes-sigs/kind/releases) for your platform, it is just one binary you need to add to you system's path)
+- HELM (Just pick a [release](https://github.com/helm/helm/releases) for your platform, it is just one binary you need to add to you system's path)
 
 Commands:  
 - `git clone https://github.com/IBM/tensorlakehouse-openeo-driver.git`  
@@ -200,4 +201,7 @@ Check [CONTRIBUTING.md](.github/CONTRIBUTING.md).
 
 Check [SUPPORT.md](.github/SUPPORT.md).
 
+## Credits
+
+TensorLakeHouse is supported by the EU’s Horizon Europe program under Grant Agreement number 101131841 and also received funding from the Swiss State Secretariat for Education, Research and Innovation (SERI) and the UK Research and Innovation (UKRI).
 

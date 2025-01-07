@@ -9,7 +9,8 @@ import logging.config
 from boto3.session import Session
 from urllib.parse import urlparse
 from datetime import datetime
-
+import xarray as xr
+from openeo_pg_parser_networkx.pg_schema import ParameterReference
 from tensorlakehouse_openeo_driver.util import object_storage_util
 
 assert os.path.isfile("logging.conf")
@@ -26,7 +27,7 @@ class CloudStorageFileReader:
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
-        dimension_map: Optional[Dict[str, str]],
+        properties: Optional[Dict[str, Any]],
     ) -> None:
         """
 
@@ -57,7 +58,6 @@ class CloudStorageFileReader:
                 assert isinstance(temporal_extent[1], datetime)
                 assert temporal_extent[0] <= temporal_extent[1]
         self.temporal_extent = temporal_extent
-        self.dimension_map = dimension_map
         assets: Dict = items[0]["assets"]
         asset_values = next(iter(assets.values()))
         href = asset_values["href"]
@@ -69,6 +69,7 @@ class CloudStorageFileReader:
         self.secret_access_key = credentials["secret_access_key"]
         region = object_storage_util.parse_region(endpoint=self.endpoint)
         self.region = region
+        self.properties = properties
 
     @property
     def endpoint(self) -> str:
@@ -81,6 +82,42 @@ class CloudStorageFileReader:
     @property
     def end_datetime(self) -> Optional[datetime]:
         return self.temporal_extent[1]
+
+    def get_extra_dimensions_filter(self) -> Dict:
+        """parse properties specified by end-user and extract the extra-dimension filters, e.g.,
+        if level is 100
+
+        Returns:
+            Dict: keys are extra-dimension names and values are extra-dimension values
+        """
+        extra_dim_filter = dict()
+        if self.properties is not None and isinstance(self.properties, dict):
+            # iterate over properties
+            for property_name, property_values in self.properties.items():
+                # ignore if property is not a dimension
+                if property_name.startswith("cube:dimensions"):
+                    # split property name into fields
+                    fields = property_name.split(".")
+                    assert len(fields) >= 2, f"Error! Unexpected fields: {fields=}"
+                    # get dimension name
+                    dimension_name = fields[1]
+                    process_graph = property_values["process_graph"]
+                    assert isinstance(
+                        process_graph, dict
+                    ), f"Error! Unexpected type: {process_graph=}"
+                    for process_graph_values in process_graph.values():
+                        # get process id which is the filter operation to be applied
+                        process_id = process_graph_values["process_id"]
+                        # get value
+                        arguments = process_graph_values["arguments"]
+                        if isinstance(arguments["x"], ParameterReference):
+                            value = arguments["y"]
+                        else:
+                            value = arguments["x"]
+                        # apply filter
+                        if process_id in ["eq", "="]:
+                            extra_dim_filter[dimension_name] = value
+        return extra_dim_filter
 
     def get_polygon(self) -> Polygon:
         """convert the bbox associated with this instance of the s3reader to a polygon
@@ -223,7 +260,7 @@ class CloudStorageFileReader:
         item: Dict[str, Any],
         axis: Optional[str] = None,
         dim_type: Optional[str] = None,
-    ) -> str:
+    ) -> Optional[str]:
         """get dimension name of the specified axis or the specified dim_type. Otherwise, it throws an
         exception
 
@@ -231,11 +268,6 @@ class CloudStorageFileReader:
             item (Dict[str, Any]): STAC item
             axis (Optional[str], optional): axis name (e.g., x, y)
             dim_type (Optional[str], optional): dimension type (e.g., temporal, spatial)
-
-        Raises:
-            ValueError: _description_
-            ValueError: _description_
-            ValueError: _description_
 
         Returns:
             str: dimension name
@@ -262,9 +294,39 @@ class CloudStorageFileReader:
             ):
                 dimension_name = k
                 found = True
-        if found and isinstance(dimension_name, str):
-            return dimension_name
-        else:
-            raise ValueError(
-                f"Error! Unable to dimension name - axis={axis} dim_type={dim_type}"
-            )
+        return dimension_name
+
+    def _filter_by_extra_dimensions(self, dataset: xr.Dataset) -> xr.Dataset:
+        """extract only dimensions (cube:dimension) from properties
+
+        Returns:
+            xr.Dataset: filtered dataset
+        """
+        if self.properties is not None and isinstance(self.properties, dict):
+            # iterate over properties
+            for property_name, property_values in self.properties.items():
+                # ignore if property is not a dimension
+                if property_name.startswith("cube:dimensions"):
+                    # split property name into fields
+                    fields = property_name.split(".")
+                    assert len(fields) >= 2, f"Error! Unexpected fields: {fields=}"
+                    # get dimension name
+                    dimension_name = fields[1]
+                    process_graph = property_values["process_graph"]
+                    assert isinstance(
+                        process_graph, dict
+                    ), f"Error! Unexpected type: {process_graph=}"
+                    for process_graph_values in process_graph.values():
+                        # get process id which is the filter operation to be applied
+                        process_id = process_graph_values["process_id"]
+                        # get value
+                        arguments = process_graph_values["arguments"]
+                        if isinstance(arguments["x"], ParameterReference):
+                            value = arguments["y"]
+                        else:
+                            value = arguments["x"]
+                        # apply filter
+                        if process_id in ["eq", "="]:
+                            dataset = dataset.sel({dimension_name: [value]})
+
+        return dataset

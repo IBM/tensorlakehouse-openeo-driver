@@ -13,10 +13,13 @@ assert LOGGING_CONF_PATH.exists()
 logging.config.fileConfig(fname=LOGGING_CONF_PATH, disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
 
-# aka PAIRS API key
+#  PAIRS API key
 GEODN_DISCOVERY_PASSWORD = os.getenv("GEODN_DISCOVERY_PASSWORD")
 GEODN_DISCOVERY_USERNAME = os.getenv("GEODN_DISCOVERY_USERNAME")
-# aka DATASERVICE endpoint
+GEODN_DISCOVERY_METADATA_URL = os.getenv(
+    "GEODN_DISCOVERY_METADATA_URL", "https://pairs.res.ibm.com"
+)
+#  DATASERVICE endpoint
 GEODN_DATASERVICE_ENDPOINT_DEFAULT = "https://pairs.res.ibm.com/pairsdataservice"
 GEODN_DATASERVICE_ENDPOINT = os.getenv(
     "GEODN_DATASERVICE_ENDPOINT", GEODN_DATASERVICE_ENDPOINT_DEFAULT
@@ -81,9 +84,13 @@ OPENEO_PASSWORD = os.getenv("OPENEO_PASSWORD", None)
 # https://github.com/radiantearth/stac-spec/blob/master/best-practices.md#working-with-media-types
 ZIP_ZARR_MEDIA_TYPE = "application/zip+zarr"
 NETCDF_MEDIA_TYPE = "application/netcdf"
+X_NETCDF_MEDIA_TYPE = "application/x-netcdf"
 COG_MEDIA_TYPE = "image/tiff; application=geotiff; profile=cloud-optimized"
 JPG2000_MEDIA_TYPE = "image/jp2"
 GEOTIFF_MEDIA_TYPE = "image/tiff; application=geotiff"
+PARQUET_MEDIA_TYPE = "table/parquet; application=geoparquet; profile=cloud-optimized"
+GRIB2_MEDIA_TYPE = "application/x-grib2"
+FSTD_MEDIA_TYPE = "application/x-fstd"
 
 # default reference system
 EPSG_4326 = "EPSG:4326"
@@ -94,8 +101,11 @@ JSON = "JSON"
 GEOJSON = "GEOJSON"
 GTIFF = "GTIFF"
 ZIP = "ZIP"
+ZARR = "ZARR"
+
 GEOTIFF_PREFIX = "openeo_output_"
 FILE_DATETIME_FORMAT = "%Y-%m-%dT%H-%M-%SZ"
+PARQUET = "PARQUET"
 
 broker_url = os.getenv("BROKER_URL", "redis://:@0.0.0.0:6379/")
 result_backend = os.getenv("RESULT_BACKEND", "redis://:@0.0.0.0:6379/")
