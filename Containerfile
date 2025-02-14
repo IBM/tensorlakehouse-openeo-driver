@@ -1,4 +1,4 @@
-FROM base-tensorlakehouse-openeo-driver:latest
+FROM quay.io/ltizzei/tensorlakehouse-base:latest
 
 LABEL "name"="base-tensorlakehouse-openeo-driver"
 LABEL "vendor"="IBM"
@@ -8,7 +8,6 @@ WORKDIR ${TENSORLAKEHOUSE_OPENEO_DRIVER_DIR}
 
 # copy app
 COPY tensorlakehouse_openeo_driver tensorlakehouse_openeo_driver
-COPY libs libs
 COPY logging.conf .
 COPY pyproject.toml .
 COPY setup.py .
