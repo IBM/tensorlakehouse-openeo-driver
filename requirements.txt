@@ -8,9 +8,10 @@ bottleneck
 celery==5.3.6
 # cfgrib is required to read grib2 files
 cfgrib
-dask==2023.5.0
-dask-geopandas
-dask-image
+dask~=2024.9.1
+dask-expr~=1.1.15
+dask-geopandas~=0.4.2
+dask-image~=2023.8.1
 distributed
 # ecmwflibs is required to fix this issue https://github.com/ecmwf/eccodes-python/issues/54#issuecomment-925036724
 ecmwflibs
@@ -20,7 +21,8 @@ Fiona
 Flask
 Flask-Cors
 # fstd2nc is required to read FSTD
-fstd2nc
+# fstd2nc
+geojson
 GeoAlchemy2
 geojson-pydantic
 geopandas
@@ -35,19 +37,21 @@ ibm-cos-sdk-s3transfer~=2.13.1
 ibmpairs~=3.0.9
 imageio
 importlib-resources~=5.12.0
+joblib
 jsonschema
 kombu==5.3.4
 netCDF4
 networkx
 numpy>=1.22.2
 numbagg
-odc-algo==0.2.3
-odc-geo==0.3.3
-openeo
-openeo_driver @ git+https://github.com/Open-EO/openeo-python-driver.git@fa707ae4259c55b53aac8d290595d4383e5770a3
-openeo-pg-parser-networkx~=2023.10.9
+odc-algo~=0.2.3
+odc-geo~=0.4.8
+odc-stac~=0.3.10
+openeo~=0.34.0
+openeo-pg-parser-networkx~=2024.10.1
 openeo-processes==0.0.4
-openeo-processes-dask~=2023.10.7
+openeo-processes-dask~=2024.11.5
+openeo_driver @ git+https://github.com/leotizzei/openeo-python-driver.git@2fc7c8e9e1c43a6041a80b9c33bf79e0066f7e15
 pandas>=1.4.0
 pendulum
 Pillow
@@ -72,7 +76,7 @@ s3fs
 scikit-image
 scipy
 # openeo-driver requires shapely<2.0.0
-shapely<2.0.0
+shapely
 SQLAlchemy
 stack-data
 stac-validator
@@ -85,4 +89,5 @@ werkzeug>=2.3.8
 wrapt
 xarray[complete]~=2023.4.2
 xgboost
+xvec
 zarr

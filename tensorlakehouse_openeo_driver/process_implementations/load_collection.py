@@ -1,20 +1,23 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple, Union
+from typing import Any, DefaultDict, Dict, List, Optional, Sequence, Tuple, Union
 from openeo_pg_parser_networkx.pg_schema import (
     BoundingBox,
     TemporalInterval,
 )
-from pystac_client import Client
+from pystac import Asset, Item
 import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
     COG_MEDIA_TYPE,
+    GEOTIFF_MEDIA_TYPE,
+    GEOTIFF_MEDIA_TYPE_SIMPLE,
     GRIB2_MEDIA_TYPE,
     JPG2000_MEDIA_TYPE,
     NETCDF_MEDIA_TYPE,
     STAC_DATETIME_FORMAT,
     STAC_URL,
+    X_NETCDF_MEDIA_TYPE,
     ZIP_ZARR_MEDIA_TYPE,
     FSTD_MEDIA_TYPE,
     logger,
@@ -37,6 +40,9 @@ from tensorlakehouse_openeo_driver.file_reader.grib2_file_reader import Grib2Fil
 # )
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 
+from tensorlakehouse_openeo_driver.stac.stac import make_stac_client
+from tensorlakehouse_openeo_driver.pipeline.handler.handler_factory import make_handler
+
 
 class AbstractLoadCollection(ABC):
     @abstractmethod
@@ -47,7 +53,7 @@ class AbstractLoadCollection(ABC):
         temporal_extent: TemporalInterval,
         bands: List[str],
         dimensions: Dict[str, str],
-        properties=None,
+        properties: Optional[Dict[str, Any]] = None,
     ) -> xr.DataArray:
         raise NotImplementedError()
 
@@ -102,6 +108,15 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         else:
             end = None
         temporal_ext = (start, end)
+        logger.debug(f"Create pipeline handler: collection_id={id}")
+        pipeline_handler = make_handler(collection_id=id)
+        if pipeline_handler is not None:
+            pipeline_handler.trigger_pipeline(
+                bbox=bbox_wsg84, temporal_extent=temporal_ext
+            )
+        logger.debug(
+            f"Search items: {bbox_wsg84=} {temporal_extent=} {id=} {properties=}"
+        )
         item_search = self._search_items(
             bbox=bbox_wsg84,
             temporal_extent=temporal_extent,
@@ -113,13 +128,19 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         )
         assert (
             len(items_by_media_type) == 1
-        ), "Error! Current implementation supports only loading items that have the same media\
+        ), f"Error! Number of items by media type is {len(items_by_media_type)}. Current \
+            implementation supports only loading items that have the same media\
                   type. For instance, if some of the selected items are associated with COG files \
                       and other with parquet files, it will raise an exception"
 
         media_type = next(iter(items_by_media_type.keys()))
         items = next(iter(items_by_media_type.values()))
-        if media_type in [COG_MEDIA_TYPE, JPG2000_MEDIA_TYPE]:
+        if media_type in [
+            COG_MEDIA_TYPE,
+            JPG2000_MEDIA_TYPE,
+            GEOTIFF_MEDIA_TYPE,
+            GEOTIFF_MEDIA_TYPE_SIMPLE,
+        ]:
             reader: Union[
                 COGFileReader,
                 ZarrFileReader,
@@ -142,7 +163,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 temporal_extent=temporal_ext,
                 properties=properties,
             )
-        elif media_type == NETCDF_MEDIA_TYPE:
+        elif media_type in [NETCDF_MEDIA_TYPE, X_NETCDF_MEDIA_TYPE]:
             reader = NetCDFFileReader(
                 items=items,
                 bbox=bbox_wsg84,
@@ -210,7 +231,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
     @staticmethod
     def _convert_properties_to_filter(
         properties: Optional[Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[Dict[str, Sequence[Union[Dict, str, None]]]]:
         """convert properties parameter of load_collection process to a filter parameter of
         pystac_client search method
 
@@ -223,8 +244,8 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         # TODO this method does not handle all types of filters that can be applied
 
         # this is the list of conditions/filters that we will pass as filters in the search
-        conditions: List[Dict[str, Any]] = list()
-        if properties is not None:
+        conditions: List[Union[Dict, str]] = list()
+        if properties is not None and isinstance(properties, dict):
             # for each property
             for property_name, process_graph in properties.items():
                 # for each process graph
@@ -251,7 +272,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         else:
             # if the number of conditions is >= 2, then add 'and' operator
             filter_cql = {"op": "and", "args": conditions}
-        return filter_cql
+        return filter_cql  # type: ignore
 
     def _search_items(
         self,
@@ -260,14 +281,14 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         collection_id: str,
         properties: Optional[Dict[str, Any]] = {},
         limit: int = 10000,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[Any]:
         starttime, endtime = LoadCollectionFromCOS._get_start_and_endtime(
             temporal_extent=temporal_extent
         )
         # set datetime using STAC format
         datetime = f"{starttime.strftime(STAC_DATETIME_FORMAT)}/{endtime.strftime(STAC_DATETIME_FORMAT)}"
         logger.debug(f"Connecting to STAC service URL={STAC_URL}")
-        stac_catalog = Client.open(STAC_URL)
+        stac_catalog = make_stac_client(url=STAC_URL)
         filter_cql = LoadCollectionFromCOS._convert_properties_to_filter(
             properties=properties
         )
@@ -296,8 +317,8 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
             filter=filter_cql,
             filter_lang="cql2-json",
         )
-        items_as_dicts = list(result.items_as_dicts())
-        matched_items = len(items_as_dicts)
+        items = list(result.items())
+        matched_items = len(items)
         logger.debug(f"{matched_items} items have been found")
         assert (
             matched_items > 0
@@ -305,13 +326,13 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 collection_id={collection_id} {bbox=} {datetime=} {limit=}\
                 {fields=}"
 
-        return items_as_dicts
+        return items
 
     @staticmethod
     def _group_items_by_media_type(
-        items: List[Dict[str, Any]],
+        items: List[Item],
         bands: List[str],
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    ) -> Dict[str, List[Item]]:
         """group items by media type as it defines a method for load files
 
         Args:
@@ -321,15 +342,15 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
         Returns:
             Dict[str, List[Dict[str, Any]]]: items grouped by media type
         """
-        items_by_media_type: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(list)
+        items_by_media_type: DefaultDict[str, List[Item]] = defaultdict(list)
         for item in items:
 
-            item_properties = item["properties"]
+            item_properties = item.properties
             # get list of available bands, which are stored as cube:variables
             available_bands = list(item_properties["cube:variables"].keys())
             for band in bands:
                 if band in available_bands:
-                    assets: Dict[str, Any] = item["assets"]
+                    assets: Dict[str, Asset] = item.assets
                     # if "data" is the key
                     if LoadCollectionFromCOS.ASSET_DESCRIPTION_DATA in assets.keys():
                         asset = assets[LoadCollectionFromCOS.ASSET_DESCRIPTION_DATA]
@@ -338,8 +359,10 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                         asset = assets[band]
                     else:
                         continue
-                    media_type = asset["type"]
-
+                    media_type = asset.media_type
+                    assert isinstance(
+                        media_type, str
+                    ), f"Error! media_type cannot be None. Please check if this item is valid: {item}"
                     # create dict entry for a media type composed by a list of items and item:properties
                     items_by_media_type[media_type].append(item)
         return items_by_media_type

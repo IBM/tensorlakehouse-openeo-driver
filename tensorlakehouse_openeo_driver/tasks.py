@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from openeo_pg_parser_networkx import OpenEOProcessGraph
 from typing import Any, Dict
@@ -6,6 +7,7 @@ from celery import states
 from tensorlakehouse_openeo_driver.constants import (
     GTIFF,
     NETCDF,
+    PARQUET,
     TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR,
     logger,
 )
@@ -40,6 +42,16 @@ def create_batch_jobs(
     logger.debug(
         f"tasks::create_batch_jobs - job_id={job_id} status={status} process={process} title={title}"
     )
+    # PIPELINE CREDENTIALS
+    TLH_SENTINEL2_ACCESS_KEY_ID = os.environ["TLH_SENTINEL2_ACCESS_KEY_ID"]
+    assert TLH_SENTINEL2_ACCESS_KEY_ID is not None
+
+    TLH_SENTINEL2_SECRET_ACCESS_KEY = os.environ["TLH_SENTINEL2_SECRET_ACCESS_KEY"]
+    assert TLH_SENTINEL2_SECRET_ACCESS_KEY is not None
+
+    TLH_SENTINEL2_ENDPOINT = os.environ["TLH_SENTINEL2_ENDPOINT"]
+    assert TLH_SENTINEL2_ENDPOINT is not None
+
     # set metadata
     metadata: Dict[str, Any] = {
         "created": created,
@@ -72,8 +84,12 @@ def create_batch_jobs(
         extension = "nc"
     elif media_type.upper() == GTIFF:
         extension = "tif"
+    elif media_type.upper() == PARQUET:
+        extension = "parquet"
     else:
-        raise ValueError("Missing output format")
+        raise ValueError(
+            f"Error! Media type {media_type} is not supported! (tasks::create_batch_jobs)"
+        )
     # set filename
     now = pd.Timestamp.now().strftime("%Y%m%dT%H%M%S")
     path = str(TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR / f"{now}-{job_id}.{extension}")

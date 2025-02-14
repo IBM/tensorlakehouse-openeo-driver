@@ -22,6 +22,7 @@ from tensorlakehouse_openeo_driver.constants import (
     GEOTIFF_PREFIX,
     GTIFF,
     NETCDF,
+    PARQUET,
     TEST_DATA_ROOT,
     DEFAULT_TIME_DIMENSION,
     ZIP,
@@ -31,6 +32,9 @@ from tensorlakehouse_openeo_driver.constants import (
 )
 from tensorlakehouse_openeo_driver.dataset import DatasetMetadata
 from tensorlakehouse_openeo_driver.layer import LayerMetadata
+from tensorlakehouse_openeo_driver.tests.utils import (
+    validate_vector_datacube,
+)
 
 TEMPORAL_GUESSES = [
     "DATE",
@@ -1631,9 +1635,13 @@ def save_openeo_response(
         file_format = NETCDF
         path = test_data_dir / f"{prefix}{uuid.uuid4().hex}.nc"
 
-    elif "zip" in content_type.lower():
+    elif "zip" in content_type.lower() or content_type == "application/octet-stream":
         file_format = ZIP
         path = test_data_dir / f"{prefix}{uuid.uuid4().hex}.zip"
+    elif "parquet" in content_type.lower():
+        file_format = PARQUET
+        path = test_data_dir / f"{prefix}{uuid.uuid4().hex}.parquet"
+
     else:
         raise ValueError(f"Error! content type {content_type} is not supported")
     with open(path, "wb") as s:
@@ -1756,6 +1764,8 @@ def validate_downloaded_file(
     path: Path,
     expected_dimension_size: Dict[str, int],
     band_names: List[str],
+    temporal_extent: Optional[Tuple[str, str]],
+    spatial_extent: Optional[Dict[str, Union[float, int, str]]],
     expected_crs: CRS,
     file_format: str = NETCDF,
 ):
@@ -1767,20 +1777,44 @@ def validate_downloaded_file(
         path (Path): full path to netcdf file
         expected_dims (Dict[str, int]): expected dimensions and size
     """
+    if file_format in [PARQUET]:
+        cube = geopandas.read_parquet(path=path)
+        assert isinstance(
+            cube, geopandas.GeoDataFrame
+        ), f"Error! {type(cube)} is not geopandas.Geodataframe"
+        assert temporal_extent is not None
+        assert spatial_extent is not None
+        validate_vector_datacube(
+            vector_cube=cube,
+            bands=band_names,
+            expected_dimensions=expected_dimension_size,
+            temporal_extent=temporal_extent,
+            spatial_extent=spatial_extent,
+        )
+    else:
+        da = open_array(file_format=file_format, path=path, band_names=band_names)
+        validate_raster_datacube(
+            cube=da,
+            expected_dim_size=expected_dimension_size,
+            expected_attrs={},
+            expected_crs=expected_crs,
+        )
 
-    da = open_array(file_format=file_format, path=path, band_names=band_names)
-    validate_raster_datacube(
-        cube=da,
-        expected_dim_size=expected_dimension_size,
-        expected_attrs={},
-        expected_crs=expected_crs,
-    )
 
-
-def validate_vector_datacube(cube: geopandas.GeoDataFrame, band_names: List[str]):
-    columns = band_names + ["timestamp", "geometry"]
-    for col in columns:
-        assert col in cube.columns, f"Error! {col=} is not in {cube.columns}"
+# def validate_vector_datacube(
+#     cube: geopandas.GeoDataFrame,
+#     band_names: List[str],
+#     expected_dim_size: Dict[str, Any],
+# ):
+#     dimension_names = list(expected_dim_size.keys())
+#     columns = band_names + dimension_names
+#     for col in set(columns):
+#         assert col in cube.columns, f"Error! {col=} is not in {cube.columns}"
+#         size = len(cube[col].unique())
+#         if col in expected_dim_size.keys():
+#             assert (
+#                 expected_dim_size[col] == size
+#             ), f"Error! {expected_dim_size=} {size=}"
 
 
 def validate_raster_datacube(
@@ -1811,7 +1845,7 @@ def validate_raster_datacube(
             actual_size = len(cube[name])
             assert (
                 actual_size == size
-            ), f"Error! the size of dimension {name} is invalid: actual size is {actual_size}, but the expected size is {size}"
+            ), f"Error! the size of dimension {name} is invalid: actual size is {actual_size}, but the expected size is {size}: {cube.sizes}"
     # validate attributes key and values
     for key, value in expected_attrs.items():
         assert cube.attrs[key] == value
@@ -1820,6 +1854,13 @@ def validate_raster_datacube(
     assert (
         cube.rio.crs == expected_crs
     ), f"Error! Invalid crs = {cube.rio.crs}, but the expected CRS is {expected_crs}"
+
+    for required_band in band_names:
+        found = False
+        for actual_band in cube[DEFAULT_BANDS_DIMENSION].values:
+            if actual_band == required_band:
+                found = True
+        assert found
 
 
 def generate_file(

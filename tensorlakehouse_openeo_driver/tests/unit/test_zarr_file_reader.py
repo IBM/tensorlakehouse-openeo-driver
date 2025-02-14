@@ -16,6 +16,7 @@ from unittest.mock import patch
 from rasterio.crs import CRS
 
 from tensorlakehouse_openeo_driver.geospatial_utils import reproject_bbox
+from tensorlakehouse_openeo_driver.stac.stac_utils import make_pystac_item
 from tensorlakehouse_openeo_driver.tests.unit.unit_test_util import (
     generate_xarray,
 )
@@ -34,12 +35,15 @@ class FakeS3Filesystem:
         (
             [
                 {
+                    "bbox": [0.0, 50.0, 5.0, 55.0],
                     "assets": {
                         "data": {
                             "href": "https://s3.us-east.cloud-object-storage.appdomain.cloud/my-bucket/radar.zarr"
                         }
                     },
                     "properties": {
+                        "start_datetime": "2000-01-01T00:00:00.000Z",
+                        "end_datetime": "2020-01-31T00:00:00.000Z",
                         "cube:dimensions": {
                             DEFAULT_TIME_DIMENSION: {
                                 "step": "P0DT0H10M0S",
@@ -63,7 +67,7 @@ class FakeS3Filesystem:
                                 "extent": [0.0, 5.0],
                                 "reference_system": 4326,
                             },
-                        }
+                        },
                     },
                 }
             ],
@@ -132,8 +136,11 @@ def test_load_items(
     ):
 
         with patch.object(xr, "open_zarr", return_value=ds):
+            pystac_items = list()
+            for item in items:
+                pystac_items.append(make_pystac_item(item))
             reader = ZarrFileReader(
-                items=items,
+                items=pystac_items,
                 bbox=bbox,
                 temporal_extent=temporal_extent,
                 bands=bands,

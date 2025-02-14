@@ -1,7 +1,6 @@
 from collections import defaultdict
-import numpy as np
 from typing import Any, DefaultDict, Dict, List, Mapping, Optional, Tuple
-import stackstac
+from pystac import Item
 import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
@@ -13,20 +12,22 @@ from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import 
 )
 import os
 import logging
-import pandas as pd
-from rasterio.session import AWSSession
-from tensorlakehouse_openeo_driver import geospatial_utils
 from datetime import datetime
+from odc.stac import stac_load, configure_rio
+from tensorlakehouse_openeo_driver.file_reader.raster_file_reader import (
+    RasterFileReader,
+)
+import statistics
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
 
 
-class COGFileReader(CloudStorageFileReader):
+class COGFileReader(RasterFileReader):
     def __init__(
         self,
-        items: List[Dict[str, Any]],
+        items: List[Item],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
@@ -44,59 +45,51 @@ class COGFileReader(CloudStorageFileReader):
         self,
     ) -> xr.DataArray:
         """load STAC items that match the criteria specified by end-user as xarray object
-
         Args:
             items (List[Dict[str, Any]]): list of items matched
             bands (List[str]): band names
             bbox (Tuple[float, float, float, float]): west, south, east, north - WSG84 reference system
-
         Returns:
             xr.DataArray: datacube
         """
         # group items by media type, because zarr items are handled differently than non-zarr items
         (
-            item_by_bands,
+            items_by_crs_and_res,
             most_frequent_epsg,
             most_frequent_resolution,
-        ) = COGFileReader._group_items_by_band(items=self.items, bands=self.bands)
+        ) = COGFileReader._group_items_by_crs_and_resolution(
+            items=self.items, bands=self.bands
+        )
 
         # for each group of media type items, load items into xarray
         data_arrays: List[xr.DataArray] = list()
         # concatenate the data arrays of each band alog the band dimension
-        for band, items_grouped_by_crs_resolution in item_by_bands.items():
-            single_band_arrays = list()
-            # combine the  data array that have the same band
-            for stac_items in items_grouped_by_crs_resolution.values():
-                # if items are single-asset, 'assets' is a list that has a single band name that will be
-                # used to rename 'data'
-                if band is not None:
-                    assets = [band]
-                else:
-                    # multi-asset items are loaded in parallel
-                    assert self.bands is not None
-                    assets = self.bands
-
+        items: List[Item]
+        for bands, items_same_crs_res in items_by_crs_and_res.items():
+            # create a list of dataarrays that have same bands but different CRS/resolution
+            diff_crs_res_arr: List[xr.DataArray] = list()
+            for k, items in items_same_crs_res.items():
+                crs, res = k
                 # load items from COS as xarray
-                arr = self._load_items_using_stackstac(
-                    items=stac_items,
+                data_array: xr.DataArray = self._load_items_using_odc_stac(
+                    items=items,
                     bbox=self.bbox,
-                    bands=assets,
+                    bands=bands,
                     epsg=most_frequent_epsg,
                     resolution=most_frequent_resolution,
                 )
 
-                single_band_arrays.append(arr)
-
-            data_array = None
-            if len(single_band_arrays) > 1:
-                data_array = single_band_arrays[0]
-                for i in range(1, len(single_band_arrays)):
-                    data_array = data_array.combine_first(single_band_arrays[i])
-            elif len(single_band_arrays) == 1:
-                data_array = single_band_arrays.pop()
+                diff_crs_res_arr.append(data_array)
+            # combine all dataarrays that have same bands but different CRS/resolution
+            if len(diff_crs_res_arr) > 1:
+                data_array = diff_crs_res_arr[0]
+                for i in range(1, len(diff_crs_res_arr)):
+                    data_array = data_array.combine_first(diff_crs_res_arr[i])
+            elif len(diff_crs_res_arr) == 1:
+                data_array = diff_crs_res_arr.pop()
             else:
                 raise ValueError(
-                    f"Error! Unexpected size of single band arrays list for band {band}"
+                    f"Error! Unexpected size of single band arrays list for {bands=}"
                 )
             data_arrays.append(data_array)
         if len(data_arrays) > 1:
@@ -114,206 +107,130 @@ class COGFileReader(CloudStorageFileReader):
             data_array = data_arrays.pop()
         return data_array
 
-    def _load_items_using_stackstac(
-        self,
-        items: List[Dict[str, Any]],
-        bbox: Tuple[float, float, float, float],
-        bands: List[str],
-        epsg: int,
-        resolution: float,
-    ) -> xr.DataArray:
-        """load STAC items into memory as xarray objects
-
-        Args:
-            items (List[Item]): list of STAC items
-            bbox (Tuple[float, float, float, float]): bounding box (west, south, east, north)
-            resolution (float): spatial resolution or step.  Careful: this must be given in
-                the output CRS's units! For example, with epsg=4326 (meaning lat-lon),
-                the units are degrees of latitude/longitude, not meters. Giving resolution=20 in
-                that case would mean each pixel is 20ºx20º (probably not what you wanted).
-                You can also give pair of (x_resolution, y_resolution).
-            epsg (int): reference system (e.g., 4326)
-
-        Returns:
-            xr.DataArray: _description_
-        """
-
-        dict_items = []
-        bucket = None
-        time_dim = None
-        x_dim = None
-        y_dim = None
-        for index, item in enumerate(items):
-            # select the list of assets that will be loaded
-            if index == 0:
-                # convert stackstac default dimension names to openEO default
-
-                time_dim = CloudStorageFileReader._get_dimension_name(
-                    item=item, dim_type="temporal"
-                )
-                x_dim = CloudStorageFileReader._get_dimension_name(
-                    item=item, axis=DEFAULT_X_DIMENSION
-                )
-                y_dim = CloudStorageFileReader._get_dimension_name(
-                    item=item, axis=DEFAULT_Y_DIMENSION
-                )
-                assets_item: Dict = item["assets"]
-                arbitrary_asset_key = next(iter(assets_item.keys()))
-                url = assets_item[arbitrary_asset_key]["href"]
-                bucket = CloudStorageFileReader._extract_bucket_name_from_url(url=url)
-
-                if CloudStorageFileReader.DATA in assets_item.keys():
-                    assets = [CloudStorageFileReader.DATA]
-                else:
-                    assets = bands
-            item_prop = item["properties"]
-
-            mydatetime = item_prop.get("datetime")
-            pddt = pd.Timestamp(mydatetime)
-            item["properties"]["datetime"] = pddt.isoformat(sep="T", timespec="seconds")
-            dict_items.append(item)
-
-        assert isinstance(time_dim, str), f"Error! Unexpected time_dim={time_dim}"
-        # create boto3 session using credentials
-        assert isinstance(bucket, str)
-        session = self._create_boto3_session()
-        logger.debug(f"load_items_using_stackstac - connecting to {self.endpoint=}")
-        # accessing non-AWS s3 https://github.com/rasterio/rasterio/pull/1779
-        aws_session = AWSSession(
-            session=session,
-            endpoint_url=self.endpoint,
-        )
-        # setting gdal_env param is based on this https://github.com/gjoseph92/stackstac#roadmap
-        data_array = stackstac.stack(
-            dict_items,
-            epsg=epsg,
-            resolution=resolution,
-            bounds_latlon=bbox,
-            rescale=False,
-            fill_value=np.nan,
-            properties=["datetime"],
-            assets=assets,
-            gdal_env=stackstac.DEFAULT_GDAL_ENV.updated(
-                always=dict(session=aws_session)
-            ),
-            band_coords=False,
-            sortby_date="asc",
-        )
-        if "band" in data_array.dims and "band" != DEFAULT_BANDS_DIMENSION:
-            data_array = data_array.rename({"band": DEFAULT_BANDS_DIMENSION})
-        # if time_dim in data_array.dims and "time" != TIME:
-        # data_array = data_array.rename({"time": TIME})
-        # drop coords that are not required to avoid merging conflicts
-        for coord in list(data_array.coords.keys()):
-            if coord not in [x_dim, y_dim, DEFAULT_BANDS_DIMENSION, time_dim]:
-                data_array = data_array.reset_coords(names=coord, drop=True)
-        data_array = geospatial_utils.remove_repeated_time_coords(
-            data_array=data_array, time_dim=time_dim
-        )
-
-        data_array.rio.write_crs(epsg, inplace=True)
-
-        # if "data" is the coordinate of the band, rename it to band name (e.g., B02)
-        if (
-            data_array.coords[DEFAULT_BANDS_DIMENSION].values[0]
-            == CloudStorageFileReader.DATA
-            and len(bands) == 1
-        ):
-            data_array = data_array.assign_coords({DEFAULT_BANDS_DIMENSION: bands})
-        assert isinstance(
-            data_array, xr.DataArray
-        ), f"Error! data_array is not xarray.DataArray: {type(data_array)}"
-
-        return data_array
-
     @staticmethod
-    def _group_items_by_band(
-        items: List[Dict[str, Any]],
+    def _group_items_by_crs_and_resolution(
+        items: List[Item],
         bands: List[str],
     ) -> Tuple[DefaultDict, int, float]:
         """this method groups items by band because we want to stack data arrays. Within each band
           group, we group items by media type, because the way we load each media type is different
         from each other, thus grouping them facilitates loading them into memory
-
         Args:
             item_collection (pystac.ItemCollection): set of item objects
-
         Returns:
             Dict[str, Any]: items grouped by media types
         """
-        # asset description
-        data_asset_description = "data"
-        # filter out items that have repeated asset.href
-        unique_asset_href = set()
-        # group items by media type (e.g., zarr, tiff)
-        items_by_band: DefaultDict = defaultdict(dict)
+        items_by_crs_res: DefaultDict = defaultdict(dict)
         # initialize variable
         item_properties = None
         # store the CRS and resolution of all items
         crs_resolution_list = list()
         # for each selected item
         for item in items:
-            item_properties = item["properties"]
+            item_properties = item.properties
             # get list of available bands, which are stored as cube:variables
             available_bands = list(item_properties["cube:variables"].keys())
             epsg = CloudStorageFileReader._get_epsg(item=item)
             resolution = CloudStorageFileReader._get_resolution(item=item)
             crs_resolution_list.append((epsg, resolution))
-            for band in bands:
-                if band in available_bands:
-                    assets: Dict[str, Any] = item["assets"]
-                    # if "data" is the key
-                    if data_asset_description in assets.keys():
-                        asset = assets[data_asset_description]
-                    # if band name is the key
-                    elif band in assets.keys():
-                        asset = assets[band]
-                    else:
-                        continue
-                    # filter out items that have repeated asset.href
-                    if asset["href"] not in unique_asset_href:
-                        unique_asset_href.add(asset["href"])
-                        # if this is a single-asset item, group by mediatype and band
-                        crs_resolution = (epsg, resolution)
+            if "data" in item.assets.keys():
+                selected_bands = tuple(available_bands)
+            else:
+                selected_bands = tuple([b for b in bands if b in available_bands])
 
-                        # create dict entry for a media type composed by a list of items and item:properties
-                        if crs_resolution in items_by_band[band].keys():
-                            items_by_band[band][crs_resolution].append(item)
-                        else:
-                            items_by_band[band][crs_resolution] = [item]
+            if len(selected_bands) > 0:
+                crs_resolution = (epsg, resolution)
+                if crs_resolution not in items_by_crs_res[selected_bands].keys():
 
-        (
-            most_frequent_crs,
-            most_frequent_res,
-        ) = COGFileReader._get_most_frequent_crs(
-            crs_resolution_list=crs_resolution_list
-        )
-        return items_by_band, most_frequent_crs, most_frequent_res
+                    items_by_crs_res[selected_bands][crs_resolution] = [item]
+                else:
+                    items_by_crs_res[selected_bands][crs_resolution].append(item)
 
-    @staticmethod
-    def _get_most_frequent_crs(
-        crs_resolution_list: List[Tuple[Optional[int], Optional[float]]]
-    ) -> Tuple[int, float]:
-        """CRS and resolution is a tuple, so compute the most frequent tuple
+        most_frequent_crs = COGFileReader._get_most_frequent_epsg(items=items)
+        most_frequent_res = COGFileReader._get_most_frequent_resolution(items=items)
+        return items_by_crs_res, most_frequent_crs, most_frequent_res
 
-        Args:
-            crs_resolution_list (List[Tuple[int, float]]): list of tuple composed by CRS and
-                resolution
+    def _load_items_using_odc_stac(
+        self,
+        items: List[Item],
+        bbox: Tuple[float, float, float, float],
+        bands: List[str],
+        epsg: int,
+        resolution: float,
+    ) -> xr.DataArray:
+        """load STAC items that match the criteria specified by end-user as xarray object
 
         Returns:
-            Tuple[int, float]: most frequent CRS and resolution
+            xr.DataArray: datacube
         """
-        assert len(crs_resolution_list) > 0
-        most_frequent: DefaultDict = defaultdict(int)
-        for k in crs_resolution_list:
-            most_frequent[k] += 1
-        # list of tuples reverse sorted by the number of occurrences
-        crs_resolution_sorted = sorted(
-            list(most_frequent.items()), key=lambda x: x[1], reverse=True
-        )
-        # first item is the most frequent
-        k, _ = crs_resolution_sorted[0]
-        epsg, resolution = k
+
+        logger.debug(f"_load_items_using_odc_stac - connecting to {self.endpoint=}")
+        # setting gdal env vars https://gdal.org/en/latest/user/configoptions.html
+        os.environ["AWS_ACCESS_KEY_ID"] = self.access_key_id
+        os.environ["AWS_SECRET_ACCESS_KEY"] = self.secret_access_key
+        os.environ["AWS_S3_ENDPOINT"] = self.endpoint
+        session = self._create_boto3_session()
+        configure_rio(cloud_defaults=True, aws={"session": session})
+
+        # get epsg from arbitray item
+        epsg = COGFileReader._get_most_frequent_epsg(items=self.items)
         assert isinstance(epsg, int)
+        resolution = COGFileReader._get_most_frequent_resolution(items=self.items)
         assert isinstance(resolution, float)
-        return epsg, resolution
+        # some items have 'data' as asset key while others have band name. If these items
+        # have band names, then check if the required bands are a subset of the bands
+        arbitrary_item = items[0]
+        asset_keys: set = set(list(arbitrary_item.assets.keys()))
+        # asset_keys = set(arbitrary_item.assets.keys())
+        if "data" in asset_keys:
+            asset_key_as_bands = list(asset_keys)
+        else:
+            asset_key_as_bands = bands
+        logger.debug(
+            f"COGFileReader::_load_items_using_odc_stac - {bbox=} {asset_key_as_bands=} {resolution=} {epsg=}"
+        )
+        ds = stac_load(
+            items=items,
+            bbox=bbox,
+            # bands=None,
+            bands=asset_key_as_bands,
+            crs=epsg,
+            resolution=resolution,
+            chunks={},  # <-- use Dask
+        )
+        # if asset key is 'data' and only one bands is required, then rename data to band name
+        if (
+            "data" in list(ds)
+            and len(items[0].properties["cube:variables"].keys()) == 1
+        ):
+            ds = ds.rename_vars({"data": bands[0]})
+        # convert
+        arr = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
+        x_dim = self._get_dimension_name(item=arbitrary_item, axis=DEFAULT_X_DIMENSION)
+        y_dim = self._get_dimension_name(item=arbitrary_item, axis=DEFAULT_Y_DIMENSION)
+        # ODC sets latitude/longitude as default coordinates, so we need to rename them
+        # reference: https://github.com/opendatacube/odc-stac/issues/136#issuecomment-1860094091
+        if "latitude" in arr.sizes.keys() and "latitude" != y_dim:
+            arr = arr.rename({"latitude": y_dim})
+        if "longitude" in arr.sizes.keys() and "longitude" != x_dim:
+            arr = arr.rename({"longitude": x_dim})
+
+        return arr
+
+    @staticmethod
+    def _get_most_frequent_resolution(items: List[Item]) -> float:
+        resolution_list = list()
+        for item in items:
+            resolution = CloudStorageFileReader._get_resolution(item=item)
+            assert resolution is not None
+            resolution_list.append(float(resolution))
+        return statistics.mode(resolution_list)
+
+    @staticmethod
+    def _get_most_frequent_epsg(items: List[Item]) -> int:
+        epsg_list = list()
+        for item in items:
+            epsg = CloudStorageFileReader._get_epsg(item=item)
+            assert isinstance(epsg, int), f"Error! Unexpected {epsg=} of {item=}"
+            epsg_list.append(epsg)
+        return statistics.mode(epsg_list)

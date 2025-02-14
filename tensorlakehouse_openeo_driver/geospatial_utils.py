@@ -1,6 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, DefaultDict
+import geojson
 import numpy as np
 import pyproj
 import xarray as xr
@@ -13,6 +14,8 @@ from rioxarray.exceptions import OneDimensionalRaster
 import bisect
 from cftime._cftime import Datetime360Day
 import pytz
+from shapely.geometry.polygon import Polygon
+from shapely.geometry import shape
 
 
 def clip_box(
@@ -331,3 +334,55 @@ def _get_epsg(crs_code: Union[str, int]) -> CRS:
         crs_code = int(crs_code.split(":")[1])
     crs_obj = pyproj.CRS.from_epsg(crs_code)
     return crs_obj
+
+
+def convert_bbox_to_polygon(bbox: Tuple[float, float, float, float]) -> Polygon:
+    west, south, east, north = bbox
+    p = Polygon([[west, south], [east, south], [east, north], [west, north]])
+    assert p.is_valid
+    return p
+
+
+def to_geojson(geom: Polygon, output_format: str = "dict") -> Union[Dict, str]:
+    """convert shapely Polygon to either dict or str
+
+    Args:
+        geom (Polygon): geometry
+        output_format (str, optional): _description_. Defaults to "dict".
+
+    Returns:
+        Union[Dict, str]: geojson
+    """
+    assert isinstance(geom, Polygon), f"Error! not a polygon: {type(geom)}"
+    poly = geojson.Polygon(list(geom.exterior.coords))
+    if output_format == "dict":
+        output = dict(poly)
+        assert isinstance(output, dict)
+    else:
+        output = geojson.dumps(poly)
+        assert isinstance(output, str)
+    return output
+
+
+def from_geojson_to_polygon(geom_dict: Dict) -> Polygon:
+
+    geom = shape(geom_dict)
+    assert geom.is_valid
+    return geom
+
+
+def from_bbox_to_polygon(bbox: Tuple[float, float, float, float]) -> Polygon:
+    """generates a polygon from a bounding box
+
+    Args:
+        bbox (Tuple[float, float, float, float]): right, bottom, left, top
+
+    Returns:
+        Polygon: _description_
+    """
+    west, south, east, north = bbox
+    assert west <= east, f"Error! Invalid values: {west=} {east=}"
+    assert south <= north, f"Error! Invalid values: {south=} {north=}"
+    p = Polygon([[west, south], [west, north], [east, north], [east, south]])
+    assert p.is_valid, f"Error! Invalid polygon {p=}"
+    return p

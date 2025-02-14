@@ -1,13 +1,15 @@
 import inspect
+
 import logging
 from collections import namedtuple
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
-from dask.array.core import Array
+import pystac
 from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     LoadCollectionFromCOS,
 )
+
 import geopandas as gpd
 import numpy as np
 import openeo
@@ -17,13 +19,10 @@ import xarray as xr
 from openeo_driver.errors import ProcessParameterInvalidException
 from openeo_pg_parser_networkx.graph import Callable
 from openeo.udf.udf_data import UdfData
-from openeo.udf.xarraydatacube import XarrayDataCube
 from openeo_pg_parser_networkx.pg_schema import (
     BoundingBox,
     TemporalInterval,
-    TemporalIntervals,
 )
-from openeo.udf.run_code import run_udf_code
 from openeo_processes_dask.process_implementations.data_model import (
     RasterCube,
     VectorCube,
@@ -43,7 +42,6 @@ from shapely.geometry import shape
 from shapely.geometry.polygon import Polygon
 
 from tensorlakehouse_openeo_driver.constants import (
-    DEFAULT_BANDS_DIMENSION,
     GTIFF,
     NETCDF,
     PARQUET,
@@ -51,13 +49,12 @@ from tensorlakehouse_openeo_driver.constants import (
     STAC_URL,
     DEFAULT_TIME_DIMENSION,
     ZIP,
-    DEFAULT_X_DIMENSION,
-    DEFAULT_Y_DIMENSION,
 )
 from tensorlakehouse_openeo_driver.driver_data_cube import TensorLakehouseDataCube
 from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
 from tensorlakehouse_openeo_driver.geospatial_utils import reproject_cube
-from tensorlakehouse_openeo_driver.stac import make_stac_client
+from tensorlakehouse_openeo_driver.stac.stac import make_stac_client
+from tensorlakehouse_openeo_driver.stac.stac_utils import get_dimension_names
 
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
@@ -70,6 +67,7 @@ Overlap = namedtuple("Overlap", ["only_in_cube1", "only_in_cube2", "in_both"])
 GEOJSON = "GEOJSON"
 # TODO remove hardcoded EPSG
 CRS_EPSG_4326 = "epsg:4326"
+HBASE = "hbase"
 
 
 def rename_dimension(data: RasterCube, source: str, target: str) -> RasterCube:
@@ -260,7 +258,13 @@ def save_result(
         assert isinstance(
             data, xr.DataArray
         ), f"Error! data is not a xarray.Dataset: {type(data)}"
-        if "reduced_dimensions_min_values" in data.attrs.keys():
+        # list temporal dimensions
+        temporal_dims = data.openeo.temporal_dims
+        # check if a temporal dim has been reduced
+        if (
+            "reduced_dimensions_min_values" in data.attrs.keys()
+            and len(temporal_dims) == 0
+        ):
             attr: Dict[str, np.datetime64] = data.attrs["reduced_dimensions_min_values"]
             time_dim = next(iter(attr.keys()))
             data.attrs["reduced_dimensions_min_values"] = pd.Timestamp(
@@ -287,6 +291,29 @@ def save_result(
         )
     else:
         raise NotImplementedError(f"Support for {format} is not implemented")
+
+
+def _is_data_on_hbase(collection: pystac.Collection) -> bool:
+    """use keywords of STAC collection object to find out whether the data is available on hBase
+      or not
+    Args:
+        collection (pystac.Collection): collection of interest
+    Raises:
+        an: _description_
+        ValueError: _description_
+    Returns:
+        bool: True if data is available on hBase, otherwise False
+    """
+
+    if (
+        collection.keywords is not None
+        and isinstance(collection.keywords, list)
+        and len(collection.keywords)
+    ):
+        if HBASE in collection.keywords:
+            return True
+
+    return False
 
 
 def load_collection(
@@ -322,7 +349,7 @@ def load_collection(
             cube_dimensions, dict
         ), f"Error! Unexpected type {cube_dimensions}"
         assert isinstance(bands, list), f"Error! Unexpected type: {bands}"
-        dimension_names = _get_dimension_names(cube_dimensions=cube_dimensions)
+        dimension_names = get_dimension_names(cube_dimensions=cube_dimensions)
         loader = LoadCollectionFromCOS()
         data = loader.load_collection(
             id=id,
@@ -337,35 +364,6 @@ def load_collection(
         msg = f"Error! collection_id={id} spatial_extent={spatial_extent} temporal_extent={temporal_extent} msg={e}"
         logger.error(msg=msg)
         raise e
-
-
-def _get_dimension_names(cube_dimensions: Dict[str, Any]) -> Dict[str, str]:
-    """this method parses the cube:dimensions field from STAC and extracts the type and name of
-    each dimension in order to support load_collection process to rename the dimensions according
-    to the way they were specified in STAC
-
-    Args:
-        cube_dimensions (Dict[str, Any]): this is field cube:dimensions as specified by datacube
-            STAC extension
-
-    Returns:
-        Dict[str, str]: _description_
-    """
-    dimension_names = dict()
-    for name, value in cube_dimensions.items():
-        # type is a mandatory field
-        dimension_type = value["type"]
-        # if this is a horizontal spatial dimension, then it has axis (either x, y, or z)
-        if dimension_type == "spatial":
-            axis = value["axis"]
-            dimension_names[axis] = name
-        elif dimension_type == "temporal":
-            dimension_names[DEFAULT_TIME_DIMENSION] = name
-        elif dimension_type == "bands":
-            dimension_names[DEFAULT_BANDS_DIMENSION] = name
-        else:
-            dimension_names[dimension_type] = name
-    return dimension_names
 
 
 def _load_collection_from_external_openeo_instance(
@@ -443,16 +441,12 @@ def aggregate_spatial(
 
     Args:
         data (RasterCube): _description_
-        geometries (VectorCube): A  multi-polygon clip area, type GeoDataFrame or GeoJson
+        geometries (VectorCube): _description_
         reducer (Callable): _description_
         target_dimension (str, optional): _description_. Defaults to "result".
 
     Returns:
         VectorCube: GeopandasDataFrame
-
-    TODO:
-        the var: str applicable_band_dim can probably be replaced in favor of
-        constants.py:: DEFAULT_BANDS_DIMENSION as I think thats now standard dim name 'bands'
     """
     logger.debug(f"Running aggregate_spatial process; geometries: {geometries}")
     logger.debug(f"kwargs: {kwargs}")
@@ -641,82 +635,50 @@ def geojson_dict_to_geodataframe(geometries: Dict[str, Any]) -> gpd.GeoDataFrame
     return gpdf
 
 
+def temporal_aggregation(
+    data: xr.DataArray, intervals: pd.IntervalIndex, reducer: Callable
+) -> xr.DataArray:
+    """
+    Aggregates temporal data grouped by bins using xarray's groupby_bins method.
+
+    Parameters:
+        data (xr.DataArray): The data to be aggregated, with a time dimension.
+        intervals (pd.IntervalIndex): The bins defining the time intervals.
+        reducer (Callable): A function to apply for aggregation, e.g., np.mean, np.sum, etc.
+
+    Returns:
+        xr.DataArray: A new DataArray with the aggregated values.
+    """
+    if "time" not in data.dims:
+        raise ValueError(
+            "DataArray must have a 'time' dimension for temporal aggregation."
+        )
+
+    # Convert the pandas.IntervalIndex into an array of bin edges
+    bin_edges = np.concatenate(([intervals.left[0]], intervals.right))
+
+    # Group by bins using xarray's groupby_bins
+    binned = data.groupby_bins("time", bins=bin_edges, labels=intervals, right=False)
+
+    # Apply the reducer to each bin
+    aggregated = binned.reduce(reducer)
+
+    return aggregated
+
+
 def aggregate_temporal(
     data: RasterCube,
-    intervals: Union[TemporalIntervals, list[TemporalInterval], list[Optional[str]]],
+    intervals: TemporalInterval,
     reducer: Callable,
     labels: Optional[list] = None,
     dimension: Optional[str] = None,
     context: Optional[dict] = None,
     **kwargs,
 ) -> RasterCube:
-    # this is an example of usage of the openeo custom accessor
-    # https://docs.xarray.dev/en/stable/internals/extending-xarray.html#writing-custom-accessors
-    temporal_dims = data.openeo.temporal_dims
-
-    if dimension is not None:
-        if dimension not in data.dims:
-            raise DimensionNotAvailable(
-                f"A dimension with the specified name: {dimension} does not exist."
-            )
-        applicable_temporal_dimension = dimension
-    else:
-        if not temporal_dims:
-            raise DimensionNotAvailable(
-                f"No temporal dimension detected on dataset. Available dimensions: {data.dims}"
-            )
-        if len(temporal_dims) > 1:
-            raise TooManyDimensions(
-                f"The data cube contains multiple temporal dimensions: {temporal_dims}. The parameter `dimension` must be specified."
-            )
-        applicable_temporal_dimension = temporal_dims[0]
-    bins = _create_bins(intervals=intervals)
-    grouped_data = data.groupby_bins(
-        group=applicable_temporal_dimension, labels=labels, bins=bins
-    )
-    if isinstance(reducer, str):
-        if reducer.lower() in ["mean", "average", "avg"]:
-            aggregated_data = grouped_data.mean(
-                skipna=True, dim=applicable_temporal_dimension
-            )
-        elif reducer.lower() in ["max", "maximum"]:
-            aggregated_data = grouped_data.max(
-                skipna=True, dim=applicable_temporal_dimension
-            )
-        elif reducer.lower() in ["min", "minimum"]:
-            aggregated_data = grouped_data.min(
-                skipna=True, dim=applicable_temporal_dimension
-            )
-        elif reducer.lower() in ["median"]:
-            aggregated_data = grouped_data.median(
-                skipna=True, dim=applicable_temporal_dimension
-            )
-        else:
-            raise NotImplementedError(f"Error! {reducer} not supported")
-    else:
-        raise NotImplementedError(f"Error! {reducer} not supported")
-
-    return aggregated_data
-
-
-def _create_bins(intervals: List[TemporalInterval]) -> List[List[np.datetime64]]:
-    """create bins (which are represented by two numpy.datetime objects) given a list of
-    time ranges (TemporalInterval)
-
-    Args:
-        intervals (List[TemporalInterval]): list of time ranges
-
-
-    Returns:
-        List[List[np.datetime64]]: bins
-    """
-    numpy_intervals = list()
-    for interval in intervals:
-        s = interval.start.to_numpy()
-        numpy_intervals.append(s)
-        e = interval.end.to_numpy()
-        numpy_intervals.append(e)
-    return sorted(list(set(numpy_intervals)))
+    ts = [pd.Timestamp(d.to_numpy()) for d in intervals]
+    interval_index = pd.IntervalIndex.from_breaks(ts)
+    agg = temporal_aggregation(data=data, intervals=interval_index, reducer=reducer)
+    return agg
 
 
 def resample_cube_spatial(
@@ -1199,7 +1161,11 @@ def resample_spatial(
 
 
 def run_udf(
-    data: RasterCube, udf: str, runtime: str, version: Optional[str] = None
+    data: RasterCube,
+    udf: str,
+    runtime: str,
+    version: Optional[str] = None,
+    context: Any = {},
 ) -> UdfData:
     """run an user-defined function
 
@@ -1212,21 +1178,23 @@ def run_udf(
     Returns:
         UdfData: _description_
     """
-    logger.debug(f"processes::run_udf {udf=} {data=} {runtime=}")
-    if isinstance(data, Array):
-        data.compute()
-        data = xr.DataArray(
-            data,
-            dims=(
-                DEFAULT_TIME_DIMENSION,
-                DEFAULT_BANDS_DIMENSION,
-                DEFAULT_Y_DIMENSION,
-                DEFAULT_X_DIMENSION,
-            ),
-        )
-    assert isinstance(data, xr.DataArray), f"Error! Unexpected data type: {type(data)}"
-    udf_data = UdfData(datacube_list=[XarrayDataCube(data)])
-    return run_udf_code(code=udf, data=udf_data)
+    logger.debug(
+        f"processes::run_udf {udf=}\n{data=}\n{runtime=}\n{version=}\n{context=}"
+    )
+    # find function name - assumption: there is a def so it is not a lambda function
+    def_str = "def "
+    def_index = udf.find(def_str)
+    parenthesis_index = udf.find("(", def_index)
+    func_name = udf[def_index + len(def_str) : parenthesis_index]
+    logger.debug(f"name of the function that will be executed: {func_name}")
+    # TODO sanitize the udf before using it
+    exec(udf, globals())
+    f = globals()[func_name]
+    # for some reason, when context is an emptdy dict it raises an exception. So I assign it to None
+    if len(context) == 0:
+        context = None
+    new_data = xr.apply_ufunc(f, data, context, dask="allowed")
+    return new_data
 
 
 def aggregate_temporal_period(

@@ -1,5 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
+
+from pystac import Asset, Item
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     DEFAULT_X_DIMENSION,
@@ -10,6 +12,9 @@ from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import 
 )
 import xarray as xr
 
+from tensorlakehouse_openeo_driver.file_reader.raster_file_reader import (
+    RasterFileReader,
+)
 from tensorlakehouse_openeo_driver.geospatial_utils import (
     clip_box,
     filter_by_time,
@@ -19,11 +24,11 @@ from urllib.parse import urlparse
 import pandas as pd
 
 
-class NetCDFFileReader(CloudStorageFileReader):
+class NetCDFFileReader(RasterFileReader):
 
     def __init__(
         self,
-        items: List[Dict[str, Any]],
+        items: List[Item],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
@@ -53,10 +58,10 @@ class NetCDFFileReader(CloudStorageFileReader):
         data_arrays = list()
         # load each item
         for item in self.items:
-            assets: Dict[str, Any] = item["assets"]
+            assets: Dict[str, Asset] = item.assets
             asset_value = next(iter(assets.values()))
             # href field can be either URL (a link to a file on COS) or a path to a local file
-            path_or_url = asset_value["href"]
+            path_or_url = asset_value.href
             parse_url = urlparse(path_or_url)
             if parse_url.scheme == "":
                 ds = xr.open_dataset(path_or_url, engine="netcdf4")
@@ -66,22 +71,20 @@ class NetCDFFileReader(CloudStorageFileReader):
                 ds = xr.open_dataset(s3_file_obj, engine="scipy")
             # get dimension names
             x_dim = CloudStorageFileReader._get_dimension_name(
-                item=item, axis=DEFAULT_X_DIMENSION
+                item=item.to_dict(), axis=DEFAULT_X_DIMENSION
             )
             y_dim = CloudStorageFileReader._get_dimension_name(
-                item=item, axis=DEFAULT_Y_DIMENSION
+                item=item.to_dict(), axis=DEFAULT_Y_DIMENSION
             )
-            time_dim = CloudStorageFileReader._get_dimension_name(
-                item=item, dim_type="temporal"
-            )
+
             # get CRS
-            crs_code = CloudStorageFileReader._get_epsg(item=item)
+            crs_code = CloudStorageFileReader._get_epsg(item=item.to_dict())
             if ds.rio.crs is None:
                 ds.rio.write_crs(f"epsg:{crs_code}", inplace=True)
             assert all(
                 band in list(ds) for band in self.bands
             ), f"Error! not all bands={self.bands} are in ds={list(ds)}"
-            # drop bands that were not required
+            # drop bands that are not required by the user
             ds = ds[self.bands]
             ds = self._filter_by_extra_dimensions(ds)
             # if bands is already one of the dimensions, use default 'variable'
@@ -92,12 +95,13 @@ class NetCDFFileReader(CloudStorageFileReader):
                 da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
             # add temporal dimension if it does not exist on dataarray
             time_dim = CloudStorageFileReader._get_dimension_name(
-                item=item, dim_type="temporal"
+                item=item.to_dict(), dim_type="temporal"
             )
             if time_dim is None:
                 raise ValueError(f"Error! {item=}")
             elif time_dim not in da.dims:
-                dt_str = item["properties"].get("datetime")
+
+                dt_str = item.properties.get("datetime")
                 dt = pd.Timestamp(dt_str).to_datetime64()
 
                 da = da.expand_dims({time_dim: [dt]})

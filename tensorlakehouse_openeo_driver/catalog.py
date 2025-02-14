@@ -1,7 +1,7 @@
 import os
 from typing import Any, Dict, List, Optional
 
-from pystac_client import Client, CollectionClient
+from pystac_client import CollectionClient
 from pystac import Item
 from openeo_driver.backend import CollectionCatalog
 from tensorlakehouse_openeo_driver.constants import (
@@ -23,6 +23,7 @@ from tensorlakehouse_openeo_driver.model.dimension import (
     TemporalDimension,
     VerticalSpatialDimension,
 )
+from tensorlakehouse_openeo_driver.stac.stac import make_stac_client
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
@@ -37,9 +38,9 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
 
     def __init__(self):
         super().__init__(all_metadata=list())
-        self._access_token = None
+        self.access_token = None
         self.discovery = GeoDNDiscovery(
-            client_id=GEODN_DISCOVERY_USERNAME, password=GEODN_DISCOVERY_PASSWORD
+            username=GEODN_DISCOVERY_USERNAME, password=GEODN_DISCOVERY_PASSWORD
         )
         self._stac_catalog = None
 
@@ -47,14 +48,14 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
     def headers(self):
         """Gets the request headers."""
         headers = {"Content-Type": "application/json"}
-        if self._access_token is not None:
-            headers["Authorization"] = f"Bearer {self._access_token}"
+        if self.access_token is not None:
+            headers["Authorization"] = f"Bearer {self.access_token}"
         return headers
 
     @property
     def stac_client(self):
         if self._stac_catalog is None:
-            self._stac_catalog = Client.open(STAC_URL)
+            self._stac_catalog = make_stac_client(STAC_URL)
         return self._stac_catalog
 
     def get_all_metadata(self) -> List[Dict]:

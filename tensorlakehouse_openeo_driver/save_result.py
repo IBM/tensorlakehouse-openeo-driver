@@ -91,6 +91,24 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                 else:
                     ds = array.to_dataset(name="variable")
                 logger.debug(f"DataSet dimensions {dimensions}")
+                # convert attributes of the xarray.Dataset
+                valid_types = (str, Number, np.ndarray, np.number, list, tuple)
+                for attr_key, attr_value in ds.attrs.items():
+                    if not isinstance(attr_value, valid_types) or isinstance(
+                        attr_value, bool
+                    ):
+                        logger.debug(f"Invalid attr: {attr_key}")
+                        ds.attrs[attr_key] = str(attr_value)
+                # convert attributes of the variables
+                for variable in list(ds):
+                    for attr_key, attr_value in ds[variable].attrs.items():
+                        if not isinstance(attr_value, valid_types) or isinstance(
+                            attr_value, bool
+                        ):
+                            logger.debug(f"Invalid attr: {attr_key}")
+                            ds[variable].attrs[attr_key] = str(attr_value)
+                assert ds.rio.crs is not None
+                # ds = ds.compute()
                 ds.to_netcdf(path=filename, engine="netcdf4")  # type: ignore[call-overload]
             except TypeError as e:
                 logger.error(
@@ -114,6 +132,9 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                             ds[variable].attrs[attr_key] = str(attr_value)
 
                 ds.to_netcdf(path=filename, engine="netcdf4")  # type: ignore[call-overload]
+            except Exception as e:
+                logger.error(e)
+                raise e
 
         else:
             raise NotImplementedError(f"Support for {format} is not implemented")

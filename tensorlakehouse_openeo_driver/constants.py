@@ -2,6 +2,7 @@ import logging
 import logging.config
 import os
 from pathlib import Path
+from typing import Optional
 
 # set URL of STAC service, which provides collections and items
 STAC_URL = os.environ["STAC_URL"]
@@ -48,7 +49,7 @@ TEST_DATA_ROOT = (
     / "test_data"
 )
 if not TEST_DATA_ROOT.exists():
-    TEST_DATA_ROOT.mkdir()
+    TEST_DATA_ROOT.mkdir(exist_ok=True)
 
 
 TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR = TENSORLAKEHOUSE_OPENEO_DRIVER_ROOT_DIR / "data"
@@ -88,10 +89,10 @@ X_NETCDF_MEDIA_TYPE = "application/x-netcdf"
 COG_MEDIA_TYPE = "image/tiff; application=geotiff; profile=cloud-optimized"
 JPG2000_MEDIA_TYPE = "image/jp2"
 GEOTIFF_MEDIA_TYPE = "image/tiff; application=geotiff"
+GEOTIFF_MEDIA_TYPE_SIMPLE = "image/tiff"
 PARQUET_MEDIA_TYPE = "table/parquet; application=geoparquet; profile=cloud-optimized"
 GRIB2_MEDIA_TYPE = "application/x-grib2"
 FSTD_MEDIA_TYPE = "application/x-fstd"
-
 # default reference system
 EPSG_4326 = "EPSG:4326"
 
@@ -115,3 +116,31 @@ assert result_backend is not None, "Error! RESULT_BACKEND is None"
 
 REDIS_CERT_NAME = os.getenv("REDIS_CERT_NAME")
 REDIS_CERT = os.getenv("REDIS_CERT")
+
+
+KUBEFLOW_PIPELINE_API = os.getenv("KUBEFLOW_PIPELINE_API")
+
+NASA_STAC = "https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
+COPERNICUS_STAC = "https://catalogue.dataspace.copernicus.eu/stac"
+MS_PLANETARY_COMPUTER_STAC = "https://planetarycomputer.microsoft.com/api/stac/v1"
+
+# IBM Research STAC - collection ids that have data pipelines
+HLS = "HLS_S30"
+SENTINEL_1_GRD = "sentinel-1-grd"
+SENTINEL_2_L2A = "sentinel-2-l2a"
+SENTINEL_2_L1C = "esa-sentinel-2A-msil1c"
+
+# SENTINEL 1 AND 2 DATABASE CREDENTIALS
+SENTINEL_DB_HOST = os.getenv("SENTINEL_DB_HOST")
+sentinel_port_str = os.getenv("SENTINEL_DB_PORT")
+
+if sentinel_port_str is not None and isinstance(sentinel_port_str, str):
+    SENTINEL_DB_PORT: Optional[int] = int(sentinel_port_str)
+else:
+    SENTINEL_DB_PORT = None
+
+SENTINEL_DB_NAME = os.getenv("SENTINEL_DB_NAME")
+SENTINEL_DB_USER = os.getenv("SENTINEL_DB_USER")
+SENTINEL_DB_PASSWORD = os.getenv("SENTINEL_DB_PASSWORD")
+
+PIPELINE_DISABLED = os.getenv("PIPELINE_DISABLED", True)

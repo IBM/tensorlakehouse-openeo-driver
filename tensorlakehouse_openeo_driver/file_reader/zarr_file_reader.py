@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple
+from pystac import Asset, Item
 import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
@@ -25,7 +26,7 @@ logger = logging.getLogger("geodnLogger")
 class ZarrFileReader(CloudStorageFileReader):
     def __init__(
         self,
-        items: List[Dict[str, Any]],
+        items: List[Item],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
@@ -51,10 +52,10 @@ class ZarrFileReader(CloudStorageFileReader):
             len(self.items) == 1
         ), f"Error! Number of items must be 1, got: {len(self.items)}"
         item = self.items[0]
-        assets: Dict[str, Any] = item["assets"]
+        assets: Dict[str, Asset] = item.assets
         assert isinstance(assets, dict)
         asset_value = next(iter(assets.values()))
-        href = asset_value["href"]
+        href = asset_value.href
         s3_link = self._convert_https_to_s3(url=href)
         fs = self.create_s3filesystem()
         store = fs.get_mapper(s3_link)
@@ -62,13 +63,13 @@ class ZarrFileReader(CloudStorageFileReader):
         dataset = xr.open_zarr(store=store)
 
         t_axis_name = CloudStorageFileReader._get_dimension_name(
-            item=item, dim_type="temporal"
+            item=item.to_dict(), dim_type="temporal"
         )
         x_axis_name = CloudStorageFileReader._get_dimension_name(
-            item=item, axis=DEFAULT_X_DIMENSION
+            item=item.to_dict(), axis=DEFAULT_X_DIMENSION
         )
         y_axis_name = CloudStorageFileReader._get_dimension_name(
-            item=item, axis=DEFAULT_Y_DIMENSION
+            item=item.to_dict(), axis=DEFAULT_Y_DIMENSION
         )
 
         array = dataset[self.bands]
@@ -82,7 +83,7 @@ class ZarrFileReader(CloudStorageFileReader):
             )
 
         # Filter by spatial extent
-        crs_code = CloudStorageFileReader._get_epsg(item=item)
+        crs_code = CloudStorageFileReader._get_epsg(item=item.to_dict())
         assert isinstance(
             crs_code, int
         ), f"Error! crs_code is not an int: {type(crs_code)}"

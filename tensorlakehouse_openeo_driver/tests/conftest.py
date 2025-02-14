@@ -5,14 +5,16 @@ import os
 import pathlib
 import time
 from unittest import mock
-
+import openeo
 import flask
 import pytest
 import pythonjsonlogger.jsonlogger
 
 from openeo_driver.backend import UserDefinedProcesses
-from tensorlakehouse_openeo_driver.tensorlakehouse_backend import (
-    TensorLakeHouseBackendImplementation,
+from tensorlakehouse_openeo_driver.constants import (
+    OPENEO_PASSWORD,
+    OPENEO_URL,
+    OPENEO_USERNAME,
 )
 from openeo_driver.server import build_backend_deploy_metadata
 from openeo_driver.testing import UrllibMocker
@@ -25,6 +27,10 @@ from openeo_driver.util.logging import (
 )
 
 from openeo_driver.views import build_app
+
+from tensorlakehouse_openeo_driver.tensorlakehouse_backend import (
+    TensorLakeHouseBackendImplementation,
+)
 
 
 # pytest_plugins = "pytester"
@@ -139,11 +145,19 @@ def enhanced_logging(
         root_logger.setLevel(orig_root_level)
 
 
-# def pytest_ignore_collect(path, config):
-#     # suppose our condition is some command line argument is passed in
-#     val = config.getvalue("-k")
-#     if val == "":
-#         here = pathlib.Path.cwd().absolute()
-#         skip_fd = here / "libs"
-#         if skip_fd == path:
-#             return True
+@pytest.fixture
+def openeo_client():
+    # conn = openeo.connect(
+    #     OPENEO_URL
+    # ).authenticate_oidc_resource_owner_password_credentials(
+    #     username=APPID_USERNAME,
+    #     password=APPID_PASSWORD,
+    #     client_id=OPENEO_AUTH_CLIENT_ID,
+    #     client_secret=OPENEO_AUTH_CLIENT_SECRET,
+    #     provider_id="app_id",
+    # )
+    conn = openeo.connect(OPENEO_URL).authenticate_basic(
+        OPENEO_USERNAME, OPENEO_PASSWORD
+    )
+
+    return conn

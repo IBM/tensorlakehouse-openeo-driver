@@ -432,7 +432,7 @@ class DummyUserDefinedProcesses(UserDefinedProcesses):
 
 
 class TensorLakeHouseBackendImplementation(OpenEoBackendImplementation):
-    __version__ = "0.1.0"
+    __version__ = "0.1.25"
 
     vector_cube_cls = DummyVectorCube
 
@@ -465,7 +465,7 @@ class TensorLakeHouseBackendImplementation(OpenEoBackendImplementation):
             oidc_providers=oidc_prov,
             capabilities_title="tensorlakehouse openEO Backend",
             capabilities_description="This is the tensorlakehouse openEO Backend",
-            capabilities_backend_version="0.1.0",
+            capabilities_backend_version="0.1.25",
             enable_basic_auth=True,
         )
 
@@ -512,6 +512,11 @@ class TensorLakeHouseBackendImplementation(OpenEoBackendImplementation):
                 "ZIP": {
                     "title": "ZIP",
                     "gis_data_types": ["raster"],
+                    "parameters": {},
+                },
+                "PARQUET": {
+                    "title": "Parquet",
+                    "gis_data_types": ["vector"],
                     "parameters": {},
                 },
             },

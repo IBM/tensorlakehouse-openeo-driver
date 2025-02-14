@@ -32,7 +32,7 @@ class TensorlakehouseOpenEoBackendConfig(OpenEoBackendConfig):
     """
 
     # identifier for this config
-    id: Optional[str] = "0.1.0"
+    id: Optional[str] = "0.1.25"
 
     # Generic indicator describing the environment the code is deployed in
     # (e.g. "prod", "dev", "staging", "test", "integration", ...)
@@ -43,7 +43,7 @@ class TensorlakehouseOpenEoBackendConfig(OpenEoBackendConfig):
     capabilities_service_id: Optional[str] = None
     capabilities_title: str = "Tensorlakehouse openEO Backend"
     capabilities_description: str = "This is the GeoDN openEO Backend"
-    capabilities_backend_version: str = "0.1.0"
+    capabilities_backend_version: str = "0.1.25"
     capabilities_deploy_metadata: dict = attrs.Factory(
         lambda: build_backend_deploy_metadata(packages=["openeo", "openeo_driver"])
     )

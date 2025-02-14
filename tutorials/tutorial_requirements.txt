@@ -9,7 +9,6 @@ pandas
 dask
 xarray
 rioxarray
-jupyterlab
 dask_geopandas
 PyGEOS
 xvec
@@ -20,3 +19,4 @@ stac_validator
 odc-algo==0.2.3
 odc-geo==0.3.3
 jupyterlab
+cftime

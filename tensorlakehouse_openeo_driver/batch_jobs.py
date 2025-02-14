@@ -10,6 +10,7 @@ from openeo_driver.errors import JobNotFinishedException, JobNotFoundException
 from openeo_driver.users.user import User
 from openeo_driver.jobregistry import JOB_STATUS
 from celery.states import STARTED, SUCCESS, FAILURE, PENDING, RECEIVED
+from tensorlakehouse_openeo_driver.tasks import create_batch_jobs
 from celery import states
 from tensorlakehouse_openeo_driver import tasks
 from tensorlakehouse_openeo_driver.constants import GTIFF, logger
@@ -108,7 +109,7 @@ class TensorLakeHouseBatchJobs(BatchJobs):
         # set start time of this task
         created = datetime.now()
         # create task
-        task_info = tasks.create_batch_jobs.delay(
+        task_info = create_batch_jobs.delay(
             job_id="job-id",
             status=JOB_STATUS.CREATED,
             process=process,
@@ -158,13 +159,16 @@ class TensorLakeHouseBatchJobs(BatchJobs):
             celery_state = task.state
             metadata: Optional[Dict[str, Any]] = task.info
             # if task.info is none create a default metadata dict
-            if metadata is None:
+            if metadata is None or (
+                "pid" in metadata.keys() and "hostname" in metadata.keys()
+            ):
+                start_datetime = datetime.now().isoformat()
                 metadata = {
                     "created": None,
                     "status": JOB_STATUS.CREATED,
                     "geometry": None,
                     "bbox": None,
-                    "start_datetime": None,
+                    "start_datetime": start_datetime,
                     "end_datetime": None,
                     "description": None,
                     "epsg": None,
@@ -180,6 +184,20 @@ class TensorLakeHouseBatchJobs(BatchJobs):
                 msg = metadata
                 logger.error(msg)
                 raise Exception(msg)
+            # check if these mandatory keys are available in the metadata dict
+            for k in [
+                "created",
+                "geometry",
+                "bbox",
+                "start_datetime",
+                "end_datetime",
+                "description",
+                "epsg",
+            ]:
+                if k not in metadata.keys():
+                    error_msg: str = f"KeyError - missing key {k=} in {metadata=}"
+                    logger.error(error_msg)
+                    raise KeyError(error_msg)
             # instantiate object that will be returned
             job_metadata = BatchJobMetadata(
                 id=job_id,

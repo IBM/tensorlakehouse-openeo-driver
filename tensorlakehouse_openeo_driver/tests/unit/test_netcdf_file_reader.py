@@ -14,6 +14,7 @@ from datetime import datetime
 from unittest.mock import patch
 from rasterio.crs import CRS
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
+from tensorlakehouse_openeo_driver.stac.stac_utils import make_pystac_item
 from tensorlakehouse_openeo_driver.util import object_storage_util
 import os
 
@@ -30,67 +31,73 @@ class FakeS3Filesystem:
         (
             [
                 {
+                    "bbox": [-1, 51, 0, 52],
                     "assets": {
                         "data": {
                             "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/filename_2000_2001.nc"
                         }
                     },
                     "properties": {
+                        "start_datetime": "2000-01-01T00:00:00Z",
+                        "end_datetime": "2001-01-01T00:00:00Z",
                         "cube:dimensions": {
-                            "lat": {
+                            "y": {
                                 "axis": "y",
                                 "step": 0.017471758104738153,
                                 "type": "spatial",
                                 "extent": [46.991275, 61.003625],
                                 "reference_system": 4326,
                             },
-                            "lon": {
+                            "x": {
                                 "axis": "x",
                                 "step": 0.039572477064220186,
                                 "type": "spatial",
                                 "extent": [-15.01975, 6.54725],
                                 "reference_system": 4326,
                             },
-                            "time": {
+                            "t": {
                                 "type": "temporal",
                                 "extent": [
-                                    "1999-12-01T12:00:00Z",
-                                    "2000-11-30T12:00:00Z",
+                                    "2000-01-01T00:00:00Z",
+                                    "2001-01-01T00:00:00Z",
                                 ],
                             },
-                        }
+                        },
                     },
                 },
                 {
+                    "bbox": [-1, 51, 0, 52],
                     "assets": {
                         "data": {
                             "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/filename_2001_2002.nc"
                         }
                     },
                     "properties": {
+                        "start_datetime": "2000-01-01T00:00:00Z",
+                        "end_datetime": "2001-01-01T00:00:00Z",
                         "cube:dimensions": {
-                            "lat": {
+                            "y": {
                                 "axis": "y",
                                 "step": 0.017471758104738153,
                                 "type": "spatial",
                                 "extent": [46.991275, 61.003625],
                                 "reference_system": 4326,
                             },
-                            "lon": {
+                            "x": {
                                 "axis": "x",
                                 "step": 0.039572477064220186,
                                 "type": "spatial",
                                 "extent": [-15.01975, 6.54725],
                                 "reference_system": 4326,
                             },
-                            "time": {
+                            "t": {
                                 "type": "temporal",
                                 "extent": [
-                                    "1999-12-01T12:00:00Z",
-                                    "2000-11-30T12:00:00Z",
+                                    "2000-01-01T00:00:00Z",
+                                    "2001-01-01T12:00:00Z",
                                 ],
                             },
-                        }
+                        },
                     },
                 },
             ],
@@ -100,14 +107,15 @@ class FakeS3Filesystem:
             ["tasmax"],
             4326,
             {
-                DEFAULT_TIME_DIMENSION: 732,
-                "lon": 100,
-                "lat": 100,
+                DEFAULT_TIME_DIMENSION: 1,
+                "x": 100,
+                "y": 100,
             },
         ),
         (
             [
                 {
+                    "bbox": [-18, -9, 17, 8],
                     "assets": {
                         "data": {
                             "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/no_time_dim_data_.nc"
@@ -207,9 +215,11 @@ def test_load_items(
                     "_extract_bucket_name_from_url",
                     return_value="fake-bucket-name",
                 ):
-
+                    pystac_items = list()
+                    for item in items:
+                        pystac_items.append(make_pystac_item(item))
                     reader = NetCDFFileReader(
-                        items=items,
+                        items=pystac_items,
                         bbox=spatial_extent,
                         temporal_extent=temporal_extent,
                         bands=bands,

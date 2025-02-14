@@ -239,10 +239,16 @@ class TemporalDimension(Dimension):
         """
         assert type == "temporal"
         super().__init__(description, type)
-        assert isinstance(extent, list), f"Error! not a list: {extent}"
-        assert len(extent) == 2, f"Error! Unexpected size: {extent}"
+        assert isinstance(
+            extent, list
+        ), f"Error! 'extent' field of the temporal dimension is not a list: {extent=}. Please check https://github.com/stac-extensions/datacube"
+        assert (
+            len(extent) == 2
+        ), f"Error! 'extent' field of the temporal dimension must have 2 items: {extent=}. Please check https://github.com/stac-extensions/datacube"
         start = extent[0]
-        assert isinstance(start, str), f"Error! start not a str: {start}"
+        assert isinstance(
+            start, str
+        ), f"Error! 'start' field of the temporal dimension not a string: {start=}. Please check https://github.com/stac-extensions/datacube"
         try:
             self._start = pd.Timestamp(start)
         except ValueError as e:

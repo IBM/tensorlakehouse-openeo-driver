@@ -15,6 +15,9 @@ import uuid
 import pandas as pd
 import xarray as xr
 import cfgrib
+from tensorlakehouse_openeo_driver.file_reader.raster_file_reader import (
+    RasterFileReader,
+)
 from tensorlakehouse_openeo_driver.geospatial_utils import (
     clip_box,
     filter_by_time,
@@ -23,7 +26,7 @@ from tensorlakehouse_openeo_driver.geospatial_utils import (
 from urllib.parse import urlparse
 
 
-class Grib2FileReader(CloudStorageFileReader):
+class Grib2FileReader(RasterFileReader):
 
     def __init__(
         self,
@@ -229,6 +232,7 @@ class Grib2FileReader(CloudStorageFileReader):
         )
         assert x_dim is not None
         assert y_dim is not None
+        assert isinstance(data_array, xr.DataArray)
         da = clip_box(
             data=data_array,
             bbox=reprojected_bbox,

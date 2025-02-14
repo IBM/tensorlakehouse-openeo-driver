@@ -224,3 +224,13 @@ class COSConnector:
         # The response contains the presigned URL
         assert isinstance(response, str), f"Error! Unexpected response: {response}"
         return response
+
+
+def main():
+    for bucket in ["claimed-test"]:
+        conn = COSConnector(bucket=bucket)
+        conn.get_bucket_contents(max_keys=2)
+
+
+if __name__ == "__main__":
+    main()

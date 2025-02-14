@@ -1,6 +1,6 @@
 from shapely.geometry.polygon import Polygon
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pystac
 import s3fs
@@ -9,7 +9,6 @@ import logging.config
 from boto3.session import Session
 from urllib.parse import urlparse
 from datetime import datetime
-import xarray as xr
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 from tensorlakehouse_openeo_driver.util import object_storage_util
 
@@ -23,11 +22,11 @@ class CloudStorageFileReader:
 
     def __init__(
         self,
-        items: List[Dict[str, Any]],
+        items: List[pystac.Item],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
-        properties: Optional[Dict[str, Any]],
+        properties: Dict[str, Any] | None,
     ) -> None:
         """
 
@@ -50,21 +49,29 @@ class CloudStorageFileReader:
         assert -90 <= south <= north <= 90, f"Error! {south=} {north=}"
         self.bbox = bbox
         self.bands = bands
-        if temporal_extent is not None and len(temporal_extent) > 0:
+        if temporal_extent is not None:
+            assert isinstance(
+                temporal_extent, tuple
+            ), f"Error! temporal_extent is not a tuple: {type(temporal_extent)}"
+            assert (
+                len(temporal_extent) == 2
+            ), f"Error! tuple size is not 2: {temporal_extent=}"
             # if temporal_extent is not empty tuple, then the first item cannot be None
-            assert isinstance(temporal_extent[0], datetime)
+            start = temporal_extent[0]
+            end = temporal_extent[1]
+            assert isinstance(start, datetime)
             # the second item can be None for open intervals
-            if temporal_extent[1] is not None:
-                assert isinstance(temporal_extent[1], datetime)
-                assert temporal_extent[0] <= temporal_extent[1]
+            if end is not None:
+                assert isinstance(end, datetime)
+                assert start <= end, f"Error! {start=} {end=}"
         self.temporal_extent = temporal_extent
-        assets: Dict = items[0]["assets"]
-        asset_values = next(iter(assets.values()))
-        href = asset_values["href"]
+        assets: Dict = items[0].assets
+        asset_values: pystac.Asset = next(iter(assets.values()))
+        href = asset_values.href
         self.bucket = CloudStorageFileReader._extract_bucket_name_from_url(url=href)
         credentials = object_storage_util.get_credentials_by_bucket(bucket=self.bucket)
 
-        self._endpoint = credentials["endpoint"]
+        self._endpoint: str = credentials["endpoint"]
         self.access_key_id = credentials["access_key_id"]
         self.secret_access_key = credentials["secret_access_key"]
         region = object_storage_util.parse_region(endpoint=self.endpoint)
@@ -85,7 +92,12 @@ class CloudStorageFileReader:
 
     def get_extra_dimensions_filter(self) -> Dict:
         """parse properties specified by end-user and extract the extra-dimension filters, e.g.,
-        if level is 100
+        if properties is
+        {'cube:dimensions.level:values': {'process_graph': {'eq1': {'process_id': 'eq',
+        'arguments': {'x': {'from_parameter': 'value'}, 'y': [1, 2]},
+        'result': True}}}}
+        then it returns
+        {"level": [1, 2]}
 
         Returns:
             Dict: keys are extra-dimension names and values are extra-dimension values
@@ -113,8 +125,11 @@ class CloudStorageFileReader:
                         if isinstance(arguments["x"], ParameterReference):
                             value = arguments["y"]
                         else:
+                            assert isinstance(
+                                arguments["y"], ParameterReference
+                            ), f"Error! Unexpected data type: {arguments}"
                             value = arguments["x"]
-                        # apply filter
+                        # add dimension name and values to extra_dim_filter dict
                         if process_id in ["eq", "="]:
                             extra_dim_filter[dimension_name] = value
         return extra_dim_filter
@@ -195,7 +210,9 @@ class CloudStorageFileReader:
         return object_name
 
     @staticmethod
-    def _get_epsg(item: Dict[str, Any]) -> Optional[int]:
+    def _get_epsg(item: pystac.Item | Dict[str, Any]) -> Optional[int]:
+        if isinstance(item, pystac.Item):
+            item = item.to_dict()
         item_prop = item["properties"]
         cube_dims: Dict[str, Any] = item_prop["cube:dimensions"]
         epsg = None
@@ -205,7 +222,9 @@ class CloudStorageFileReader:
         return epsg
 
     @staticmethod
-    def _get_resolution(item: Dict[str, Any]) -> Optional[float]:
+    def _get_resolution(item: pystac.Item | Dict[str, Any]) -> Optional[float]:
+        if isinstance(item, pystac.Item):
+            item = item.to_dict()
         item_prop = item["properties"]
         cube_dims: Dict[str, Any] = item_prop["cube:dimensions"]
         resolution = None
@@ -257,7 +276,7 @@ class CloudStorageFileReader:
 
     @staticmethod
     def _get_dimension_name(
-        item: Dict[str, Any],
+        item: Union[Dict[str, Any], pystac.Item],
         axis: Optional[str] = None,
         dim_type: Optional[str] = None,
     ) -> Optional[str]:
@@ -272,14 +291,18 @@ class CloudStorageFileReader:
         Returns:
             str: dimension name
         """
+        if isinstance(item, pystac.Item):
+            item = item.to_dict()
+        assert isinstance(item, dict), f"Error! item is not a dict: {item}"
         item_properties = item["properties"]
         cube_dims = item_properties["cube:dimensions"]
         assert isinstance(cube_dims, dict), f"Error! Unexpected type: {cube_dims}"
         assert axis is not None or dim_type is not None
-        found = None
+        found = False
         i = 0
         dim_list = list(cube_dims.items())
         dimension_name = None
+        # iterate over dimensions until it finds one that matches axis or type
         while i < len(dim_list) and not found:
             k, v = dim_list[i]
             i += 1
@@ -295,38 +318,3 @@ class CloudStorageFileReader:
                 dimension_name = k
                 found = True
         return dimension_name
-
-    def _filter_by_extra_dimensions(self, dataset: xr.Dataset) -> xr.Dataset:
-        """extract only dimensions (cube:dimension) from properties
-
-        Returns:
-            xr.Dataset: filtered dataset
-        """
-        if self.properties is not None and isinstance(self.properties, dict):
-            # iterate over properties
-            for property_name, property_values in self.properties.items():
-                # ignore if property is not a dimension
-                if property_name.startswith("cube:dimensions"):
-                    # split property name into fields
-                    fields = property_name.split(".")
-                    assert len(fields) >= 2, f"Error! Unexpected fields: {fields=}"
-                    # get dimension name
-                    dimension_name = fields[1]
-                    process_graph = property_values["process_graph"]
-                    assert isinstance(
-                        process_graph, dict
-                    ), f"Error! Unexpected type: {process_graph=}"
-                    for process_graph_values in process_graph.values():
-                        # get process id which is the filter operation to be applied
-                        process_id = process_graph_values["process_id"]
-                        # get value
-                        arguments = process_graph_values["arguments"]
-                        if isinstance(arguments["x"], ParameterReference):
-                            value = arguments["y"]
-                        else:
-                            value = arguments["x"]
-                        # apply filter
-                        if process_id in ["eq", "="]:
-                            dataset = dataset.sel({dimension_name: [value]})
-
-        return dataset

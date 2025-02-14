@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Dict, List, Tuple
 import pytest
 import xarray as xr
@@ -20,9 +19,7 @@ from rasterio.crs import CRS
                 {
                     "assets": {
                         "data": {
-                            "href": Path(
-                                "./tensorlakehouse_openeo_driver/tests/unit_test_data/example.fst"
-                            )
+                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/example.fst"
                         }
                     },
                     "properties": {

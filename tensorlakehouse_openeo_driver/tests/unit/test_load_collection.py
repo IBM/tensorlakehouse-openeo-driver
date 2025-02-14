@@ -84,6 +84,29 @@ import deepdiff
                 ],
             },
         ),
+        (
+            {
+                "cube:dimensions.level.values": {
+                    "process_graph": {
+                        "eq1": {
+                            "process_id": "eq",
+                            "arguments": {
+                                "x": ParameterReference(from_parameter="value"),
+                                "y": "97",
+                            },
+                            "result": True,
+                        }
+                    }
+                }
+            },
+            {
+                "op": "a_contains",
+                "args": [
+                    {"property": "properties.cube:dimensions.level.values"},
+                    "97",
+                ],
+            },
+        ),
     ],
 )
 def test_convert_properties_to_filter(properties, expected_filter):

@@ -27,13 +27,16 @@ def get_credentials_by_bucket(bucket: str) -> Dict[str, str]:
     access_key_id_env_var = f"{prefix}{core_var_name}_ACCESS_KEY_ID"
     secret_access_key_env_var = f"{prefix}{core_var_name}_SECRET_ACCESS_KEY"
     endpoint_env_var = f"{prefix}{core_var_name}_ENDPOINT"
+    logger.debug(
+        f"Accessing env variables: {access_key_id_env_var=} {secret_access_key_env_var=} {endpoint_env_var=}"
+    )
     try:
         # get the credential values
         access_key_id = os.environ[access_key_id_env_var]
         secret_access_key = os.environ[secret_access_key_env_var]
         endpoint = os.environ[endpoint_env_var]
     except KeyError as e:
-        msg = f"Error! Environment variable that grants access to bucket {bucket} has not been set. {e}"
+        msg = f"KeyError! At least one of these variables ({access_key_id_env_var=}, {secret_access_key_env_var=}, {endpoint_env_var=}), which grant access to the {bucket} bucket,  has not been set. Message={e}"
         logger.error(msg=msg)
         raise KeyError(msg)
     credentials = {
@@ -76,4 +79,6 @@ def convert_bucket_to_envvar(bucket: str) -> str:
 
 
 if __name__ == "__main__":
-    convert_bucket_to_envvar(bucket="")
+    bucket = "ukcp18-land-cpm-uk-2.2km-rp-1993-2023"
+    env_var = convert_bucket_to_envvar(bucket=bucket)
+    print(env_var)
