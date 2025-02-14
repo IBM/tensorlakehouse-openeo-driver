@@ -39,6 +39,7 @@ Prerequisites:
 - docker/podman installation (e.g., 'docker ps' should run without error)
 - kubectl: Follow the [instructions](https://kubernetes.io/docs/tasks/tools/) for your platform
 - KIND (Just pick a [release](https://github.com/kubernetes-sigs/kind/releases) for your platform, it is just one binary you need to add to you system's path)
+- HELM (Just pick a [release](https://github.com/helm/helm/releases) for your platform, it is just one binary you need to add to you system's path)
 
 Commands:  
 - `git clone https://github.com/IBM/tensorlakehouse-openeo-driver.git`  
