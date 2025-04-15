@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import fsspec
 from pystac import Asset, Item
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
@@ -42,10 +43,6 @@ class NetCDFFileReader(RasterFileReader):
             properties=properties,
         )
 
-    def _concat_bucket_and_path(self, path) -> str:
-        url = f"s3://{self.bucket}/{path}"
-        return url
-
     def load_items(self) -> xr.DataArray:
         """load items that are associated with netcdf files
 
@@ -63,11 +60,26 @@ class NetCDFFileReader(RasterFileReader):
             # href field can be either URL (a link to a file on COS) or a path to a local file
             path_or_url = asset_value.href
             parse_url = urlparse(path_or_url)
+            # create s3 file system
+            # if scheme is an empty string it means it is a local file
             if parse_url.scheme == "":
+                # open local file
                 ds = xr.open_dataset(path_or_url, engine="netcdf4")
+            # if credentials have not been set it means that data is publicly available
+            elif (
+                self.endpoint is None
+                and self.access_key_id is None
+                and self.secret_access_key is None
+            ):
+                # open publicly available remote file
+                with fsspec.open(path_or_url) as fobj:
+                    # chunks={} to fix this issue https://github.com/fsspec/s3fs/issues/337
+                    ds = xr.open_dataset(fobj, chunks={}, engine="h5netcdf")
             else:
+                # create s3 session using credentials
                 s3fs = self.create_s3filesystem()
                 s3_file_obj = s3fs.open(path_or_url, mode="rb")
+                # open remote file
                 ds = xr.open_dataset(s3_file_obj, engine="scipy")
             # get dimension names
             x_dim = CloudStorageFileReader._get_dimension_name(

@@ -1,3 +1,4 @@
+from typing import Optional
 import ibm_boto3
 from ibm_botocore.config import Config
 from botocore.exceptions import ClientError
@@ -30,8 +31,11 @@ class COSConnector:
         self.secret_access_key = credentials["secret_access_key"]
 
     @property
-    def endpoint(self) -> str:
-        return self._endpoint.lower()
+    def endpoint(self) -> Optional[str]:
+        if isinstance(self._endpoint, str):
+            return self._endpoint.lower()
+        else:
+            return None
 
     def _make_ibm_boto3_client(self, endpoint: str, access_key_id: str, secret: str):
         client = ibm_boto3.client(
@@ -145,6 +149,9 @@ class COSConnector:
         """
         print("Retrieving bucket contents from: {0}".format(self.bucket))
         try:
+            assert self.access_key_id is not None
+            assert self.secret_access_key is not None
+            assert self.endpoint is not None
             s3 = ibm_boto3.resource(
                 "s3",
                 endpoint_url=f"https://{self.endpoint}",
@@ -180,6 +187,7 @@ class COSConnector:
             path (Path): local path
         """
         logger.debug(f"Upload file to COS: {key=} {path=} {self.bucket=}")
+        # create a resource object using credentials
         s3 = ibm_boto3.resource(
             "s3",
             endpoint_url=f"https://{self.endpoint}",
@@ -188,7 +196,9 @@ class COSConnector:
             verify=False,
             config=Config(tcp_keepalive=True),
         )
+        # create an Bucket object
         bucket_obj = s3.Bucket(self.bucket)
+        # create an Object object
         obj = bucket_obj.Object(key)
 
         with open(path, "rb") as data:
@@ -206,6 +216,9 @@ class COSConnector:
             Optional[str]: pre-signed url
         """
         logger.debug(f"Create presigned link: {self.bucket=} {key=}")
+        assert self.access_key_id is not None
+        assert self.secret_access_key is not None
+        assert self.endpoint is not None
         s3_client = self._make_ibm_boto3_client(
             endpoint=self.endpoint,
             access_key_id=self.access_key_id,

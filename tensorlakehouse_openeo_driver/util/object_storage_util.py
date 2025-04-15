@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Dict, Optional
 import logging
 import logging.config
 
@@ -8,7 +8,7 @@ logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
 
 
-def get_credentials_by_bucket(bucket: str) -> Dict[str, str]:
+def get_credentials_by_bucket(bucket: str) -> Dict[str, Optional[str]]:
     """get the credentials to access the specified bucket
 
     Args:
@@ -32,9 +32,9 @@ def get_credentials_by_bucket(bucket: str) -> Dict[str, str]:
     )
     try:
         # get the credential values
-        access_key_id = os.environ[access_key_id_env_var]
-        secret_access_key = os.environ[secret_access_key_env_var]
-        endpoint = os.environ[endpoint_env_var]
+        access_key_id = os.getenv(access_key_id_env_var)
+        secret_access_key = os.getenv(secret_access_key_env_var)
+        endpoint = os.getenv(endpoint_env_var)
     except KeyError as e:
         msg = f"KeyError! At least one of these variables ({access_key_id_env_var=}, {secret_access_key_env_var=}, {endpoint_env_var=}), which grant access to the {bucket} bucket,  has not been set. Message={e}"
         logger.error(msg=msg)

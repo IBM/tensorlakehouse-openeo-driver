@@ -68,19 +68,23 @@ class CloudStorageFileReader:
         assets: Dict = items[0].assets
         asset_values: pystac.Asset = next(iter(assets.values()))
         href = asset_values.href
+        self.properties = properties
         self.bucket = CloudStorageFileReader._extract_bucket_name_from_url(url=href)
         credentials = object_storage_util.get_credentials_by_bucket(bucket=self.bucket)
 
-        self._endpoint: str = credentials["endpoint"]
-        self.access_key_id = credentials["access_key_id"]
-        self.secret_access_key = credentials["secret_access_key"]
-        region = object_storage_util.parse_region(endpoint=self.endpoint)
-        self.region = region
-        self.properties = properties
+        self._endpoint: Optional[str] = credentials["endpoint"]
+        self.access_key_id: Optional[str] = credentials["access_key_id"]
+        self.secret_access_key: Optional[str] = credentials["secret_access_key"]
+        if self.endpoint is not None:
+            region = object_storage_util.parse_region(endpoint=self.endpoint)
+            self.region = region
 
     @property
-    def endpoint(self) -> str:
-        return self._endpoint.lower()
+    def endpoint(self) -> Optional[str]:
+        if self._endpoint is not None:
+            return self._endpoint.lower()
+        else:
+            return None
 
     @property
     def start_datetime(self) -> datetime:
@@ -262,7 +266,8 @@ class CloudStorageFileReader:
         Returns:
             s3fs.S3FileSystem: _description_
         """
-        if self.endpoint.startswith("https://"):
+
+        if isinstance(self.endpoint, str) and self.endpoint.startswith("https://"):
             endpoint_url = self.endpoint
         else:
             endpoint_url = f"https://{self.endpoint}"

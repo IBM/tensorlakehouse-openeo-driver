@@ -176,12 +176,14 @@ def filter_by_time(
 
     # convert temporal index to datetime timezone-aware
     timestamps = _convert_to_datetime(datetime_index=ts)
-    start_index = bisect.bisect_left(timestamps, start_datetime)
-    end_index = bisect.bisect_right(timestamps, end_datetime)
-    if start_index == end_index:
-        data = data.isel({temporal_dim: [start_index]})
-    else:
-        data = data.isel({temporal_dim: slice(start_index, end_index)})
+    # if length of timestamps equals 2, timestamsps have been converted
+    if len(timestamps) == 2:
+        start_index = bisect.bisect_left(timestamps, start_datetime)
+        end_index = bisect.bisect_right(timestamps, end_datetime)
+        if start_index == end_index:
+            data = data.isel({temporal_dim: [start_index]})
+        else:
+            data = data.isel({temporal_dim: slice(start_index, end_index)})
     return data
 
 

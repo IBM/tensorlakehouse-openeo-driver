@@ -25,7 +25,9 @@ from tensorlakehouse_openeo_driver.pipeline.handler.sentinel_2_pipeline_handler_
 
 
 def make_handler(collection_id: str) -> Optional[PipelineHandler]:
-    logger.debug(f"handler_factory: make_hander = {collection_id=} {PIPELINE_DISABLED=}")
+    logger.debug(
+        f"handler_factory: make_hander = {collection_id=} {PIPELINE_DISABLED=}"
+    )
     if PIPELINE_DISABLED:
         return None
     elif collection_id == HLS:
