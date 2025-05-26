@@ -160,7 +160,9 @@ class TensorLakeHouseBatchJobs(BatchJobs):
             metadata: Optional[Dict[str, Any]] = task.info
             # if task.info is none create a default metadata dict
             if metadata is None or (
-                "pid" in metadata.keys() and "hostname" in metadata.keys()
+                isinstance(metadata, dict)
+                and "pid" in metadata.keys()
+                and "hostname" in metadata.keys()
             ):
                 start_datetime = datetime.now().isoformat()
                 metadata = {

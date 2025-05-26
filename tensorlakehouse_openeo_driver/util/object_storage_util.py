@@ -18,27 +18,39 @@ def get_credentials_by_bucket(bucket: str) -> Dict[str, Optional[str]]:
         Dict[str, str]: a dict that contains endpoint, access_key_id, secret_access_key, region,
             endpoint
     """
-    # make sure the bucket is valid
+    # make sure the bucket variable is valid
     assert bucket is not None
     assert isinstance(bucket, str)
     # create the environment variable name, which is based on the bucket name
-    core_var_name = convert_bucket_to_envvar(bucket=bucket)
-    prefix = "TLH_"
-    access_key_id_env_var = f"{prefix}{core_var_name}_ACCESS_KEY_ID"
-    secret_access_key_env_var = f"{prefix}{core_var_name}_SECRET_ACCESS_KEY"
-    endpoint_env_var = f"{prefix}{core_var_name}_ENDPOINT"
+    envvar = remove_invalid_characters(name=bucket)
+    cos_instance_env_var_name = f"{envvar}_INSTANCE".upper()
+    assert (
+        cos_instance_env_var_name in os.environ
+    ), f"Error! Environment variable does not exist: {cos_instance_env_var_name}"
+    endpoint_env_var_name = f"{envvar}_ENDPOINT".upper()
+    assert (
+        endpoint_env_var_name in os.environ
+    ), f"Error! Environment variable does not exist: {cos_instance_env_var_name}"
+    # get COS instance name 
+    cos_instance = os.environ[cos_instance_env_var_name].upper()
+    cos_instance = remove_invalid_characters(name=cos_instance)
+    # create env variable names based on COS instance name
+    access_key_id_env_var = f"{cos_instance}_ACCESS_KEY_ID"
+    secret_access_key_env_var = f"{cos_instance}_SECRET_ACCESS_KEY"
     logger.debug(
-        f"Accessing env variables: {access_key_id_env_var=} {secret_access_key_env_var=} {endpoint_env_var=}"
+        f"Accessing env variables: {access_key_id_env_var=} {secret_access_key_env_var=}"
     )
     try:
         # get the credential values
         access_key_id = os.getenv(access_key_id_env_var)
         secret_access_key = os.getenv(secret_access_key_env_var)
-        endpoint = os.getenv(endpoint_env_var)
     except KeyError as e:
-        msg = f"KeyError! At least one of these variables ({access_key_id_env_var=}, {secret_access_key_env_var=}, {endpoint_env_var=}), which grant access to the {bucket} bucket,  has not been set. Message={e}"
+        msg = f"KeyError! At least one of these variables ({access_key_id_env_var=}, {secret_access_key_env_var=}), which grant access to the {bucket} bucket,  has not been set. Message={e}"
         logger.error(msg=msg)
         raise KeyError(msg)
+    # get endpoint value
+    endpoint = os.environ[endpoint_env_var_name]
+    # grouping credentials as dict
     credentials = {
         "access_key_id": access_key_id,
         "secret_access_key": secret_access_key,
@@ -63,22 +75,25 @@ def parse_region(endpoint: str) -> str:
     return region
 
 
-def convert_bucket_to_envvar(bucket: str) -> str:
-    """convert bucket name to env var name, i.e., remove non-alpha-numeric characters except for
-    underline
+def remove_invalid_characters(name: str) -> str:
+    """ environment variables must have alpha-numeric characters and underscore. This function
+    remove what is invalid
 
     Args:
-        bucket (str): _description_
+        name (str): name of the bucket or instance
 
     Returns:
         str: core part of env var
     """
-    env_var = bucket.upper()
-    env_var = "".join([i if str.isalnum(i) or i == "_" else "" for i in env_var])
+    assert isinstance(name, str), f"Error! {name=} is not a str"
+    env_var = "".join([i if str.isalnum(i) or i == "_" else "" for i in name])
     return env_var
 
 
 if __name__ == "__main__":
-    bucket = "ukcp18-land-cpm-uk-2.2km-rp-1993-2023"
-    env_var = convert_bucket_to_envvar(bucket=bucket)
-    print(env_var)
+    buckets = ["sentinel-2", "sentinel-1", "hls", "sentinel2-l2a-jp2"]
+    for bucket in buckets:
+        env_var = get_credentials_by_bucket(bucket=bucket)
+        assert isinstance(env_var, dict)
+        for v in env_var.values():
+            assert v is not None

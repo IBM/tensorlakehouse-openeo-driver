@@ -164,10 +164,13 @@ class COSConnector:
 
             i = 0
             file_list = list(files)
+            unique_object_keys = set()
             while i < len(file_list) and i < max_keys:
                 file = file_list[i]
                 i += 1
+                unique_object_keys.add(file.key)
                 print("Item: {0}".format(file.key))
+            return unique_object_keys
         except ClientError as be:
             print("CLIENT ERROR: {0}\n".format(be))
         except Exception as e:
@@ -240,9 +243,11 @@ class COSConnector:
 
 
 def main():
-    for bucket in ["claimed-test"]:
+    for bucket in ["openeo-geodn-driver-output"]:
         conn = COSConnector(bucket=bucket)
-        conn.get_bucket_contents(max_keys=2)
+        files = conn.get_bucket_contents(max_keys=10)
+        for f in files:
+            print(f)
 
 
 if __name__ == "__main__":

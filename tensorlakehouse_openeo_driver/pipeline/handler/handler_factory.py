@@ -1,7 +1,7 @@
 from typing import Optional
 from tensorlakehouse_openeo_driver.constants import (
     HLS,
-    PIPELINE_DISABLED,
+    PIPELINE_ENABLED,
     SENTINEL_1_GRD,
     SENTINEL_2_L1C,
     SENTINEL_2_L2A,
@@ -25,18 +25,14 @@ from tensorlakehouse_openeo_driver.pipeline.handler.sentinel_2_pipeline_handler_
 
 
 def make_handler(collection_id: str) -> Optional[PipelineHandler]:
-    logger.debug(
-        f"handler_factory: make_hander = {collection_id=} {PIPELINE_DISABLED=}"
-    )
-    if PIPELINE_DISABLED:
-        return None
-    elif collection_id == HLS:
-        return HLSPipelineHandler()
-    elif collection_id == SENTINEL_1_GRD:
-        return Sentinel1PipelineHandler()
-    elif collection_id == SENTINEL_2_L2A:
-        return Sentinel2PipelineHandlerL2A()
-    elif collection_id == SENTINEL_2_L1C:
-        return Sentinel2PipelineHandlerL1C()
-    else:
-        return None
+    logger.debug(f"handler_factory: make_hander = {collection_id=} {PIPELINE_ENABLED=}")
+    if PIPELINE_ENABLED:
+        if collection_id == HLS:
+            return HLSPipelineHandler()
+        elif collection_id == SENTINEL_1_GRD:
+            return Sentinel1PipelineHandler()
+        elif collection_id == SENTINEL_2_L2A:
+            return Sentinel2PipelineHandlerL2A()
+        elif collection_id == SENTINEL_2_L1C:
+            return Sentinel2PipelineHandlerL1C()
+    return None

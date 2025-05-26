@@ -1,3 +1,4 @@
+import os
 from typing import Dict, Optional, Tuple
 import pandas as pd
 from shapely.geometry.polygon import Polygon
@@ -300,6 +301,7 @@ class TiledItem(Item):
             "check_geodn_stac": "0",
             "geodn_collection_id": geodn_collection_id,
             "log_level": "DEBUG",
+            "max_pending": "9999"
         }
         return params
 

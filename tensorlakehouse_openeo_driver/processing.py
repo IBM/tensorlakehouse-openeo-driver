@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Dict, Iterable, List, Union
 from openeo_driver.utils import read_json
 from openeo_driver.ProcessGraphDeserializer import ConcreteProcessing
 from openeo_driver.dry_run import SourceConstraint
@@ -49,7 +49,7 @@ class TensorlakehouseProcessing(ConcreteProcessing):
             proc_spec = read_json(proc_path)
             process_names.append(proc_spec["id"])
 
-        openeo_impls = get_openeo_impls()
+        openeo_impls: Dict[str, str] = get_openeo_impls()
         geodn_impls = get_impls()
         # get a list of processes implemented by openeo-process-dask
         processes_by_openeo = list(

@@ -143,4 +143,9 @@ SENTINEL_DB_NAME = os.getenv("SENTINEL_DB_NAME")
 SENTINEL_DB_USER = os.getenv("SENTINEL_DB_USER")
 SENTINEL_DB_PASSWORD = os.getenv("SENTINEL_DB_PASSWORD")
 
-PIPELINE_DISABLED = os.getenv("PIPELINE_DISABLED", True)
+PIPELINE_ENABLED_STR = os.getenv("PIPELINE_ENABLED", "False")
+assert isinstance(
+    PIPELINE_ENABLED_STR, str
+), f"Error! {PIPELINE_ENABLED_STR=} is not a str"
+PIPELINE_ENABLED = PIPELINE_ENABLED_STR == "True"
+assert isinstance(PIPELINE_ENABLED, bool), f"Error! {PIPELINE_ENABLED=} is not a bool"

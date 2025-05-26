@@ -9,7 +9,6 @@ import openeo
 import flask
 import pytest
 import pythonjsonlogger.jsonlogger
-
 from openeo_driver.backend import UserDefinedProcesses
 from tensorlakehouse_openeo_driver.constants import (
     OPENEO_PASSWORD,

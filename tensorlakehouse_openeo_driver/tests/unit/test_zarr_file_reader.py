@@ -91,11 +91,10 @@ def test_load_items(
     crs: str,
     expected_dim_size: Dict[str, int],
 ):
-    os.environ["TLH_MYBUCKET_ACCESS_KEY_ID"] = "my-access-key"
-    os.environ["TLH_MYBUCKET_SECRET_ACCESS_KEY"] = "my-secret-key"
-    os.environ["TLH_MYBUCKET_ENDPOINT"] = (
-        "s3.us-south.cloud-object-storage.appdomain.cloud"
-    )
+    os.environ["MY_COS_INSTANCE_ACCESS_KEY_ID"] = "my-access-key"
+    os.environ["MY_COS_INSTANCE_SECRET_ACCESS_KEY"] = "my-secret-key"
+    os.environ["MYBUCKET_ENDPOINT"] = "s3.us-south.cloud-object-storage.appdomain.cloud"
+    os.environ["MYBUCKET_INSTANCE"] = "MY_COS_INSTANCE"
     lonmin, latmin, lonmax, latmax = bbox
     temporal_ext = (
         pd.Timestamp(temporal_extent[0] - pd.Timedelta(1, unit="D")),

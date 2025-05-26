@@ -1801,22 +1801,6 @@ def validate_downloaded_file(
         )
 
 
-# def validate_vector_datacube(
-#     cube: geopandas.GeoDataFrame,
-#     band_names: List[str],
-#     expected_dim_size: Dict[str, Any],
-# ):
-#     dimension_names = list(expected_dim_size.keys())
-#     columns = band_names + dimension_names
-#     for col in set(columns):
-#         assert col in cube.columns, f"Error! {col=} is not in {cube.columns}"
-#         size = len(cube[col].unique())
-#         if col in expected_dim_size.keys():
-#             assert (
-#                 expected_dim_size[col] == size
-#             ), f"Error! {expected_dim_size=} {size=}"
-
-
 def validate_raster_datacube(
     cube: xr.DataArray,
     expected_dim_size: Dict[str, int],

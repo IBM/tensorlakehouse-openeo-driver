@@ -177,7 +177,7 @@ def filter_by_time(
     # convert temporal index to datetime timezone-aware
     timestamps = _convert_to_datetime(datetime_index=ts)
     # if length of timestamps equals 2, timestamsps have been converted
-    if len(timestamps) == 2:
+    if len(timestamps) > 0:
         start_index = bisect.bisect_left(timestamps, start_datetime)
         end_index = bisect.bisect_right(timestamps, end_datetime)
         if start_index == end_index:
