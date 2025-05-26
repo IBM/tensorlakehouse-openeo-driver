@@ -58,7 +58,8 @@ google-resumable-media~=2.7.2
 googleapis-common-protos~=1.65.0
 greenlet~=3.1.1
 gunicorn~=23.0.0
-h11~=0.14.0
+# h11 lower bound defined because of this security issue https://github.com/IBM/tensorlakehouse-openeo-driver/security/dependabot/1
+h11>=0.16.0
 h5netcdf~=1.3.0
 h5py~=3.11.0
 httpcore~=1.0.5
@@ -209,7 +210,8 @@ tifffile~=2024.9.20
 tinycss2~=1.3.0
 toml~=0.10.2
 toolz~=0.12.1
-tornado~=6.4.1
+# tornado lower bound is defined because of this security issue https://github.com/IBM/tensorlakehouse-openeo-driver/security/dependabot/3
+tornado>=6.5
 tox~=4.20.0
 traitlets~=5.9.0
 traittypes~=0.2.1
