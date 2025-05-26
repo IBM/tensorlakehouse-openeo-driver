@@ -1,21 +1,18 @@
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
 from openeo_pg_parser_networkx.process_registry import Process, ProcessRegistry
 from openeo_driver.processes import ProcessesListing
 
 
-
 class TensorLakeHouseProcessesListing(ProcessesListing):
-    def to_response_dict(self) -> dict:
+    def to_response_dict(self) -> dict[Any, Any]:
         resp = super().to_response_dict()
-        resp["links"].append({"rel": "docs", "href": "http://processing.test/dummy"})
-        resp["flavor"] = "salt and pepper"
-        resp["version"] = "dummy-v2"
+        assert isinstance(resp, dict), f"Error! {resp=} is not a dict"
         return resp
 
 
 class TensorLakehouseProcessRegistry(ProcessRegistry):
-    """ this class glues ProcessRegistry from openeo_pg_parser_networkx to ProcessRegistry 
-    from openeo_driver. It implements method from openeo_driver.ProcessRegistry to support 
+    """this class glues ProcessRegistry from openeo_pg_parser_networkx to ProcessRegistry
+    from openeo_driver. It implements method from openeo_driver.ProcessRegistry to support
     API implementation
 
     Args:
@@ -24,6 +21,7 @@ class TensorLakehouseProcessRegistry(ProcessRegistry):
     Returns:
         _type_: _description_
     """
+
     def __init__(self, wrap_funcs: Optional[list] = None, *args, **kwargs):
         super().__init__(wrap_funcs, *args, **kwargs)
         self.target_version = "1.1.0"

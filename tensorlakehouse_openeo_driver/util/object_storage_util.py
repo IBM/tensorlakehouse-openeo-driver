@@ -31,7 +31,7 @@ def get_credentials_by_bucket(bucket: str) -> Dict[str, Optional[str]]:
     assert (
         endpoint_env_var_name in os.environ
     ), f"Error! Environment variable does not exist: {cos_instance_env_var_name}"
-    # get COS instance name 
+    # get COS instance name
     cos_instance = os.environ[cos_instance_env_var_name].upper()
     cos_instance = remove_invalid_characters(name=cos_instance)
     # create env variable names based on COS instance name
@@ -76,7 +76,7 @@ def parse_region(endpoint: str) -> str:
 
 
 def remove_invalid_characters(name: str) -> str:
-    """ environment variables must have alpha-numeric characters and underscore. This function
+    """environment variables must have alpha-numeric characters and underscore. This function
     remove what is invalid
 
     Args:
