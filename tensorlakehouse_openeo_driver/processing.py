@@ -7,6 +7,7 @@ from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
 from openeo_driver.utils import EvalEnv
 from openeo_pg_parser_networkx import OpenEOProcessGraph
 from openeo_pg_parser_networkx import ProcessRegistry, Process
+# from openeo_driver.processes import ProcessRegistry
 from tensorlakehouse_openeo_driver.geodn_process_registry import (
     TensorLakehouseProcessRegistry,
 )
@@ -19,8 +20,9 @@ from tensorlakehouse_openeo_driver.get_openeo_process_implementations import (
     get_openeo_impls,
 )
 from tensorlakehouse_openeo_driver.get_process_implementations import get_impls
-from openeo_processes_dask.process_implementations import _max, _min
-from openeo_processes_dask.specs import _max as max_spec, _min as min_spec
+# from openeo_processes_dask.process_implementations import _max, _min
+
+# from openeo_processes_dask.specs import _max as max_spec, _min as min_spec
 from openeo_processes_dask.process_implementations.core import process
 import openeo
 from openeo.udf import run_udf_code
@@ -35,7 +37,6 @@ class TensorlakehouseProcessing(ConcreteProcessing):
         super().__init__()
         # `process` is wrapped around each registered implementation
         self.process_registry = TensorLakehouseProcessRegistry(wrap_funcs=[process])
-
         process_names = get_process_names()
         # explicit reading rename dimension and rename labels processes specification
         # because they're not part of openeo-process-dask lib
@@ -99,8 +100,8 @@ class TensorlakehouseProcessing(ConcreteProcessing):
 
             proc_data.append({"name": item, "spec": itemspec, "impl": itemimpl})
 
-        proc_data.append({"name": "max", "spec": max_spec, "impl": _max})
-        proc_data.append({"name": "min", "spec": min_spec, "impl": _min})
+        # proc_data.append({"name": "max", "spec": max_spec, "impl": _max})
+        # proc_data.append({"name": "min", "spec": min_spec, "impl": _min})
 
         for p in proc_data:
             self.process_registry[p["name"]] = Process(

@@ -1,7 +1,7 @@
-from openeo_pg_parser_networkx import ProcessRegistry
-from typing import Iterable, List, Optional
-from openeo_pg_parser_networkx.process_registry import Process
-from openeo_driver.processes import ProcessRegistry, ProcessesListing
+from typing import Iterable, Optional
+from openeo_pg_parser_networkx.process_registry import Process, ProcessRegistry
+from openeo_driver.processes import ProcessesListing
+
 
 
 class TensorLakeHouseProcessesListing(ProcessesListing):
@@ -14,10 +14,22 @@ class TensorLakeHouseProcessesListing(ProcessesListing):
 
 
 class TensorLakehouseProcessRegistry(ProcessRegistry):
+    """ this class glues ProcessRegistry from openeo_pg_parser_networkx to ProcessRegistry 
+    from openeo_driver. It implements method from openeo_driver.ProcessRegistry to support 
+    API implementation
+
+    Args:
+        ProcessRegistry (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     def __init__(self, wrap_funcs: Optional[list] = None, *args, **kwargs):
         super().__init__(wrap_funcs, *args, **kwargs)
+        self.target_version = "1.1.0"
 
     def get_specs(self, exclusion_list: Optional[Iterable[str]] = None):
+        # self.get_processes_listing()
         assert isinstance(self.store, dict), f"Error! Not a dict: {self.store}"
         store = self.store
         process_list = []

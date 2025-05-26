@@ -137,12 +137,13 @@ oauthlib~=3.2.2
 odc-algo~=0.2.3
 odc-geo~=0.4.8
 odc-stac~=0.3.10
-openeo
-openeo-pg-parser-networkx~=2024.10.1
+openeo~=0.41.0
+openeo-pg-parser-networkx~=2025.5.1
 openeo-processes~=0.0.4
-openeo-processes-dask~=2024.11.5
+openeo-processes-dask~=2025.5.1
 # openeo_driver @ git+https://github.com/Open-EO/openeo-python-driver.git@fa707ae4259c55b53aac8d290595d4383e5770a3
-openeo_driver @ git+https://github.com/leotizzei/openeo-python-driver.git
+openeo_driver @ git+https://github.com/Open-EO/openeo-python-driver.git@0511bdc4e9ab4c8f812dd7e6ed7ac8bef6ed9713
+# openeo_driver @ git+https://github.com/leotizzei/openeo-python-driver.git
 openpyxl~=3.1.5
 orderly-set~=5.2.2
 overrides~=7.7.0
@@ -231,5 +232,5 @@ widgetsnbextension~=4.0.13
 wrapt
 xarray[complete]~=2023.4.2
 xgboost
-xvec
+xvec<0.4.0
 zarr
