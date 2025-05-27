@@ -18,7 +18,7 @@ class HLSPipelineHandler(PipelineHandler):
         self.collection_id = HLS
         self._pipeline_name = "HLS ingestion"
         # self._version_name = "v1.0 (10 parallel)"
-        self._version_name = "v0.2 (2 parallel)"
+        self._version_name = "v1.1 (2 parallel)"
         self.external_collection = "HLSS30_2.0"
         self.datasource_stac_url = NASA_STAC
         self._temporal_buffer = 60 * 15
