@@ -144,6 +144,7 @@ openeo-processes~=0.0.4
 openeo-processes-dask~=2025.5.1
 # openeo_driver @ git+https://github.com/Open-EO/openeo-python-driver.git@fa707ae4259c55b53aac8d290595d4383e5770a3
 openeo_driver @ git+https://github.com/Open-EO/openeo-python-driver.git@0511bdc4e9ab4c8f812dd7e6ed7ac8bef6ed9713
+# openeo_driver @ git+https://github.com/leotizzei/openeo-python-driver.git@f995a1aa7869803036b9dff5b8259feadbe116c4
 # openeo_driver @ git+https://github.com/leotizzei/openeo-python-driver.git
 openpyxl~=3.1.5
 orderly-set~=5.2.2
