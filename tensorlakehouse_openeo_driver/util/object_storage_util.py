@@ -9,7 +9,8 @@ logger = logging.getLogger("geodnLogger")
 
 
 def get_credentials_by_bucket(bucket: str) -> Dict[str, Optional[str]]:
-    """get the credentials to access the specified bucket
+    """get the credentials to access the specified bucket. This method maps the bucket to a
+    cos instance, then it gets the credentials to access this instance
 
     Args:
         bucket (str): input bucket name
@@ -23,33 +24,33 @@ def get_credentials_by_bucket(bucket: str) -> Dict[str, Optional[str]]:
     assert isinstance(bucket, str)
     # create the environment variable name, which is based on the bucket name
     envvar = remove_invalid_characters(name=bucket)
-    cos_instance_env_var_name = f"{envvar}_INSTANCE".upper()
-    assert (
-        cos_instance_env_var_name in os.environ
-    ), f"Error! Environment variable does not exist: {cos_instance_env_var_name}"
     endpoint_env_var_name = f"{envvar}_ENDPOINT".upper()
-    assert (
-        endpoint_env_var_name in os.environ
-    ), f"Error! Environment variable does not exist: {cos_instance_env_var_name}"
-    # get COS instance name
-    cos_instance = os.environ[cos_instance_env_var_name].upper()
-    cos_instance = remove_invalid_characters(name=cos_instance)
-    # create env variable names based on COS instance name
-    access_key_id_env_var = f"{cos_instance}_ACCESS_KEY_ID"
-    secret_access_key_env_var = f"{cos_instance}_SECRET_ACCESS_KEY"
-    logger.debug(
-        f"Accessing env variables: {access_key_id_env_var=} {secret_access_key_env_var=}"
-    )
-    try:
-        # get the credential values
-        access_key_id = os.getenv(access_key_id_env_var)
-        secret_access_key = os.getenv(secret_access_key_env_var)
-    except KeyError as e:
-        msg = f"KeyError! At least one of these variables ({access_key_id_env_var=}, {secret_access_key_env_var=}), which grant access to the {bucket} bucket,  has not been set. Message={e}"
-        logger.error(msg=msg)
-        raise KeyError(msg)
-    # get endpoint value
-    endpoint = os.environ[endpoint_env_var_name]
+    cos_instance_env_var_name = f"{envvar}_INSTANCE".upper()
+    # if these env variables are set, it means that credentials are required
+    if cos_instance_env_var_name in os.environ and endpoint_env_var_name in os.environ:
+        # get COS instance name
+        cos_instance = os.environ[cos_instance_env_var_name].upper()
+        cos_instance = remove_invalid_characters(name=cos_instance)
+        # get endpoint
+        endpoint = os.environ[endpoint_env_var_name]
+        # create env variable names based on COS instance name
+        access_key_id_env_var = f"{cos_instance}_ACCESS_KEY_ID"
+        secret_access_key_env_var = f"{cos_instance}_SECRET_ACCESS_KEY"
+        logger.debug(
+            f"Accessing env variables: {access_key_id_env_var=} {secret_access_key_env_var=}"
+        )
+        try:
+            # get the credential values
+            access_key_id = os.getenv(access_key_id_env_var)
+            secret_access_key = os.getenv(secret_access_key_env_var)
+        except KeyError as e:
+            msg = f"KeyError! At least one of these variables ({access_key_id_env_var=}, {secret_access_key_env_var=}), which grant access to the {bucket} bucket,  has not been set. Message={e}"
+            logger.error(msg=msg)
+            raise KeyError(msg)
+        # get endpoint value
+    else:
+        # if the dataset does not require credentials
+        access_key_id = secret_access_key = endpoint = None
     # grouping credentials as dict
     credentials = {
         "access_key_id": access_key_id,
