@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import fsspec
+from fsspec.implementations.http import HTTPFileSystem
 from pystac import Asset, Item
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
@@ -72,9 +73,9 @@ class NetCDFFileReader(RasterFileReader):
                 and self.secret_access_key is None
             ):
                 # open publicly available remote file
-                with fsspec.open(path_or_url) as fobj:
-                    # chunks={} to fix this issue https://github.com/fsspec/s3fs/issues/337
-                    ds = xr.open_dataset(fobj, chunks={}, engine="h5netcdf")
+                fs: HTTPFileSystem = fsspec.filesystem("https")
+                # chunks={} to fix this issue https://github.com/fsspec/s3fs/issues/337
+                ds = xr.open_dataset(fs.open(path_or_url), chunks={}, engine="h5netcdf")
             else:
                 # create s3 session using credentials
                 s3fs = self.create_s3filesystem()
