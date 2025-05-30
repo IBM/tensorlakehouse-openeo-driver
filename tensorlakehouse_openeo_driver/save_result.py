@@ -109,7 +109,8 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                             ds[variable].attrs[attr_key] = str(attr_value)
                 assert ds.rio.crs is not None
                 # ds = ds.compute()
-                ds.to_netcdf(path=filename, engine="netcdf4")  # type: ignore[call-overload]
+                # ds.to_netcdf(path=filename, engine="h5netcdf")  # type: ignore[call-overload]
+                ds.to_netcdf(path=filename, engine="h5netcdf")  # type: ignore[call-overload]
             except TypeError as e:
                 logger.error(
                     f"TypeError: Invalid attr. Exception handling: trying to convert invalid attrs to str: {e}"
@@ -131,7 +132,7 @@ class GeoDNImageCollectionResult(ImageCollectionResult):
                             logger.debug(f"Invalid attr: {attr_key}")
                             ds[variable].attrs[attr_key] = str(attr_value)
 
-                ds.to_netcdf(path=filename, engine="netcdf4")  # type: ignore[call-overload]
+                ds.to_netcdf(path=filename, engine="h5netcdf")  # type: ignore[call-overload]
             except Exception as e:
                 logger.error(e)
                 raise e
