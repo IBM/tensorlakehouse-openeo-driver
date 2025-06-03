@@ -16,7 +16,12 @@ joblib
 planetary_computer
 stackstac
 stac_validator
-odc-algo==0.2.3
-odc-geo==0.3.3
+psycopg2-binary~=2.9.10
+odc-algo
+odc-geo
+odc-stac
 jupyterlab
 cftime
+boto3
+folium
+netCDF4
