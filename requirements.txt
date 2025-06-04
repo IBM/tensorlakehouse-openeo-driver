@@ -33,6 +33,17 @@ dask-expr
 dask-geopandas
 dask-image
 distributed
+earthkit~=0.11.1
+earthkit-data~=0.14.3
+earthkit-geo~=0.3.0
+earthkit-hydro~=0.1.4
+earthkit-meteo~=0.3.0
+earthkit-plots~=0.3.1
+earthkit-plots-default-styles~=0.1.0
+earthkit-regrid~=0.4.0
+earthkit-time~=0.1.7
+earthkit-transforms~=0.4.0
+earthkit-utils~=0.0.1
 # ecmwflibs is required to fix this issue https://github.com/ecmwf/eccodes-python/issues/54#issuecomment-925036724
 ecmwflibs
 eccodes
