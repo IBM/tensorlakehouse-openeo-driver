@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple, Union, DefaultDict
 import geojson
 import numpy as np
 import pyproj
+import shapely
 import xarray as xr
 import pandas as pd
 from rasterio.crs import CRS
@@ -40,27 +41,35 @@ def clip_box(
     if data.rio.crs is None:
         input_crs = CRS.from_epsg(crs)
         data.rio.write_crs(input_crs, inplace=True)
+
     # area selected by the end-user
     minx, miny, maxx, maxy = bbox
     # rename dimensions because clip_box accepts only x and y
     data = rename_dimension(data=data, rename_dict={x_dim: "x", y_dim: "y"})
-    # adjust user input based on the limits of the data coordinates
-    minx = max(minx, min(data["x"].values))
-    maxx = min(maxx, max(data["x"].values))
 
-    miny = max(miny, min(data["y"].values))
-    maxy = min(maxy, max(data["y"].values))
+    # adjust user input based on the limits of the data coordinates
+    minx = max(minx, min(data["x"].values.flatten()))
+    maxx = min(maxx, max(data["x"].values.flatten()))
+    assert minx < maxx
+    miny = max(miny, min(data["y"].values.flatten()))
+    maxy = min(maxy, max(data["y"].values.flatten()))
+    assert miny < maxy
 
     try:
         data = data.rio.clip_box(minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs)
+    except TypeError:
+        data = data.where(
+            (data.x <= maxx) & (data.x >= minx) & (data.y <= maxy) & (data.y >= miny),
+            drop=True,
+        )
     except OneDimensionalRaster:
         # handling exception when resulting dataarray has either x or y 1-size dimension
 
         # assumption: coordinates are sorted
         # get index of x that is smaller than minx
-        minx_index = bisect.bisect_left(a=data.x.values, x=minx)
+        minx_index = bisect.bisect_left(a=data.x.values.flatten(), x=minx)
         # get index of x that is greater than maxx
-        maxx_index = bisect.bisect_right(a=data.x.values, x=maxx)
+        maxx_index = bisect.bisect_right(a=data.x.values.flatten(), x=maxx)
         if minx_index == maxx_index:
             if minx_index > 0:
                 minx_index -= 1
@@ -68,9 +77,9 @@ def clip_box(
                 maxx_index += 1
 
         # get index of y that is smaller than miny
-        miny_index = bisect.bisect_left(a=data.y.values, x=miny)
+        miny_index = bisect.bisect_left(a=data.y.values.flatten(), x=miny)
         # get index of y that is smaller than maxy
-        maxy_index = bisect.bisect_right(a=data.y.values, x=maxy)
+        maxy_index = bisect.bisect_right(a=data.y.values.flatten(), x=maxy)
         if miny_index == maxy_index:
             if miny_index > 0:
                 miny_index -= 1
@@ -88,14 +97,16 @@ def clip_box(
 
 
 def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):
+
     for source, target in rename_dict.items():
-        if source in data.dims:
+
+        if source in data.dims or source in data.coords:
             data = data.rename({source: target})
     return data
 
 
 def _convert_to_datetime(
-    datetime_index: List[Union[str, datetime, np.datetime64, Datetime360Day, int]]
+    datetime_index: List[Union[str, datetime, np.datetime64, Datetime360Day, int]],
 ) -> List[datetime]:
     """convert a list of datetime values to native datetime
 
@@ -388,3 +399,48 @@ def from_bbox_to_polygon(bbox: Tuple[float, float, float, float]) -> Polygon:
     p = Polygon([[west, south], [west, north], [east, north], [east, south]])
     assert p.is_valid, f"Error! Invalid polygon {p=}"
     return p
+
+
+def convert_longitude_coords(lon: float) -> float:
+    new_lon = float(((lon + 180.0) % 360.0) - 180.0)
+    return new_lon
+
+
+def main():
+    np.random.seed(0)
+    temperature = 15 + 8 * np.random.randn(4, 4, 3)
+    lon = [
+        [-99.83, -99.32, -99.15, -99.05],
+        [-99.79, -99.23, -99.10, -99.05],
+        [-99.80, -99.24, -99.11, -99.06],
+        [-99.81, -99.25, -99.12, -99.07],
+    ]
+    lat = [
+        [42.25, 42.21, 42.15, 42.10],
+        [42.63, 42.59, 42.44, 42.30],
+        [42.27, 42.23, 42.17, 42.12],
+        [42.65, 42.61, 42.46, 42.32],
+    ]
+    time = pd.date_range("2014-09-06", periods=3)
+    reference_time = pd.Timestamp("2014-09-05")
+    da = xr.DataArray(
+        data=temperature,
+        dims=["x", "y", "time"],
+        coords=dict(
+            lon=(["x", "y"], lon),
+            lat=(["x", "y"], lat),
+            time=time,
+            reference_time=reference_time,
+        ),
+        attrs=dict(
+            description="Ambient temperature.",
+            units="degC",
+        ),
+    )
+
+    bbox = (-99.79, 42.23, -99.11, 42.46)
+    arr = clip_box(data=da, bbox=bbox, x_dim="lon", y_dim="lat", crs=4326)
+
+
+if __name__ == "__main__":
+    main()

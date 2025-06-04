@@ -1,6 +1,11 @@
+from io import BytesIO
 from pathlib import Path
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
+
+import earthkit
+from pystac import Asset, Item
+import urllib
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     DEFAULT_X_DIMENSION,
@@ -20,6 +25,7 @@ from tensorlakehouse_openeo_driver.file_reader.raster_file_reader import (
 )
 from tensorlakehouse_openeo_driver.geospatial_utils import (
     clip_box,
+    convert_longitude_coords,
     filter_by_time,
     reproject_bbox,
 )
@@ -30,7 +36,7 @@ class Grib2FileReader(RasterFileReader):
 
     def __init__(
         self,
-        items: List[Dict[str, Any]],
+        items: List[Item],
         bands: List[str],
         bbox: Tuple[float, float, float, float],
         temporal_extent: Tuple[datetime, Optional[datetime]],
@@ -105,6 +111,83 @@ class Grib2FileReader(RasterFileReader):
             ds = ds.sortby([x_dim, y_dim])
         return ds
 
+    @staticmethod
+    def _open_grib_index_file(index_url: str) -> pd.DataFrame:
+        req = urllib.request.Request(index_url)
+        with urllib.request.urlopen(req) as response:
+            data = response.read()
+            print(f"Downloaded {len(data)} bytes")
+            bytes_io = BytesIO(data)
+
+            # print(data)
+
+            df = pd.read_csv(
+                bytes_io,
+                sep=":",
+                index_col=0,
+                names=["byte_position", "date", "prefix", "name", "sufix", "useless"],
+            )
+            df.drop(columns=["useless", "date"], inplace=True)
+            band_names = list()
+            for _, row in df.iterrows():
+                prefix = row["prefix"]
+                name = row["name"]
+                sufix = row["sufix"]
+                band_name = f"{prefix} {name} {sufix}"
+                band_names.append(band_name)
+            df["band"] = band_names
+            df.drop(columns=["name", "prefix", "sufix"], inplace=True)
+            return df
+
+    @staticmethod
+    def _get_byte_position(idx_file: pd.DataFrame, band_name: str) -> tuple[int, int]:
+        """get the start and end byte positions for the specified band_name using the grib
+        index file
+
+        Args:
+            idx_file (pd.DataFrame): grib2 index file
+            band_name (str): name of the band
+
+        Returns:
+            tuple[int, int]: start and end byte positions
+        """
+        s = idx_file["band"]
+        indices = s[s == band_name].index
+
+        assert len(indices) == 1, f"Error! size of {indices=} must be one"
+        i = indices[0]
+        start_byte = idx_file.at[i, "byte_position"]
+        end_byte = idx_file.at[i + 1, "byte_position"]
+        return start_byte, end_byte
+
+    def _open_remote_grib_file(self, item: Item) -> xr.Dataset:
+        # idx_file: Optional[pd.DataFrame] = None
+        datasets = list()
+        asset = item.assets["data"]
+        layers = asset.extra_fields["grib:layers"]
+        for band_name in self.bands:
+            grib_layer = layers[band_name]
+
+            start_byte = grib_layer["start_byte"]
+            end_byte = start_byte + grib_layer["byte_size"]
+            # open remote file and pull only the data specified by start and end byte positions
+            req = urllib.request.Request(asset.href)
+            req.headers["Range"] = f"bytes={start_byte}-{end_byte}"
+
+            with urllib.request.urlopen(req) as response:
+                data = response.read()
+                bytes_io = BytesIO(data)
+
+                data_s = earthkit.data.from_source("stream", bytes_io)
+                ds_aux = data_s.to_xarray()
+                ds_aux = ds_aux.assign_coords(
+                    {"longitude": (((ds_aux["longitude"] + 180) % 360) - 180)}
+                )
+                datasets.append(ds_aux)
+
+        ds = xr.merge(datasets)
+        return ds
+
     def load_items(self) -> xr.DataArray:
         """load items that are associated with grib2 files
 
@@ -117,11 +200,12 @@ class Grib2FileReader(RasterFileReader):
         # initialize array and crs variables
         da = None
         crs_code = None
+        time_dim = None
         data_arrays = list()
         # load each item
         for item in self.items:
-            assets: Dict[str, Any] = item["assets"]
-            asset_value = next(iter(assets.values()))
+            assets: Dict[str, Any] = item.assets
+            arbitrary_asset: Asset = next(iter(assets.values()))
             # get dimension names
             x_dim = CloudStorageFileReader._get_dimension_name(
                 item=item, axis=DEFAULT_X_DIMENSION
@@ -137,7 +221,7 @@ class Grib2FileReader(RasterFileReader):
             crs_code = CloudStorageFileReader._get_epsg(item=item)
             # initial implementation assumes that file is local
             # href field can be either URL (a link to a file on COS) or a path to a local file
-            path_or_url = asset_value["href"]
+            path_or_url = arbitrary_asset.href
             parse_url = urlparse(path_or_url)
             if parse_url.scheme == "":
                 path = Path(path_or_url)
@@ -151,76 +235,12 @@ class Grib2FileReader(RasterFileReader):
                     path_or_url, backend_kwargs={"indexpath": str(indexpath)}
                 )
             else:
-                s3fs = self.create_s3filesystem()
-                s3_file_obj = s3fs.open(path_or_url, mode="rb")
-                ds = xr.open_dataset(s3_file_obj, engine="cfgrib")
-                datasets = [ds]
-            try:
-                units = item["properties"]["cube:dimensions"][x_dim].get("unit")
-            except KeyError as e:
-                msg = f"Error! Missing key: {item=} {e=}"
-                raise KeyError(msg)
-            # cfgrib follows NetCDF Climate and Forecast (CF) Metadata Conventions and because of
-            # that longitude is represented as degrees east,i.e., from 0 to 360
-            i = 0
-            found = False
-            while i < len(datasets) and not found:
-                ds = datasets[i]
-                i += 1
+                ds = self._open_remote_grib_file(item=item)
 
-                # set of dimensions that this dataset contains
-
-                if (
-                    self._check_coords(ds=ds)
-                    and self._check_bands(ds=ds)
-                    and self._check_dimensions(
-                        ds=ds, x_dim=x_dim, y_dim=y_dim, temporal_dim=time_dim
-                    )
-                ):
-                    found = True
-                    ds = Grib2FileReader.convert_longitude_coords(
-                        ds=ds, units=units, x_dim=x_dim, y_dim=y_dim
-                    )
-                    assert isinstance(
-                        ds, xr.Dataset
-                    ), f"Error! Unexpected type={type(ds)}"
-
-                    # get CRS
-                    if ds.rio.crs is None:
-                        ds.rio.write_crs(f"epsg:{crs_code}", inplace=True)
-                    # assert all(
-                    #     band in list(ds) for band in self.bands
-                    # ), f"Error! not all bands={self.bands} are in ds={list(ds)}"
-                    # drop bands that are not required
-                    ds = ds[self.bands]
-                    # drop dimensions that are not required
-                    extra_dim_filter = self.get_extra_dimensions_filter()
-                    ds = ds.sel(extra_dim_filter)
-                    # if bands is already one of the dimensions, use default 'variable'
-                    if DEFAULT_BANDS_DIMENSION in dict(ds.dims).keys():
-                        da = ds.to_array()
-                    else:
-                        # else export array using bands
-                        da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
-
-                    # add temporal dimension if it does not exist on dataarray
-
-                    if time_dim is None:
-                        raise ValueError(f"Error! {item=}")
-                    elif time_dim not in da.dims:
-                        dt_str = item["properties"].get("datetime")
-                        timestamps = pd.to_datetime([pd.Timestamp(dt_str)])
-
-                        da = da.expand_dims({time_dim: timestamps})
-            assert (
-                found
-            ), f"Error! Unable to find data that contains all {self.bands} variables all {self.get_extra_dimensions_filter()}"
-            data_arrays.append(da)
-        # get temporal dimension name from an arbitrary item. Assumption that all items
-        # have the same temporal dimension name
+            data_arrays.append(ds.to_array(dim=DEFAULT_BANDS_DIMENSION))
 
         if len(data_arrays) > 1:
-
+            assert isinstance(time_dim, str), f"Error! {time_dim=} is not a str"
             # concatenate all xarray.DataArray objects
             data_array = xr.concat(data_arrays, dim=time_dim)
         else:
