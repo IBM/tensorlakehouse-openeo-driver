@@ -1,7 +1,7 @@
 absl-py
 affine~=2.4.0
 aiobotocore~=2.15.1
-aiodns~=3.2.0
+aiodns~=3.4.0
 aiohappyeyeballs~=2.6.1
 aiohttp~=3.10.5
 aioitertools~=0.12.0
