@@ -57,7 +57,7 @@ GeoAlchemy2
 geojson-pydantic
 geopandas~=0.14.4
 gevent~=24.2.1
-google-api-core~=2.20.0
+google-api-core~=2.25.0
 google-api-python-client~=1.12.11
 google-auth~=2.35.0
 google-auth-httplib2~=0.2.0
