@@ -24,7 +24,7 @@ botocore
 aiobotocore
 boto3
 bottleneck
-celery~=5.3.6
+celery~=5.5.3
 # cfgrib is required to read grib2 files
 cfgrib
 dask
