@@ -164,7 +164,7 @@ class Grib2FileReader(RasterFileReader):
     def _open_remote_grib_file(self, item: Item) -> xr.Dataset:
         # idx_file: Optional[pd.DataFrame] = None
         datasets = list()
-        asset = item.assets["grib"]
+        asset = item.assets["data"]
         layers = asset.extra_fields["grib:layers"]
         for band_name in self.bands:
             grib_layer = layers[band_name]
