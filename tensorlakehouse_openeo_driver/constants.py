@@ -92,6 +92,7 @@ GEOTIFF_MEDIA_TYPE = "image/tiff; application=geotiff"
 GEOTIFF_MEDIA_TYPE_SIMPLE = "image/tiff"
 PARQUET_MEDIA_TYPE = "table/parquet; application=geoparquet; profile=cloud-optimized"
 GRIB2_MEDIA_TYPE = "application/x-grib2"
+WMO_GRIB2 = "application/wmo-GRIB2"
 FSTD_MEDIA_TYPE = "application/x-fstd"
 # default reference system
 EPSG_4326 = "EPSG:4326"

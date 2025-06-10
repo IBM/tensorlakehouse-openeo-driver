@@ -17,6 +17,7 @@ from tensorlakehouse_openeo_driver.constants import (
     NETCDF_MEDIA_TYPE,
     STAC_DATETIME_FORMAT,
     STAC_URL,
+    WMO_GRIB2,
     X_NETCDF_MEDIA_TYPE,
     ZIP_ZARR_MEDIA_TYPE,
     FSTD_MEDIA_TYPE,
@@ -171,7 +172,7 @@ class LoadCollectionFromCOS(AbstractLoadCollection):
                 temporal_extent=temporal_ext,
                 properties=properties,
             )
-        elif media_type == GRIB2_MEDIA_TYPE:
+        elif media_type in [GRIB2_MEDIA_TYPE, WMO_GRIB2]:
             reader = Grib2FileReader(
                 items=items,
                 bbox=bbox_wsg84,

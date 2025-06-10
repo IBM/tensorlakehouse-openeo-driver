@@ -49,10 +49,10 @@ def clip_box(
     # adjust user input based on the limits of the data coordinates
     minx = max(minx, min(data["x"].values.flatten()))
     maxx = min(maxx, max(data["x"].values.flatten()))
-    assert minx < maxx
+    assert minx < maxx, f"Error! {minx=} >= {maxx=}"
     miny = max(miny, min(data["y"].values.flatten()))
     maxy = min(maxy, max(data["y"].values.flatten()))
-    assert miny < maxy
+    assert miny < maxy, f"Error! {miny=} >= {maxy=}"
 
     try:
         data = data.rio.clip_box(minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs)
