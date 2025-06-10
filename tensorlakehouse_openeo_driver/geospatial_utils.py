@@ -4,7 +4,6 @@ from typing import Dict, List, Optional, Tuple, Union, DefaultDict
 import geojson
 import numpy as np
 import pyproj
-import shapely
 import xarray as xr
 import pandas as pd
 from rasterio.crs import CRS

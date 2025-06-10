@@ -23,6 +23,7 @@ import cfgrib
 from tensorlakehouse_openeo_driver.file_reader.raster_file_reader import (
     RasterFileReader,
 )
+from datetime import datetime
 from tensorlakehouse_openeo_driver.geospatial_utils import (
     clip_box,
     convert_longitude_coords,
@@ -163,7 +164,7 @@ class Grib2FileReader(RasterFileReader):
     def _open_remote_grib_file(self, item: Item) -> xr.Dataset:
         # idx_file: Optional[pd.DataFrame] = None
         datasets = list()
-        asset = item.assets["data"]
+        asset = item.assets["grib"]
         layers = asset.extra_fields["grib:layers"]
         for band_name in self.bands:
             grib_layer = layers[band_name]
@@ -202,6 +203,7 @@ class Grib2FileReader(RasterFileReader):
         crs_code = None
         time_dim = None
         data_arrays = list()
+        timestamps = list()
         # load each item
         for item in self.items:
             assets: Dict[str, Any] = item.assets
@@ -238,11 +240,16 @@ class Grib2FileReader(RasterFileReader):
                 ds = self._open_remote_grib_file(item=item)
 
             data_arrays.append(ds.to_array(dim=DEFAULT_BANDS_DIMENSION))
+            dt: datetime = item.datetime
+            naive_dt = dt.replace(tzinfo=None)
+            timestamps.append(naive_dt)
 
         if len(data_arrays) > 1:
             assert isinstance(time_dim, str), f"Error! {time_dim=} is not a str"
             # concatenate all xarray.DataArray objects
-            data_array = xr.concat(data_arrays, dim=time_dim)
+            index = pd.Index(timestamps, name=time_dim)
+            data_array = xr.concat(data_arrays, index)
+            # data_array = xr.concat(data_arrays, dim=time_dim, coords=timestamps)
         else:
             data_array = data_arrays.pop()
         # filter by area of interest

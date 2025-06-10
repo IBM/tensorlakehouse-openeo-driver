@@ -289,44 +289,46 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
         cube_dimensions_list: List[Dimension] = list()
         for name, dimension in cube_dimensions.items():
             # description cannot be none
-
-            if dimension["type"] == "bands":
-                band_values = cube_dimensions["bands"]["values"]
-                cube_dimensions_list.append(
-                    BandDimension(values=band_values, description=name)
-                )
-            elif dimension["type"] == "spatial":
-                # type, axis and extent keys are required by datacube extension
-                # https://github.com/stac-extensions/datacube/tree/main?tab=readme-ov-file#horizontal-spatial-raster-dimension-object
-                axis = dimension["axis"]
-                if axis.lower() in [DEFAULT_X_DIMENSION, DEFAULT_Y_DIMENSION]:
-                    extent = dimension["extent"]
+            try:
+                if dimension["type"] == "bands":
+                    band_values = cube_dimensions["bands"]["values"]
                     cube_dimensions_list.append(
-                        HorizontalSpatialDimension(
-                            axis=axis, extent=extent, description=name
-                        )
+                        BandDimension(values=band_values, description=name)
                     )
-                else:
-                    if "extent" in dimension:
+                elif dimension["type"] == "spatial":
+                    # type, axis and extent keys are required by datacube extension
+                    # https://github.com/stac-extensions/datacube/tree/main?tab=readme-ov-file#horizontal-spatial-raster-dimension-object
+                    axis = dimension["axis"]
+                    if axis.lower() in [DEFAULT_X_DIMENSION, DEFAULT_Y_DIMENSION]:
                         extent = dimension["extent"]
-                    elif "values" in dimension:
-                        extent = [min(dimension["values"]), max(dimension["values"])]
+                        cube_dimensions_list.append(
+                            HorizontalSpatialDimension(
+                                axis=axis, extent=extent, description=name
+                            )
+                        )
                     else:
-                        raise Exception(f"Error! Missing extent: {dimension}")
+                        if "extent" in dimension:
+                            extent = dimension["extent"]
+                        elif "values" in dimension:
+                            extent = [min(dimension["values"]), max(dimension["values"])]
+                        else:
+                            raise Exception(f"Error! Missing extent: {dimension}")
+                        cube_dimensions_list.append(
+                            VerticalSpatialDimension(
+                                axis=axis, extent=extent, description=name
+                            )
+                        )
+                elif dimension["type"] == "temporal":
+                    extent = dimension["extent"]
+                    step = dimension.get("step")
+                    values = dimension.get("values")
                     cube_dimensions_list.append(
-                        VerticalSpatialDimension(
-                            axis=axis, extent=extent, description=name
+                        TemporalDimension(
+                            extent=extent, step=step, description=name, values=values
                         )
                     )
-            elif dimension["type"] == "temporal":
-                extent = dimension["extent"]
-                step = dimension.get("step")
-                values = dimension.get("values")
-                cube_dimensions_list.append(
-                    TemporalDimension(
-                        extent=extent, step=step, description=name, values=values
-                    )
-                )
+            except KeyError as e:
+                logger.error(f"Error! {dimension=} error={e}")
         return cube_dimensions_list
 
     @staticmethod
