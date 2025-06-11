@@ -65,7 +65,7 @@ google-cloud-core~=2.4.1
 google-cloud-storage~=2.19.0
 google-crc32c~=1.6.0
 google-resumable-media~=2.7.2
-googleapis-common-protos~=1.65.0
+googleapis-common-protos~=1.70.0
 greenlet~=3.1.1
 gunicorn~=23.0.0
 # h11 lower bound defined because of this security issue https://github.com/IBM/tensorlakehouse-openeo-driver/security/dependabot/1
