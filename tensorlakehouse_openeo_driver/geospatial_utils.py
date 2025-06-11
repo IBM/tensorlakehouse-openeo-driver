@@ -43,64 +43,84 @@ def clip_box(
 
     # area selected by the end-user
     minx, miny, maxx, maxy = bbox
-    # rename dimensions because clip_box accepts only x and y
-    data = rename_dimension(data=data, rename_dict={x_dim: "x", y_dim: "y"})
+    # "xarray disallows variables with more than 1 dimension that share a name with one of their 
+    # dimensions to avoid conflicts and ambiguity when accessing data". Thus, when coordinates
+    # have two dimensions, we rely on "where()" to clip the data
+    if len(data.coords[y_dim].dims) == 2 or len(data.coords[x_dim].dims) == 2:
+        # convert longitude values between [0,360] to [-180,180]
+        data = data.assign_coords({x_dim: (((data[x_dim] + 180) % 360) - 180)})
+        mask = (
+            (data[y_dim] >= miny)
+            & (data[y_dim] <= maxy)
+            & (data[x_dim] >= minx)
+            & (data[x_dim] <= maxx)
+        )
 
-    # adjust user input based on the limits of the data coordinates
-    minx = max(minx, min(data["x"].values.flatten()))
-    maxx = min(maxx, max(data["x"].values.flatten()))
-    assert minx < maxx, f"Error! {minx=} >= {maxx=}"
-    miny = max(miny, min(data["y"].values.flatten()))
-    maxy = min(maxy, max(data["y"].values.flatten()))
-    assert miny < maxy, f"Error! {miny=} >= {maxy=}"
-
-    try:
-        data = data.rio.clip_box(minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs)
-    except TypeError:
         data = data.where(
-            (data.x <= maxx) & (data.x >= minx) & (data.y <= maxy) & (data.y >= miny),
+            mask,
             drop=True,
         )
-    except OneDimensionalRaster:
-        # handling exception when resulting dataarray has either x or y 1-size dimension
+    else:
+        # rename dimensions because clip_box accepts only x and y
+        data = rename_dimension(data=data, rename_dict={x_dim: "x", y_dim: "y"})
+        data = data.assign_coords({"x": (((data["x"] + 180) % 360) - 180)})
+        # adjust user input based on the limits of the data coordinates
+        minx = max(minx, min(data["x"].values.flatten()))
+        maxx = min(maxx, max(data["x"].values.flatten()))
+        assert minx < maxx, f"Error! {minx=} >= {maxx=}"
+        miny = max(miny, min(data["y"].values.flatten()))
+        maxy = min(maxy, max(data["y"].values.flatten()))
+        assert miny < maxy, f"Error! {miny=} >= {maxy=}"
 
-        # assumption: coordinates are sorted
-        # get index of x that is smaller than minx
-        minx_index = bisect.bisect_left(a=data.x.values.flatten(), x=minx)
-        # get index of x that is greater than maxx
-        maxx_index = bisect.bisect_right(a=data.x.values.flatten(), x=maxx)
-        if minx_index == maxx_index:
-            if minx_index > 0:
-                minx_index -= 1
-            else:
-                maxx_index += 1
+        try:
+            data = data.rio.clip_box(
+                minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs
+            )
+        except TypeError:
+            data = data.where(
+                (data.x <= maxx)
+                & (data.x >= minx)
+                & (data.y <= maxy)
+                & (data.y >= miny),
+                drop=True,
+            )
+        except OneDimensionalRaster:
+            # handling exception when resulting dataarray has either x or y 1-size dimension
 
-        # get index of y that is smaller than miny
-        miny_index = bisect.bisect_left(a=data.y.values.flatten(), x=miny)
-        # get index of y that is smaller than maxy
-        maxy_index = bisect.bisect_right(a=data.y.values.flatten(), x=maxy)
-        if miny_index == maxy_index:
-            if miny_index > 0:
-                miny_index -= 1
-            else:
-                maxy_index += 1
-        selector = {
-            "x": slice(minx_index, maxx_index),
-            "y": slice(miny_index, maxy_index),
-        }
+            # assumption: coordinates are sorted
+            # get index of x that is smaller than minx
+            minx_index = bisect.bisect_left(a=data.x.values.flatten(), x=minx)
+            # get index of x that is greater than maxx
+            maxx_index = bisect.bisect_right(a=data.x.values.flatten(), x=maxx)
+            if minx_index == maxx_index:
+                if minx_index > 0:
+                    minx_index -= 1
+                else:
+                    maxx_index += 1
 
-        data = data.isel(selector)
-    # rename dimensions back to original
-    data = rename_dimension(data=data, rename_dict={"x": x_dim, "y": y_dim})
+            # get index of y that is smaller than miny
+            miny_index = bisect.bisect_left(a=data.y.values.flatten(), x=miny)
+            # get index of y that is smaller than maxy
+            maxy_index = bisect.bisect_right(a=data.y.values.flatten(), x=maxy)
+            if miny_index == maxy_index:
+                if miny_index > 0:
+                    miny_index -= 1
+                else:
+                    maxy_index += 1
+            selector = {
+                "x": slice(minx_index, maxx_index),
+                "y": slice(miny_index, maxy_index),
+            }
+
+            data = data.isel(selector)
+        # rename dimensions back to original
+        data = rename_dimension(data=data, rename_dict={"x": x_dim, "y": y_dim})
     return data
 
 
 def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):
 
-    for source, target in rename_dict.items():
-
-        if source in data.dims or source in data.coords:
-            data = data.rename({source: target})
+    data = data.rename(rename_dict)
     return data
 
 

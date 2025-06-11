@@ -181,9 +181,9 @@ class Grib2FileReader(RasterFileReader):
 
                 data_s = earthkit.data.from_source("stream", bytes_io)
                 ds_aux = data_s.to_xarray()
-                ds_aux = ds_aux.assign_coords(
-                    {"longitude": (((ds_aux["longitude"] + 180) % 360) - 180)}
-                )
+                # ds_aux = ds_aux.assign_coords(
+                #     {"longitude": (((ds_aux["longitude"] + 180) % 360) - 180)}
+                # )
                 datasets.append(ds_aux)
 
         ds = xr.merge(datasets)
