@@ -22,7 +22,7 @@ from tensorlakehouse_openeo_driver.util import object_storage_util
 import os
 
 
-ITEM = {
+ITEM_CUBE_DIM_LEVEL = {
     "bbox": [-18, -9, 17, 8],
     "assets": {
         "data": {
@@ -156,7 +156,7 @@ class FakeS3Filesystem:
             },
         ),
         (
-            [ITEM],
+            [ITEM_CUBE_DIM_LEVEL],
             (-15.0, -1.0, -13.0, 2.0),
             (datetime(2000, 11, 30), datetime(2000, 11, 30)),
             None,
@@ -167,11 +167,11 @@ class FakeS3Filesystem:
                 DEFAULT_X_DIMENSION: 3,
                 DEFAULT_Y_DIMENSION: 4,
                 DEFAULT_BANDS_DIMENSION: 1,
-                "level": 1,
+                "level": 10,
             },
         ),
         (
-            [ITEM],
+            [ITEM_CUBE_DIM_LEVEL],
             (-15.0, -1.0, -13.0, 2.0),
             (datetime(2000, 11, 30), datetime(2000, 11, 30)),
             {
