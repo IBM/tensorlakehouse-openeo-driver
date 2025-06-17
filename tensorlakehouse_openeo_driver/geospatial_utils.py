@@ -7,7 +7,11 @@ import pyproj
 import xarray as xr
 import pandas as pd
 from rasterio.crs import CRS
-from tensorlakehouse_openeo_driver.constants import DEFAULT_TIME_DIMENSION
+from tensorlakehouse_openeo_driver.constants import (
+    DEFAULT_TIME_DIMENSION,
+    DEFAULT_X_DIMENSION,
+    DEFAULT_Y_DIMENSION,
+)
 from rasterio.enums import Resampling
 from datetime import datetime
 from rioxarray.exceptions import OneDimensionalRaster
@@ -21,8 +25,8 @@ from shapely.geometry import shape
 def clip_box(
     data: xr.DataArray,
     bbox: Tuple[float, float, float, float],
-    x_dim: str,
-    y_dim: str,
+    x_coord: str | None,
+    y_coord: str | None,
     crs: Optional[int] = 4326,
 ) -> xr.DataArray:
     """filter out data that is not within bbox
@@ -40,20 +44,19 @@ def clip_box(
     if data.rio.crs is None:
         input_crs = CRS.from_epsg(crs)
         data.rio.write_crs(input_crs, inplace=True)
-
     # area selected by the end-user
     minx, miny, maxx, maxy = bbox
-    # "xarray disallows variables with more than 1 dimension that share a name with one of their 
+    # "xarray disallows variables with more than 1 dimension that share a name with one of their
     # dimensions to avoid conflicts and ambiguity when accessing data". Thus, when coordinates
     # have two dimensions, we rely on "where()" to clip the data
-    if len(data.coords[y_dim].dims) == 2 or len(data.coords[x_dim].dims) == 2:
+    if any(c is not None and len(data.coords[c].dims) > 1 for c in [x_coord, y_coord]):
         # convert longitude values between [0,360] to [-180,180]
-        data = data.assign_coords({x_dim: (((data[x_dim] + 180) % 360) - 180)})
+        data = data.assign_coords({x_coord: (((data[x_coord] + 180) % 360) - 180)})
         mask = (
-            (data[y_dim] >= miny)
-            & (data[y_dim] <= maxy)
-            & (data[x_dim] >= minx)
-            & (data[x_dim] <= maxx)
+            (data[y_coord] >= miny)
+            & (data[y_coord] <= maxy)
+            & (data[x_coord] >= minx)
+            & (data[x_coord] <= maxx)
         )
 
         data = data.where(
@@ -61,15 +64,22 @@ def clip_box(
             drop=True,
         )
     else:
-        # rename dimensions because clip_box accepts only x and y
-        data = rename_dimension(data=data, rename_dict={x_dim: "x", y_dim: "y"})
-        data = data.assign_coords({"x": (((data["x"] + 180) % 360) - 180)})
+        data = data.assign_coords({x_coord: (((data[x_coord] + 180) % 360) - 180)})
+        # clip_box works if coords and dims have the same name
+        rename_dict = dict()
+        if y_coord != DEFAULT_Y_DIMENSION and y_coord in list(data.coords.keys()):
+            rename_dict[y_coord] = DEFAULT_Y_DIMENSION
+        if x_coord != DEFAULT_X_DIMENSION and x_coord in list(data.coords.keys()):
+            rename_dict[x_coord] = DEFAULT_X_DIMENSION
+        if len(rename_dict) > 0:
+            data = data.rename(rename_dict)
+
         # adjust user input based on the limits of the data coordinates
-        minx = max(minx, min(data["x"].values.flatten()))
-        maxx = min(maxx, max(data["x"].values.flatten()))
+        minx = max(minx, min(data[DEFAULT_X_DIMENSION].values.flatten()))
+        maxx = min(maxx, max(data[DEFAULT_X_DIMENSION].values.flatten()))
         assert minx < maxx, f"Error! {minx=} >= {maxx=}"
-        miny = max(miny, min(data["y"].values.flatten()))
-        maxy = min(maxy, max(data["y"].values.flatten()))
+        miny = max(miny, min(data[DEFAULT_Y_DIMENSION].values.flatten()))
+        maxy = min(maxy, max(data[DEFAULT_Y_DIMENSION].values.flatten()))
         assert miny < maxy, f"Error! {miny=} >= {maxy=}"
 
         try:
@@ -114,13 +124,95 @@ def clip_box(
 
             data = data.isel(selector)
         # rename dimensions back to original
-        data = rename_dimension(data=data, rename_dict={"x": x_dim, "y": y_dim})
+        assert isinstance(data, xr.DataArray)
     return data
 
 
-def rename_dimension(data: xr.DataArray, rename_dict: Dict[str, str]):
+def rename_vars(data: xr.Dataset) -> xr.Dataset:
+    for var in data.variables:
+        if var == DEFAULT_TIME_DIMENSION:
+            data = data.rename_vars({var: "temp"})
+    return data
 
-    data = data.rename(rename_dict)
+
+def expand_time_dimension(
+    data: xr.Dataset, time_dim: str | None, dt: str | None
+) -> xr.Dataset:
+    """
+    Expands the time dimension in the given xarray Dataset.
+
+    Parameters:
+    data (xr.Dataset): The input xarray Dataset.
+    time_dim (str | None): The name of the time dimension to expand. If None, no expansion is performed.
+    dt (str | None): A string representing a date-time in the format 'YYYY-MM-DD HH:MM:SS'. If provided, the time dimension is expanded with this date-time.
+
+    Returns:
+    xr.Dataset: The xarray Dataset with the time dimension expanded.
+    """
+    if (
+        # if time_dim is None then it is not one of the dimensions 
+        (time_dim is None or not time_dim in data.dims)
+        # the default time dimension must not be one of the dimensions
+        and not DEFAULT_TIME_DIMENSION in data.dims
+        # if dt is none we cannot use it
+        and dt is not None
+    ):
+        ts = pd.Timestamp(dt)
+        pydt = ts.to_pydatetime()
+
+        data = data.expand_dims({DEFAULT_TIME_DIMENSION: [pydt]})
+    return data
+
+
+def rename_dimensions(
+    data: xr.Dataset,
+    x_dim: str | None = DEFAULT_X_DIMENSION,
+    time_dim: str | None = DEFAULT_TIME_DIMENSION,
+    y_dim: str | None = DEFAULT_Y_DIMENSION,
+) -> xr.Dataset:
+    # Assisted by watsonx Code Assistant
+    """
+    Renames dimensions in an xarray Dataset.
+
+    Args:
+        data (xr.Dataset): The input xarray Dataset to rename dimensions in.
+        x_dim (str, optional): The current name of the x-dimension. Defaults to DEFAULT_X_DIMENSION.
+        time_dim (str, optional): The current name of the time dimension. Defaults to DEFAULT_TIME_DIMENSION.
+        y_dim (str, optional): The current name of the y-dimension. Defaults to DEFAULT_Y_DIMENSION.
+
+    Returns:
+        xr.Dataset: The xarray Dataset with renamed dimensions.
+
+    Raises:
+        ValueError: If any of the provided dimension names do not exist in the input Dataset.
+
+    This function renames the dimensions of an xarray Dataset based on the provided parameters.
+    If a dimension name is provided and it exists in the Dataset, it will be renamed to the corresponding default dimension name.
+    If no dimension name is provided or it matches the default dimension name, the dimension remains unchanged.
+
+    The function returns the modified Dataset with the renamed dimensions.
+    If any of the provided dimension names do not exist in the input Dataset, a ValueError is raised.
+
+    The default dimension names are defined as constants:
+    - DEFAULT_X_DIMENSION
+    - DEFAULT_TIME_DIMENSION
+    - DEFAULT_Y_DIMENSION
+
+    These constants should be defined elsewhere in the codebase.
+    """
+    rename_dict = dict()
+    if x_dim is not None and x_dim != DEFAULT_X_DIMENSION and x_dim in data.dims.keys():
+        rename_dict[x_dim] = DEFAULT_X_DIMENSION
+    if y_dim is not None and y_dim != DEFAULT_Y_DIMENSION and y_dim in data.dims.keys():
+        rename_dict[y_dim] = DEFAULT_Y_DIMENSION
+    if (
+        time_dim is not None
+        and time_dim != DEFAULT_TIME_DIMENSION
+        and time_dim in data.dims.keys()
+    ):
+        rename_dict[time_dim] = DEFAULT_TIME_DIMENSION
+    if len(rename_dict) > 0:
+        data = data.rename_dims(rename_dict)
     return data
 
 
@@ -179,12 +271,9 @@ def filter_by_time(
     Returns:
         xr.DataArray: datacube
     """
+    temporal_dim = DEFAULT_TIME_DIMENSION
     if isinstance(data, xr.Dataset):
         data = data.to_array()
-    # if temporal dimension does not exist in the dataarray, add temporal dimension
-    # if temporal_dim not in data.dims:
-    #     time_coords = list(set([ts for ts in temporal_extent if ts is not None]))
-    #     data = data.expand_dims({temporal_dim: time_coords})
 
     # convert 360 calendar to gregorian
     if isinstance(data[temporal_dim].values[0], Datetime360Day):
@@ -241,26 +330,6 @@ def remove_repeated_time_coords(
         )
 
         return arr
-
-
-def remove_files_in_dir(dir_path: Path, prefix: str, suffix: str):
-    files = _find_files_in_dir(dir_path=dir_path, prefix=prefix, suffix=suffix)
-    for f in files:
-        f.unlink()
-
-
-def _find_files_in_dir(dir_path: Path, prefix: str, suffix: str) -> List[Path]:
-    file_list = list()
-    assert dir_path.exists()
-    assert dir_path.is_dir()
-    p = dir_path.glob("**/*")
-    files = [x for x in p if x.is_file()]
-    for f in files:
-        parts = f.parts
-        filename = parts[-1]
-        if filename.startswith(prefix) and filename.endswith(suffix):
-            file_list.append(f)
-    return file_list
 
 
 def reproject_cube(
@@ -458,7 +527,7 @@ def main():
     )
 
     bbox = (-99.79, 42.23, -99.11, 42.46)
-    arr = clip_box(data=da, bbox=bbox, x_dim="lon", y_dim="lat", crs=4326)
+    arr = clip_box(data=da, bbox=bbox, x_coord="lon", y_coord="lat", crs=4326)
 
 
 if __name__ == "__main__":

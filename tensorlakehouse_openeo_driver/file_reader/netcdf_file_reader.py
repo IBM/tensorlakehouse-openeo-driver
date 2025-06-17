@@ -6,6 +6,7 @@ from fsspec.implementations.http import HTTPFileSystem
 from pystac import Asset, Item
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
+    DEFAULT_TIME_DIMENSION,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
 )
@@ -19,7 +20,9 @@ from tensorlakehouse_openeo_driver.file_reader.raster_file_reader import (
 )
 from tensorlakehouse_openeo_driver.geospatial_utils import (
     clip_box,
+    expand_time_dimension,
     filter_by_time,
+    rename_dimensions,
     reproject_bbox,
 )
 from urllib.parse import urlparse
@@ -82,6 +85,12 @@ class NetCDFFileReader(RasterFileReader):
                 s3_file_obj = s3fs.open(path_or_url, mode="rb")
                 # open remote file
                 ds = xr.open_dataset(s3_file_obj, engine="scipy")
+            # add temporal dimension if it does not exist on dataarray
+            time_dim = CloudStorageFileReader._get_dimension_name(
+                item=item.to_dict(), dim_type="temporal"
+            )
+            dt_str: str | None = item.properties.get("datetime")
+
             # get dimension names
             x_dim = CloudStorageFileReader._get_dimension_name(
                 item=item.to_dict(), axis=DEFAULT_X_DIMENSION
@@ -90,6 +99,8 @@ class NetCDFFileReader(RasterFileReader):
                 item=item.to_dict(), axis=DEFAULT_Y_DIMENSION
             )
 
+            ds = expand_time_dimension(data=ds, time_dim=time_dim, dt=dt_str)
+            ds = rename_dimensions(data=ds, y_dim=y_dim, x_dim=x_dim, time_dim=time_dim)
             # get CRS
             crs_code = CloudStorageFileReader._get_epsg(item=item.to_dict())
             if ds.rio.crs is None:
@@ -106,22 +117,11 @@ class NetCDFFileReader(RasterFileReader):
             else:
                 # else export array using bands
                 da = ds.to_array(dim=DEFAULT_BANDS_DIMENSION)
-            # add temporal dimension if it does not exist on dataarray
-            time_dim = CloudStorageFileReader._get_dimension_name(
-                item=item.to_dict(), dim_type="temporal"
-            )
-            if time_dim is None:
-                raise ValueError(f"Error! {item=}")
-            elif time_dim not in da.dims:
 
-                dt_str = item.properties.get("datetime")
-                dt = pd.Timestamp(dt_str).to_datetime64()
-
-                da = da.expand_dims({time_dim: [dt]})
             data_arrays.append(da)
         if len(data_arrays) > 1:
             # concatenate all xarray.DataArray objects
-            data_array = xr.concat(data_arrays, dim=time_dim)
+            data_array = xr.concat(data_arrays, dim=DEFAULT_TIME_DIMENSION)
         else:
             data_array = data_arrays.pop()
         # filter by area of interest
@@ -133,9 +133,9 @@ class NetCDFFileReader(RasterFileReader):
         da = clip_box(
             data=data_array,
             bbox=reprojected_bbox,
-            x_dim=x_dim,
-            y_dim=y_dim,
             crs=crs_code,
+            y_coord=y_dim,
+            x_coord=x_dim,
         )
         # remove timestamps that have not been selected by end-user
         if time_dim is not None:

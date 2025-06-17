@@ -7,7 +7,7 @@ from shapely.geometry.polygon import Polygon
 import pandas as pd
 
 from tensorlakehouse_openeo_driver import geospatial_utils
-from tensorlakehouse_openeo_driver.constants import EPSG_4326
+from tensorlakehouse_openeo_driver.constants import DEFAULT_X_DIMENSION, DEFAULT_Y_DIMENSION, EPSG_4326
 from tensorlakehouse_openeo_driver.geospatial_utils import reproject_bbox
 from shapely.wkt import loads
 
@@ -18,6 +18,7 @@ def validate_raster_datacube(
     temporal_extent: Tuple[datetime, datetime],
     expected_dims: Dict[str, str],
     expected_crs: str,
+    expected_coords: Dict[str, str]
 ):
     # validate the size of each dimension
     actual_dims = cube.sizes
@@ -40,43 +41,46 @@ def validate_raster_datacube(
     tolerance_x_dim = 0.1
     tolerance_y_dim = 0.1
 
-    # coordinates of the downloaded data
-    minx = np.min(cube[X_DIM].values)
-    maxx = np.max(cube[X_DIM].values)
+    if expected_coords is not None:
+        # compare datacube coordinates and users input
+        
+        # coordinates of the downloaded data
+        minx = np.min(cube.coords[expected_coords[DEFAULT_X_DIMENSION]].values)
+        maxx = np.max(cube.coords[expected_coords[DEFAULT_X_DIMENSION]].values)
 
-    miny = np.min(cube[Y_DIM].values)
-    maxy = np.max(cube[Y_DIM].values)
+        miny = np.min(cube.coords[expected_coords[DEFAULT_Y_DIMENSION]].values)
+        maxy = np.max(cube.coords[expected_coords[DEFAULT_Y_DIMENSION]].values)
 
-    # get the coordinates specified by the end-user
-    if isinstance(spatial_extent, dict):
-        user_west = spatial_extent["west"]
-        user_east = spatial_extent["east"]
-        user_south = spatial_extent["south"]
-        user_north = spatial_extent["north"]
-    else:
-        assert isinstance(spatial_extent, str)
-        p = loads(spatial_extent)
-        user_west, user_south, user_east, user_north = p.bounds
+        # get the coordinates specified by the end-user
+        if isinstance(spatial_extent, dict):
+            user_west = spatial_extent["west"]
+            user_east = spatial_extent["east"]
+            user_south = spatial_extent["south"]
+            user_north = spatial_extent["north"]
+        else:
+            assert isinstance(spatial_extent, str)
+            p = loads(spatial_extent)
+            user_west, user_south, user_east, user_north = p.bounds
 
-    # reproject to WSG84
-    west, south, east, north = reproject_bbox(
-        bbox=(minx, miny, maxx, maxy), dst_crs=4326, src_crs=expected_crs
-    )
+        # reproject to WSG84
+        west, south, east, north = reproject_bbox(
+            bbox=(minx, miny, maxx, maxy), dst_crs=4326, src_crs=expected_crs
+        )
 
-    if cube[X_DIM].size > 1:
-        assert (
-            user_west - tolerance_x_dim <= west
-        ), f"Error! {west=} {user_west=} {tolerance_x_dim=}"
-        assert (
-            user_east >= east - tolerance_x_dim
-        ), f"Error! {east=} {user_east=} {tolerance_x_dim=}"
-    if cube[Y_DIM].size > 1:
-        assert (
-            user_south - tolerance_y_dim * 2 <= south
-        ), f"Error! {south=} {user_south=} {tolerance_x_dim=}"
-        assert (
-            user_north >= north - tolerance_y_dim * 2
-        ), f"Error! {north=} {user_north=} {tolerance_x_dim=}"
+        if cube[X_DIM].size > 1:
+            assert (
+                user_west - tolerance_x_dim <= west
+            ), f"Error! {west=} {user_west=} {tolerance_x_dim=}"
+            assert (
+                user_east >= east - tolerance_x_dim
+            ), f"Error! {east=} {user_east=} {tolerance_x_dim=}"
+        if cube[Y_DIM].size > 1:
+            assert (
+                user_south - tolerance_y_dim * 2 <= south
+            ), f"Error! {south=} {user_south=} {tolerance_x_dim=}"
+            assert (
+                user_north >= north - tolerance_y_dim * 2
+            ), f"Error! {north=} {user_north=} {tolerance_x_dim=}"
 
 
 def _guess_column(columns: List[str], pattern: str) -> str:

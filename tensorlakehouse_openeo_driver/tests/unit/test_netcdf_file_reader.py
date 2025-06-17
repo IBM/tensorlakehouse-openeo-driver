@@ -2,7 +2,10 @@ from typing import Any, Dict, List, Optional, Tuple
 import pytest
 import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
+    DEFAULT_BANDS_DIMENSION,
     DEFAULT_TIME_DIMENSION,
+    DEFAULT_X_DIMENSION,
+    DEFAULT_Y_DIMENSION,
 )
 from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import (
     CloudStorageFileReader,
@@ -17,6 +20,46 @@ from openeo_pg_parser_networkx.pg_schema import ParameterReference
 from tensorlakehouse_openeo_driver.stac.stac_utils import make_pystac_item
 from tensorlakehouse_openeo_driver.util import object_storage_util
 import os
+
+
+ITEM = {
+    "bbox": [-18, -9, 17, 8],
+    "assets": {
+        "data": {
+            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/no_time_dim_data_.nc"
+        }
+    },
+    "properties": {
+        "datetime": "2000-11-30T00:00:00Z",
+        "cube:dimensions": {
+            "longitude": {
+                "axis": "x",
+                "step": 0.039572477064220186,
+                "type": "spatial",
+                "extent": [-18, 17],
+                "reference_system": 4326,
+            },
+            "latitude": {
+                "axis": "y",
+                "step": 0.017471758104738153,
+                "type": "spatial",
+                "extent": [-9, 8],
+                "reference_system": 4326,
+            },
+            "level": {
+                "type": "spatial",
+                "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            },
+            "time": {
+                "type": "temporal",
+                "extent": [
+                    "2000-11-30T00:00:00Z",
+                    "2000-11-30T00:00:00Z",
+                ],
+            },
+        },
+    },
+}
 
 
 class FakeS3Filesystem:
@@ -113,46 +156,22 @@ class FakeS3Filesystem:
             },
         ),
         (
-            [
-                {
-                    "bbox": [-18, -9, 17, 8],
-                    "assets": {
-                        "data": {
-                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/no_time_dim_data_.nc"
-                        }
-                    },
-                    "properties": {
-                        "datetime": "2000-11-30T00:00:00Z",
-                        "cube:dimensions": {
-                            "longitude": {
-                                "axis": "x",
-                                "step": 0.039572477064220186,
-                                "type": "spatial",
-                                "extent": [-18, 17],
-                                "reference_system": 4326,
-                            },
-                            "latitude": {
-                                "axis": "y",
-                                "step": 0.017471758104738153,
-                                "type": "spatial",
-                                "extent": [-9, 8],
-                                "reference_system": 4326,
-                            },
-                            "level": {
-                                "type": "spatial",
-                                "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                            },
-                            "time": {
-                                "type": "temporal",
-                                "extent": [
-                                    "2000-11-30T00:00:00Z",
-                                    "2000-11-30T00:00:00Z",
-                                ],
-                            },
-                        },
-                    },
-                },
-            ],
+            [ITEM],
+            (-15.0, -1.0, -13.0, 2.0),
+            (datetime(2000, 11, 30), datetime(2000, 11, 30)),
+            None,
+            ["temperature"],
+            4326,
+            {
+                DEFAULT_TIME_DIMENSION: 1,
+                DEFAULT_X_DIMENSION: 3,
+                DEFAULT_Y_DIMENSION: 4,
+                DEFAULT_BANDS_DIMENSION: 1,
+                "level": 1,
+            },
+        ),
+        (
+            [ITEM],
             (-15.0, -1.0, -13.0, 2.0),
             (datetime(2000, 11, 30), datetime(2000, 11, 30)),
             {
@@ -172,10 +191,10 @@ class FakeS3Filesystem:
             ["temperature"],
             4326,
             {
-                "time": 1,
-                "longitude": 3,
-                "latitude": 4,
-                "bands": 1,
+                DEFAULT_TIME_DIMENSION: 1,
+                DEFAULT_X_DIMENSION: 3,
+                DEFAULT_Y_DIMENSION: 4,
+                DEFAULT_BANDS_DIMENSION: 1,
                 "level": 1,
             },
         ),

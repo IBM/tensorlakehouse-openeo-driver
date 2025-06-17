@@ -293,29 +293,6 @@ def save_result(
         raise NotImplementedError(f"Support for {format} is not implemented")
 
 
-def _is_data_on_hbase(collection: pystac.Collection) -> bool:
-    """use keywords of STAC collection object to find out whether the data is available on hBase
-      or not
-    Args:
-        collection (pystac.Collection): collection of interest
-    Raises:
-        an: _description_
-        ValueError: _description_
-    Returns:
-        bool: True if data is available on hBase, otherwise False
-    """
-
-    if (
-        collection.keywords is not None
-        and isinstance(collection.keywords, list)
-        and len(collection.keywords)
-    ):
-        if HBASE in collection.keywords:
-            return True
-
-    return False
-
-
 def load_collection(
     id: str,
     spatial_extent: BoundingBox,
@@ -703,8 +680,8 @@ def resample_cube_spatial(
     required_dim_order = (
         data.openeo.band_dims
         + data.openeo.temporal_dims
-        + tuple(data.openeo.y_dim)
-        + tuple(data.openeo.x_dim)
+        + data.openeo.y_dim
+        + data.openeo.x_dim
     )
 
     data_reordered = data.transpose(*required_dim_order, missing_dims="ignore")
