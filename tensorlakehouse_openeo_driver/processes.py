@@ -1,15 +1,15 @@
 import inspect
-
 import logging
 from collections import namedtuple
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
-import pystac
+from openeo_processes_dask.process_implementations.exceptions import DimensionMissing
 from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     LoadCollectionFromCOS,
 )
-
+from odc.geo import xr as odc_xr
+from rasterio.crs import CRS
 import geopandas as gpd
 import numpy as np
 import openeo
@@ -35,7 +35,9 @@ from openeo_processes_dask.process_implementations.exceptions import (
 from openeo_processes_dask.process_implementations.math import (
     mean as openeo_processes_dask_mean,
 )
-
+from openeo_processes_dask.process_implementations.cubes import (
+    resample_cube_spatial as openeo_process_dask_resample_cube_spatial,
+)
 from pyproj import Transformer
 from rasterio import crs
 from shapely.geometry import shape
@@ -680,8 +682,8 @@ def resample_cube_spatial(
     required_dim_order = (
         data.openeo.band_dims
         + data.openeo.temporal_dims
-        + data.openeo.y_dim
-        + data.openeo.x_dim
+        + tuple([data.openeo.y_dim])
+        + tuple([data.openeo.x_dim])
     )
 
     data_reordered = data.transpose(*required_dim_order, missing_dims="ignore")
@@ -989,9 +991,7 @@ def _reproject_cube_match(
     band_dims = list(data_cube.openeo.band_dims)
     temporal_dims = list(data_cube.openeo.temporal_dims)
     non_spatial_dimension_names = band_dims + temporal_dims
-    # non_spatial_dimension_names = [
-    #     dim for dim in data_cube.dims if dim not in ["y", "x"]
-    # ]
+
     # This code assumes that all dimensions have coordinates.
     # I'm not aware of a use case we have where they not.
     # So we raise an exception if this fails.

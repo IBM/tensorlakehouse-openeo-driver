@@ -7,7 +7,11 @@ from shapely.geometry.polygon import Polygon
 import pandas as pd
 
 from tensorlakehouse_openeo_driver import geospatial_utils
-from tensorlakehouse_openeo_driver.constants import DEFAULT_X_DIMENSION, DEFAULT_Y_DIMENSION, EPSG_4326
+from tensorlakehouse_openeo_driver.constants import (
+    DEFAULT_X_DIMENSION,
+    DEFAULT_Y_DIMENSION,
+    EPSG_4326,
+)
 from tensorlakehouse_openeo_driver.geospatial_utils import reproject_bbox
 from shapely.wkt import loads
 
@@ -18,7 +22,7 @@ def validate_raster_datacube(
     temporal_extent: Tuple[datetime, datetime],
     expected_dims: Dict[str, str],
     expected_crs: str,
-    expected_coords: Dict[str, str]
+    expected_coords: Dict[str, str],
 ):
     # validate the size of each dimension
     actual_dims = cube.sizes
@@ -43,7 +47,7 @@ def validate_raster_datacube(
 
     if expected_coords is not None:
         # compare datacube coordinates and users input
-        
+
         # coordinates of the downloaded data
         minx = np.min(cube.coords[expected_coords[DEFAULT_X_DIMENSION]].values)
         maxx = np.max(cube.coords[expected_coords[DEFAULT_X_DIMENSION]].values)

@@ -37,6 +37,10 @@ from urllib.parse import urlparse
 
 class Grib2FileReader(RasterFileReader):
 
+    START_BYTE = "start_byte"
+    BYTE_SIZE = "byte_size"
+    GRIB_LAYERS = "grib:layers"
+
     def __init__(
         self,
         items: List[Item],
@@ -118,12 +122,12 @@ class Grib2FileReader(RasterFileReader):
         # idx_file: Optional[pd.DataFrame] = None
         datasets = list()
         asset = item.assets["data"]
-        layers = asset.extra_fields["grib:layers"]
+        layers = asset.extra_fields[Grib2FileReader.GRIB_LAYERS]
         for band_name in self.bands:
             grib_layer = layers[band_name]
 
-            start_byte = grib_layer["start_byte"]
-            end_byte = start_byte + grib_layer["byte_size"]
+            start_byte = grib_layer[Grib2FileReader.START_BYTE]
+            end_byte = start_byte + grib_layer[Grib2FileReader.BYTE_SIZE]
             # open remote file and pull only the data specified by start and end byte positions
             req = urllib.request.Request(asset.href)
             req.headers["Range"] = f"bytes={start_byte}-{end_byte}"
@@ -133,7 +137,16 @@ class Grib2FileReader(RasterFileReader):
                 bytes_io = BytesIO(data)
 
                 data_s = earthkit.data.from_source("stream", bytes_io)
-                ds_aux = data_s.to_xarray()
+                ds_aux: xr.Dataset = data_s.to_xarray()
+                variables = list(ds_aux)
+                # rename variable name to make sure it is consistent with STAC item
+                if band_name not in variables:
+                    assert (
+                        len(variables) == 1
+                    ), f"Error! Unexpected number of variables: {variables=}"
+                    variable = variables.pop()
+                    rename_dict = {variable: band_name}
+                    ds_aux = ds_aux.rename_vars(rename_dict)
                 datasets.append(ds_aux)
 
         ds = xr.merge(datasets)
@@ -195,17 +208,15 @@ class Grib2FileReader(RasterFileReader):
                 dt_str: str | None = item.properties["datetime"]
                 # create new time dimension if it does not exist
                 ds = expand_time_dimension(data=ds, time_dim=time_dim, dt=dt_str)
-                # rename dimensions if necessary
-                ds = rename_dimensions(
-                    data=ds, time_dim=time_dim, x_dim=x_dim, y_dim=y_dim
-                )
+                # rename_dimensions()
+
             data_arrays.append(ds.to_array(dim=DEFAULT_BANDS_DIMENSION))
         # the assumption is that each item represents a single timestamp, i.e., each arrays has
-        # a single temporal dimension 
+        # a single temporal dimension
         if len(data_arrays) > 1:
             assert isinstance(time_dim, str), f"Error! {time_dim=} is not a str"
             # concatenate all xarray.DataArray objects
-            data_array = xr.concat(data_arrays, dim=DEFAULT_TIME_DIMENSION)
+            data_array = xr.concat(data_arrays, dim=time_dim)
         else:
             data_array = data_arrays.pop()
         # filter by area of interest
@@ -220,8 +231,8 @@ class Grib2FileReader(RasterFileReader):
             data=data_array,
             bbox=reprojected_bbox,
             crs=crs_code,
-            x_coord=x_dim,
-            y_coord=y_dim,
+            x_dim=x_dim,
+            y_dim=y_dim,
         )
         # remove timestamps that have not been selected by end-user
         if time_dim is not None and time_dim in da.dims:

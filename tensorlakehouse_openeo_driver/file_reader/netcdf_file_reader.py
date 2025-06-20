@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
-
 import fsspec
 from fsspec.implementations.http import HTTPFileSystem
 from pystac import Asset, Item
@@ -20,6 +19,7 @@ from tensorlakehouse_openeo_driver.file_reader.raster_file_reader import (
 )
 from tensorlakehouse_openeo_driver.geospatial_utils import (
     clip_box,
+    create_missing_coords,
     expand_time_dimension,
     filter_by_time,
     rename_dimensions,
@@ -100,7 +100,8 @@ class NetCDFFileReader(RasterFileReader):
             )
 
             ds = expand_time_dimension(data=ds, time_dim=time_dim, dt=dt_str)
-            ds = rename_dimensions(data=ds, y_dim=y_dim, x_dim=x_dim, time_dim=time_dim)
+            # ds = rename_dimensions(data=ds, y_dim=y_dim, x_dim=x_dim, time_dim=time_dim)
+            ds = create_missing_coords(data=ds, time_dim=time_dim)
             # get CRS
             crs_code = CloudStorageFileReader._get_epsg(item=item.to_dict())
             if ds.rio.crs is None:
@@ -134,8 +135,8 @@ class NetCDFFileReader(RasterFileReader):
             data=data_array,
             bbox=reprojected_bbox,
             crs=crs_code,
-            y_coord=y_dim,
-            x_coord=x_dim,
+            y_dim=y_dim,
+            x_dim=x_dim,
         )
         # remove timestamps that have not been selected by end-user
         if time_dim is not None:

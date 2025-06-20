@@ -1340,8 +1340,12 @@ def generate_xarray(
     freq: Optional[str] = "D",
     crs: Optional[str] = EPSG_4326,
     is_dataset: bool = False,
+    x_dim: str = DEFAULT_X_DIMENSION,
+    y_dim: str = DEFAULT_Y_DIMENSION,
+    time_dim: str = DEFAULT_TIME_DIMENSION,
     coord_x: str = DEFAULT_X_DIMENSION,
     coord_y: str = DEFAULT_Y_DIMENSION,
+    coord_time: str = DEFAULT_TIME_DIMENSION,
 ) -> Union[xr.DataArray, xr.Dataset]:
     """generate a synthetic data array for testing
 
@@ -1376,18 +1380,18 @@ def generate_xarray(
         if num_periods is None:
             num_periods = len(timestamps)
         assert isinstance(num_periods, int)
-        dims = [DEFAULT_TIME_DIMENSION, DEFAULT_Y_DIMENSION, DEFAULT_X_DIMENSION]
+        dims = [time_dim, y_dim, x_dim]
         coords = {
-            DEFAULT_TIME_DIMENSION: (DEFAULT_TIME_DIMENSION, timestamps.values),
-            coord_y: (DEFAULT_Y_DIMENSION, y),
-            coord_x: (DEFAULT_X_DIMENSION, x),
+            coord_time: (DEFAULT_TIME_DIMENSION, timestamps.values),
+            coord_y: (y_dim, y),
+            coord_x: (x_dim, x),
         }
     else:
-        dims = [DEFAULT_Y_DIMENSION, DEFAULT_X_DIMENSION]
+        dims = [y_dim, x_dim]
         num_periods = None
         coords = {
-            coord_y: (DEFAULT_Y_DIMENSION, y),
-            coord_x: (DEFAULT_X_DIMENSION, x),
+            coord_y: (y_dim, y),
+            coord_x: (x_dim, x),
         }
 
     arrays = list()

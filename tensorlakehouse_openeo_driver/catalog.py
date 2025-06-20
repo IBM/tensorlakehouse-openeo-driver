@@ -310,7 +310,10 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
                         if "extent" in dimension:
                             extent = dimension["extent"]
                         elif "values" in dimension:
-                            extent = [min(dimension["values"]), max(dimension["values"])]
+                            extent = [
+                                min(dimension["values"]),
+                                max(dimension["values"]),
+                            ]
                         else:
                             raise Exception(f"Error! Missing extent: {dimension}")
                         cube_dimensions_list.append(

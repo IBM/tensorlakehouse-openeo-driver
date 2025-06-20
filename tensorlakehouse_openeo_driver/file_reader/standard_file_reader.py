@@ -118,8 +118,8 @@ class FSTDFileReader(CloudStorageFileReader):
         da = clip_box(
             data=data_array,
             bbox=reprojected_bbox,
-            x_coord=x_dim,
-            y_coord=y_dim,
+            x_dim=x_dim,
+            y_dim=y_dim,
             crs=crs_code,
         )
         # remove timestamps that have not been selected by end-user

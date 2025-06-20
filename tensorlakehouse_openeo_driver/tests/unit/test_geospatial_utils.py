@@ -66,8 +66,8 @@ def test_clip_box(
         data=array,
         bbox=filter_bbox,
         crs=crs,
-        y_coord=DEFAULT_Y_DIMENSION,
-        x_coord=DEFAULT_X_DIMENSION,
+        y_dim=DEFAULT_Y_DIMENSION,
+        x_dim=DEFAULT_X_DIMENSION,
     )
     assert isinstance(array_clipped, xr.DataArray)
     # if dimension is greater than or equal to 3, it means

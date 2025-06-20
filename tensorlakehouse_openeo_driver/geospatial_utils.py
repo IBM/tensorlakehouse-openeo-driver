@@ -21,12 +21,42 @@ import pytz
 from shapely.geometry.polygon import Polygon
 from shapely.geometry import shape
 
+xr.set_options(keep_attrs=True)
+
+
+def _get_xarray_coord(data: xr.DataArray, axis: str) -> str | None:
+    coord_name = None
+    assert axis in [DEFAULT_X_DIMENSION, DEFAULT_Y_DIMENSION]
+    if axis == DEFAULT_X_DIMENSION and DEFAULT_X_DIMENSION in data.coords.keys():
+        coord_name = DEFAULT_X_DIMENSION
+    elif axis == DEFAULT_Y_DIMENSION and DEFAULT_Y_DIMENSION in data.coords.keys():
+        coord_name = DEFAULT_Y_DIMENSION
+    else:
+        for coord in data.coords:
+            if axis in data.coords[coord].dims:
+                coord_name = str(coord)
+                break
+
+    return coord_name
+
+
+def _rename_coords(
+    data: xr.DataArray, y_coord: str, x_coord: str, y_dim: str, x_dim: str
+) -> xr.DataArray:
+    rename_dict = dict()
+    if y_coord != y_dim:
+        rename_dict[y_coord] = y_dim
+    if x_coord != x_dim:
+        rename_dict[x_coord] = x_dim
+    data = data.rename(rename_dict)
+    return data
+
 
 def clip_box(
     data: xr.DataArray,
     bbox: Tuple[float, float, float, float],
-    x_coord: str | None,
-    y_coord: str | None,
+    x_dim: str | None,
+    y_dim: str | None,
     crs: Optional[int] = 4326,
 ) -> xr.DataArray:
     """filter out data that is not within bbox
@@ -49,14 +79,14 @@ def clip_box(
     # "xarray disallows variables with more than 1 dimension that share a name with one of their
     # dimensions to avoid conflicts and ambiguity when accessing data". Thus, when coordinates
     # have two dimensions, we rely on "where()" to clip the data
-    if any(c is not None and len(data.coords[c].dims) > 1 for c in [x_coord, y_coord]):
+    if any(c is not None and len(data.coords[c].dims) > 1 for c in [x_dim, y_dim]):
         # convert longitude values between [0,360] to [-180,180]
-        data = data.assign_coords({x_coord: (((data[x_coord] + 180) % 360) - 180)})
+        data = data.assign_coords({x_dim: (((data[x_dim] + 180) % 360) - 180)})
         mask = (
-            (data[y_coord] >= miny)
-            & (data[y_coord] <= maxy)
-            & (data[x_coord] >= minx)
-            & (data[x_coord] <= maxx)
+            (data[y_dim] >= miny)
+            & (data[y_dim] <= maxy)
+            & (data[x_dim] >= minx)
+            & (data[x_dim] <= maxx)
         )
 
         data = data.where(
@@ -64,28 +94,39 @@ def clip_box(
             drop=True,
         )
     else:
+        x_coord = _get_xarray_coord(data=data, axis=DEFAULT_X_DIMENSION)
+        assert x_coord is not None
+        y_coord = _get_xarray_coord(data=data, axis=DEFAULT_Y_DIMENSION)
+        assert y_coord is not None
         data = data.assign_coords({x_coord: (((data[x_coord] + 180) % 360) - 180)})
+        data = _rename_coords(
+            data=data, x_coord=x_coord, x_dim=x_dim, y_coord=y_coord, y_dim=y_dim
+        )
         # clip_box works if coords and dims have the same name
         rename_dict = dict()
-        if y_coord != DEFAULT_Y_DIMENSION and y_coord in list(data.coords.keys()):
-            rename_dict[y_coord] = DEFAULT_Y_DIMENSION
-        if x_coord != DEFAULT_X_DIMENSION and x_coord in list(data.coords.keys()):
-            rename_dict[x_coord] = DEFAULT_X_DIMENSION
+        if y_dim != DEFAULT_Y_DIMENSION:
+            rename_dict[y_dim] = DEFAULT_Y_DIMENSION
+        if x_dim != DEFAULT_X_DIMENSION:
+            rename_dict[x_dim] = DEFAULT_X_DIMENSION
         if len(rename_dict) > 0:
             data = data.rename(rename_dict)
 
         # adjust user input based on the limits of the data coordinates
-        minx = max(minx, min(data[DEFAULT_X_DIMENSION].values.flatten()))
-        maxx = min(maxx, max(data[DEFAULT_X_DIMENSION].values.flatten()))
+        minx = max(minx, min(data[x_dim].values.flatten()))
+        maxx = min(maxx, max(data[x_dim].values.flatten()))
         assert minx < maxx, f"Error! {minx=} >= {maxx=}"
-        miny = max(miny, min(data[DEFAULT_Y_DIMENSION].values.flatten()))
-        maxy = min(maxy, max(data[DEFAULT_Y_DIMENSION].values.flatten()))
+        miny = max(miny, min(data[y_dim].values.flatten()))
+        maxy = min(maxy, max(data[y_dim].values.flatten()))
         assert miny < maxy, f"Error! {miny=} >= {maxy=}"
 
         try:
             data = data.rio.clip_box(
                 minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs
             )
+            # restore original dimension names
+            reversed_dict = {v: k for k, v in rename_dict.items()}
+            if len(reversed_dict) > 0:
+                data = data.rename(reversed_dict)
         except TypeError:
             data = data.where(
                 (data.x <= maxx)
@@ -150,7 +191,7 @@ def expand_time_dimension(
     xr.Dataset: The xarray Dataset with the time dimension expanded.
     """
     if (
-        # if time_dim is None then it is not one of the dimensions 
+        # if time_dim is None then it is not one of the dimensions
         (time_dim is None or not time_dim in data.dims)
         # the default time dimension must not be one of the dimensions
         and not DEFAULT_TIME_DIMENSION in data.dims
@@ -159,8 +200,22 @@ def expand_time_dimension(
     ):
         ts = pd.Timestamp(dt)
         pydt = ts.to_pydatetime()
+        if time_dim is None:
+            time_dim = DEFAULT_TIME_DIMENSION
+        data = data.expand_dims({time_dim: [pydt]})
+    return data
 
-        data = data.expand_dims({DEFAULT_TIME_DIMENSION: [pydt]})
+
+def create_missing_coords(data: xr.Dataset, time_dim: str | None) -> xr.Dataset:
+    # create a new coordinate to be attached to an existing dimension
+    if DEFAULT_TIME_DIMENSION in list(data.dims) and not any(
+        t in list(data.coords) for t in [time_dim, DEFAULT_TIME_DIMENSION]
+    ):
+        time_values = data[DEFAULT_TIME_DIMENSION].values
+        data = data.assign_coords(
+            {DEFAULT_TIME_DIMENSION: (DEFAULT_TIME_DIMENSION, time_values)}
+        )
+
     return data
 
 
@@ -271,7 +326,7 @@ def filter_by_time(
     Returns:
         xr.DataArray: datacube
     """
-    temporal_dim = DEFAULT_TIME_DIMENSION
+
     if isinstance(data, xr.Dataset):
         data = data.to_array()
 
@@ -527,7 +582,7 @@ def main():
     )
 
     bbox = (-99.79, 42.23, -99.11, 42.46)
-    arr = clip_box(data=da, bbox=bbox, x_coord="lon", y_coord="lat", crs=4326)
+    arr = clip_box(data=da, bbox=bbox, x_dim="lon", y_dim="lat", crs=4326)
 
 
 if __name__ == "__main__":
