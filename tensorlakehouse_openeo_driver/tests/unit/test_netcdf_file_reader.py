@@ -4,8 +4,6 @@ import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     DEFAULT_TIME_DIMENSION,
-    DEFAULT_X_DIMENSION,
-    DEFAULT_Y_DIMENSION,
 )
 from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import (
     CloudStorageFileReader,

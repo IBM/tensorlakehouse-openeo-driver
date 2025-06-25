@@ -8,7 +8,6 @@ from pystac import Asset, Item
 import urllib
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
-    DEFAULT_TIME_DIMENSION,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
     TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR,
@@ -23,12 +22,10 @@ import cfgrib
 from tensorlakehouse_openeo_driver.file_reader.raster_file_reader import (
     RasterFileReader,
 )
-from datetime import datetime
 from tensorlakehouse_openeo_driver.geospatial_utils import (
     clip_box,
     expand_time_dimension,
     filter_by_time,
-    rename_dimensions,
     rename_vars,
     reproject_bbox,
 )
@@ -197,7 +194,7 @@ class Grib2FileReader(RasterFileReader):
                     TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR
                     / f"{path.name}.{hex_code}.idx"
                 )
-                datasets = cfgrib.open_datasets(
+                ds = cfgrib.open_datasets(
                     path_or_url, backend_kwargs={"indexpath": str(indexpath)}
                 )
             else:

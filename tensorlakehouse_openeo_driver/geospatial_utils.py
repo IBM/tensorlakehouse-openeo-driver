@@ -1,5 +1,4 @@
 from collections import defaultdict
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, DefaultDict
 import geojson
 import numpy as np
@@ -24,19 +23,46 @@ from shapely.geometry import shape
 xr.set_options(keep_attrs=True)
 
 
-def _get_xarray_coord(data: xr.DataArray, axis: str) -> str | None:
-    coord_name = None
-    assert axis in [DEFAULT_X_DIMENSION, DEFAULT_Y_DIMENSION]
-    if axis == DEFAULT_X_DIMENSION and DEFAULT_X_DIMENSION in data.coords.keys():
-        coord_name = DEFAULT_X_DIMENSION
-    elif axis == DEFAULT_Y_DIMENSION and DEFAULT_Y_DIMENSION in data.coords.keys():
-        coord_name = DEFAULT_Y_DIMENSION
-    else:
-        for coord in data.coords:
-            if axis in data.coords[coord].dims:
-                coord_name = str(coord)
-                break
+def _get_xarray_coord(data: xr.DataArray, dimension: str) -> str | None:
+    """find coordinate name of a given dimension
 
+    Args:
+        data (xr.DataArray): _description_
+        dimension (str): _description_
+
+    Returns:
+        str | None: _description_
+    """
+    # initialize variable
+    coord_name = None
+    # hardcoded values of longitude and latitude
+    longitude_list = [DEFAULT_X_DIMENSION, "longitude", "lon", "long"]
+    latitude_list = [DEFAULT_Y_DIMENSION, "latitude", "lat"]
+    # assumption: dimension must one of the hardcoded values
+    if dimension in longitude_list:
+        possible_values = longitude_list
+    elif dimension in latitude_list:
+        possible_values = latitude_list
+    else:
+        raise ValueError(f"Error! Unable to find a coord that has {dimension=}")
+
+    coordinates = list(data.coords.keys())
+    found = False
+    i = 0
+    while i < len(coordinates) and not found:
+        coord = coordinates[i]
+        i += 1
+        coord_dims = list(data.coords[coord].dims)
+
+        if len(coord_dims) == 1 and dimension in coord_dims:
+            coord_name = str(coord)
+            found = True
+            break
+        elif (
+            len(coord_dims) > 1 and dimension in coord_dims and coord in possible_values
+        ):
+            coord_name = str(coord)
+            found = True
     return coord_name
 
 
@@ -48,15 +74,42 @@ def _rename_coords(
         rename_dict[y_coord] = y_dim
     if x_coord != x_dim:
         rename_dict[x_coord] = x_dim
-    data = data.rename(rename_dict)
+    if len(rename_dict) > 0:
+        data = data.rename(rename_dict)
+    return data
+
+
+def _clip_curvilinear_raster(
+    data: xr.DataArray,
+    bbox: Tuple[float, float, float, float],
+    x_dim: str,
+    y_dim: str,
+    x_coord: str,
+    y_coord: str,
+    crs: Optional[int] = 4326,
+) -> xr.DataArray:
+    # convert longitude values between [0,360] to [-180,180]
+    data = data.assign_coords({x_coord: (((data[x_coord] + 180) % 360) - 180)})
+    minx, miny, maxx, maxy = bbox
+    mask = (
+        (data[y_coord] >= miny)
+        & (data[y_coord] <= maxy)
+        & (data[x_coord] >= minx)
+        & (data[x_coord] <= maxx)
+    )
+
+    data = data.where(
+        mask,
+        drop=True,
+    )
     return data
 
 
 def clip_box(
     data: xr.DataArray,
     bbox: Tuple[float, float, float, float],
-    x_dim: str | None,
-    y_dim: str | None,
+    x_dim: str,
+    y_dim: str,
     crs: Optional[int] = 4326,
 ) -> xr.DataArray:
     """filter out data that is not within bbox
@@ -70,34 +123,33 @@ def clip_box(
     Returns:
         xr.DataArray: filtered xarray
     """
+
     # set CRS
     if data.rio.crs is None:
         input_crs = CRS.from_epsg(crs)
         data.rio.write_crs(input_crs, inplace=True)
     # area selected by the end-user
     minx, miny, maxx, maxy = bbox
+    # get coords
+    x_coord = _get_xarray_coord(data=data, dimension=x_dim)
+    assert x_coord is not None
+    y_coord = _get_xarray_coord(data=data, dimension=y_dim)
+    assert y_coord is not None
     # "xarray disallows variables with more than 1 dimension that share a name with one of their
     # dimensions to avoid conflicts and ambiguity when accessing data". Thus, when coordinates
     # have two dimensions, we rely on "where()" to clip the data
-    if any(c is not None and len(data.coords[c].dims) > 1 for c in [x_dim, y_dim]):
-        # convert longitude values between [0,360] to [-180,180]
-        data = data.assign_coords({x_dim: (((data[x_dim] + 180) % 360) - 180)})
-        mask = (
-            (data[y_dim] >= miny)
-            & (data[y_dim] <= maxy)
-            & (data[x_dim] >= minx)
-            & (data[x_dim] <= maxx)
-        )
-
-        data = data.where(
-            mask,
-            drop=True,
+    if any(c is not None and len(data.coords[c].dims) > 1 for c in [x_coord, y_coord]):
+        data = _clip_curvilinear_raster(
+            data=data,
+            bbox=bbox,
+            x_coord=x_coord,
+            y_coord=y_coord,
+            x_dim=x_dim,
+            y_dim=y_dim,
+            crs=crs,
         )
     else:
-        x_coord = _get_xarray_coord(data=data, axis=DEFAULT_X_DIMENSION)
-        assert x_coord is not None
-        y_coord = _get_xarray_coord(data=data, axis=DEFAULT_Y_DIMENSION)
-        assert y_coord is not None
+
         data = data.assign_coords({x_coord: (((data[x_coord] + 180) % 360) - 180)})
         data = _rename_coords(
             data=data, x_coord=x_coord, x_dim=x_dim, y_coord=y_coord, y_dim=y_dim
@@ -112,11 +164,11 @@ def clip_box(
             data = data.rename(rename_dict)
 
         # adjust user input based on the limits of the data coordinates
-        minx = max(minx, min(data[x_dim].values.flatten()))
-        maxx = min(maxx, max(data[x_dim].values.flatten()))
+        minx = max(minx, min(data[DEFAULT_X_DIMENSION].values.flatten()))
+        maxx = min(maxx, max(data[DEFAULT_X_DIMENSION].values.flatten()))
         assert minx < maxx, f"Error! {minx=} >= {maxx=}"
-        miny = max(miny, min(data[y_dim].values.flatten()))
-        maxy = min(maxy, max(data[y_dim].values.flatten()))
+        miny = max(miny, min(data[DEFAULT_Y_DIMENSION].values.flatten()))
+        maxy = min(maxy, max(data[DEFAULT_Y_DIMENSION].values.flatten()))
         assert miny < maxy, f"Error! {miny=} >= {maxy=}"
 
         try:
@@ -128,6 +180,7 @@ def clip_box(
             if len(reversed_dict) > 0:
                 data = data.rename(reversed_dict)
         except TypeError:
+            # handling the case when a given coord has multiple dimensions (curvilinear)
             data = data.where(
                 (data.x <= maxx)
                 & (data.x >= minx)
@@ -192,9 +245,9 @@ def expand_time_dimension(
     """
     if (
         # if time_dim is None then it is not one of the dimensions
-        (time_dim is None or not time_dim in data.dims)
+        (time_dim is None or time_dim not in data.dims)
         # the default time dimension must not be one of the dimensions
-        and not DEFAULT_TIME_DIMENSION in data.dims
+        and DEFAULT_TIME_DIMENSION not in data.dims
         # if dt is none we cannot use it
         and dt is not None
     ):
@@ -582,7 +635,7 @@ def main():
     )
 
     bbox = (-99.79, 42.23, -99.11, 42.46)
-    arr = clip_box(data=da, bbox=bbox, x_dim="lon", y_dim="lat", crs=4326)
+    clip_box(data=da, bbox=bbox, x_dim="lon", y_dim="lat", crs=4326)
 
 
 if __name__ == "__main__":

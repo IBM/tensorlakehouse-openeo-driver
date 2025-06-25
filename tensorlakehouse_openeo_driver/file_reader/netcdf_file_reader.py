@@ -22,11 +22,9 @@ from tensorlakehouse_openeo_driver.geospatial_utils import (
     create_missing_coords,
     expand_time_dimension,
     filter_by_time,
-    rename_dimensions,
     reproject_bbox,
 )
 from urllib.parse import urlparse
-import pandas as pd
 
 
 class NetCDFFileReader(RasterFileReader):
@@ -130,7 +128,9 @@ class NetCDFFileReader(RasterFileReader):
         reprojected_bbox = reproject_bbox(
             bbox=self.bbox, src_crs=4326, dst_crs=crs_code
         )
-        assert x_dim is not None and y_dim is not None
+        assert (
+            x_dim is not None and y_dim is not None
+        ), f"Error! {x_dim=} and {y_dim=} cannot be None"
         da = clip_box(
             data=data_array,
             bbox=reprojected_bbox,

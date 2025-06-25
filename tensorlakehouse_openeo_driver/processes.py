@@ -3,13 +3,10 @@ import logging
 from collections import namedtuple
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
-from openeo_processes_dask.process_implementations.exceptions import DimensionMissing
 from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     LoadCollectionFromCOS,
 )
-from odc.geo import xr as odc_xr
-from rasterio.crs import CRS
 import geopandas as gpd
 import numpy as np
 import openeo
@@ -35,9 +32,7 @@ from openeo_processes_dask.process_implementations.exceptions import (
 from openeo_processes_dask.process_implementations.math import (
     mean as openeo_processes_dask_mean,
 )
-from openeo_processes_dask.process_implementations.cubes import (
-    resample_cube_spatial as openeo_process_dask_resample_cube_spatial,
-)
+
 from pyproj import Transformer
 from rasterio import crs
 from shapely.geometry import shape
