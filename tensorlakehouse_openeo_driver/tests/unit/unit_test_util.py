@@ -1346,6 +1346,7 @@ def generate_xarray(
     coord_x: str = DEFAULT_X_DIMENSION,
     coord_y: str = DEFAULT_Y_DIMENSION,
     coord_time: str = DEFAULT_TIME_DIMENSION,
+    a_0: int = 15,
 ) -> Union[xr.DataArray, xr.Dataset]:
     """generate a synthetic data array for testing
 
@@ -1397,9 +1398,9 @@ def generate_xarray(
     arrays = list()
     for band_name in bands:
         if num_periods is None:
-            band_data = 15 + 8 * np.random.randn(size_y, size_x)
+            band_data = a_0 + 8 * np.random.randn(size_y, size_x)
         else:
-            band_data = 15 + 8 * np.random.randn(num_periods, size_y, size_x)
+            band_data = a_0 + 8 * np.random.randn(num_periods, size_y, size_x)
         # reference_time = pd.Timestamp("2014-09-05")
         da = xr.DataArray(
             name=band_name,

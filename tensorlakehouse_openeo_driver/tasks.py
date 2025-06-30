@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from openeo_pg_parser_networkx import OpenEOProcessGraph
 from typing import Any, Dict

@@ -245,9 +245,13 @@ class COSConnector:
 def main():
     for bucket in ["openeo-geodn-driver-output"]:
         conn = COSConnector(bucket=bucket)
-        files = conn.get_bucket_contents(max_keys=10)
-        for f in files:
-            print(f)
+        key = "t1.txt"
+        path = Path(".") / "tensorlakehouse_openeo_driver/util/t1.txt"
+        assert path.exists()
+        conn.upload_fileobj(key=key, path=path)
+        # files = conn.get_bucket_contents(max_keys=10)
+        # for f in files:
+        #     print(f)
 
 
 if __name__ == "__main__":
