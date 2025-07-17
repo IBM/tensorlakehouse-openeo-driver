@@ -8,7 +8,8 @@ The Tensorlakehouse openEO driver is a backend implementation of the [openEO API
   - [User guide](#user-guide)
   - [Python Environment](#python-environment)
   - [Installation](#installation)
-  - [Running locally using containers](#running-locally-using-containers)
+  - [Running locally using KIND (Kubernetes In Docker) - RECOMMENDED](#running-locally-using-kind-kubernetes-in-docker---recommended)
+  - [Running locally using containers (deprecated)](#running-locally-using-containers-deprecated)
     - [Setting environment varibles:](#setting-environment-varibles)
     - [Building and running container images](#building-and-running-container-images)
       - [*Step 1* Generate credentials](#step-1-generate-credentials)
@@ -19,6 +20,7 @@ The Tensorlakehouse openEO driver is a backend implementation of the [openEO API
   - [Software architecture](#software-architecture)
   - [Contributing](#contributing)
   - [Getting support](#getting-support)
+  - [Credits](#credits)
 
 ## User guide
 
@@ -106,32 +108,70 @@ Prerequisites:
 
 #### *Step 1* Generate credentials
 
-In order to access a COS bucket, tensorlakehouse needs to set 3 environment variables:
-  
-* access key id 
-* secret access key
-* endpoint e.g., `s3.us-south.cloud-object-storage.appdomain.cloud`
+Each COS instance might have different credentials to access it, so tensorlakehouse uses the bucket name to identify the COS instance by setting environment variables. For instance, if you have a bucket called `my-bucket` that is located in a COS instance called `my-cos-instance`, the environment variables will be:
 
-Since each bucket might have different credentials to access it, tensorlakehouse uses the bucket name to define the environment variable name. E.g. if you have a bucket called `my-bucket` , the environment variables will be:
+```shell
+MYBUCKET_INSTANCE=my-cos-instance
+MYBUCKET_ENDPOINT=s3.us-east.cloud-object-storage.appdomain.cloud
+```
+In order to define environment variable names, all non-alphanumeric symbols should be removed except for underscore `-`. Thus, `my-bucket` becomes `MYBUCKET`. We need both instance and endpoint variables because a given COS instance might have multiple endpoints. 
 
-* `TLH_MYBUCKET_ACCESS_KEY_ID`
-* `TLH_MYBUCKET_SECRET_ACCESS_KEY` 
-* `TLH_MYBUCKET_ENDPOINT`
+Based on this example, we could create a ConfigMap like this:
 
-That is, `TLH_` is a prefix for all environment variables and each one has a different suffix: `_ACCESS_KEY_ID` , `_SECRET_ACCESS_KEY` or `_ENDPOINT`. The function that converts a bucket name to the core of the environment variable name is: 
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tensorlakehouse-configmap
+  namespace: {{ .Values.namespace }}
+data:
+  # mapping between COS buckets and instances
+  MYBUCKET_INSTANCE: my-cos-instance
+  MYBUCKET_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+```
+
+After mapping buckets to COS instances, we need to set the credentials for each COS instance as environment variables. Each COS instance has a access key and a secret key. The access key is defined as `<cos-instance>_ACCESS_KEY_ID` and the secret key as `<cos-instance>_SECRET_ACCESS_KEY` . Using the same example, the access key would be `MYCOSINSTANCE_ACCESS_KEY` and the secret key `MYCOSINSTANCE_SECRET_KEY` .
+
+This an example of a Kubernetes Secret:
+
+```yaml
+kind: Secret
+apiVersion: v1
+metadata:
+  name: tensorlakehouse-openeo-driver-secret
+data:
+  MYCOSINSTANCE_ACCESS_KEY: <encoded-access-key>
+  MYCOSINSTANCE_SECRET_KEY: <encoded-secret>
+```
+
+If it is not clear how to define the environment variable names based on bucket names, this is the python function that converts bucket names to environment variable names by removing invalid characters.
+
 ```python
-def convert_bucket(bucket: str) -> str:
-    env_var = "".join([i.upper() if str.isalnum(i) or i == '_' else "" for i in bucket])
+def remove_invalid_characters(name: str) -> str:
+    """environment variables must have alpha-numeric characters and underscore. This function
+    remove what is invalid
+
+    Args:
+        name (str): name of the bucket or instance
+
+    Returns:
+        str: core part of env var
+    """
+    assert isinstance(name, str), f"Error! {name=} is not a str"
+    env_var = "".join([i if str.isalnum(i) or i == "_" else "" for i in name])
     return env_var
+
 ```
 
 
 #### *Step 2.* Set the environment variables and create  `.env` file
 ```
 # credentials to access cloud object store 
-TLH_MYBUCKET_ACCESS_KEY_ID=my-access-key
-TLH_MYBUCKET_SECRET_ACCESS_KEY=my-secret-key 
-TLH_MYBUCKET_ENDPOINT=s3.us-south.cloud-object-storage.appdomain.cloud
+MYCOSINSTANCE_ACCESS_KEY=my-access-key
+MYCOSINSTANCE_SECRET_KEY=my-secret-key 
+
+MYBUCKET_INSTANCE=my-cos-instance
+MYBUCKET_ENDPOINT=s3.us-east.cloud-object-storage.appdomain.cloud
 
 BROKER_URL=<redis database url>
 RESULT_BACKEND=<redis database url>

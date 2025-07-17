@@ -14,19 +14,6 @@ assert LOGGING_CONF_PATH.exists()
 logging.config.fileConfig(fname=LOGGING_CONF_PATH, disable_existing_loggers=False)
 logger = logging.getLogger("geodnLogger")
 
-#  PAIRS API key
-GEODN_DISCOVERY_PASSWORD = os.getenv("GEODN_DISCOVERY_PASSWORD")
-GEODN_DISCOVERY_USERNAME = os.getenv("GEODN_DISCOVERY_USERNAME")
-GEODN_DISCOVERY_METADATA_URL = os.getenv(
-    "GEODN_DISCOVERY_METADATA_URL", "https://pairs.res.ibm.com"
-)
-#  DATASERVICE endpoint
-GEODN_DATASERVICE_ENDPOINT_DEFAULT = "https://pairs.res.ibm.com/pairsdataservice"
-GEODN_DATASERVICE_ENDPOINT = os.getenv(
-    "GEODN_DATASERVICE_ENDPOINT", GEODN_DATASERVICE_ENDPOINT_DEFAULT
-)
-GEODN_DATASERVICE_USER = os.getenv("GEODN_DATASERVICE_USER", "")
-GEODN_DATASERVICE_PASSWORD = os.getenv("GEODN_DATASERVICE_PASSWORD", "")
 
 # appId credentials
 APPID_ISSUER = os.getenv("APPID_ISSUER")
