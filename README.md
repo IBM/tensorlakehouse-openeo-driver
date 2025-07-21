@@ -9,7 +9,7 @@ The Tensorlakehouse openEO driver is a backend implementation of the [openEO API
   - [Python Environment](#python-environment)
   - [Installation](#installation)
   - [Running locally using KIND (Kubernetes In Docker) - RECOMMENDED](#running-locally-using-kind-kubernetes-in-docker---recommended)
-  - [Running locally using containers (deprecated)](#running-locally-using-containers-deprecated)
+  - [Running locally using containers podman-compose (or docker-compose)](#running-locally-using-containers-podman-compose-or-docker-compose)
     - [Setting environment varibles:](#setting-environment-varibles)
     - [Building and running container images](#building-and-running-container-images)
       - [*Step 1* Generate credentials](#step-1-generate-credentials)
@@ -72,13 +72,13 @@ Optionally, you can add some STAC entries using:
 `./init_stac.sh`
 
 
-## Running locally using containers (deprecated)
+## Running locally using containers podman-compose (or docker-compose)
 
 ### Setting environment varibles:
 
  - `PYTHONPATH` for instance, `PYTHONPATH=/Users/alice/tensorlakehouse-openeo-driver/`
  - `STAC_URL` URL to the STAC service that you want to connect to (e.g., `https://stac-fastapi-sqlalchemy-nasageospatial-dev.cash.sl.cloud9.ibm.com`)
- - `TLH_<bucket>_*` is a set of credentials that allows this service to access COS S3 buckets
+ - Please see this [section](#step-1-generate-credentials) on how to set the environment variables related to credentials that allow to access COS buckets
  - `BROKER_URL` - URL to the broker, which mediates communication between clients and workers.
  - `RESULT_BACKEND` - URL to the backend, which is necessary when we want to keep track of the tasks' states or retrieve results from tasks
  - if you want to implement OIDC authentication you need:
@@ -87,8 +87,7 @@ Optionally, you can add some STAC entries using:
    - `APPID_PASSWORD` password of the authorization server
    - `OPENEO_AUTH_CLIENT_ID`  client ID
    - `OPENEO_AUTH_CLIENT_SECRET` client secret
- - `GEODN_DISCOVERY_USERNAME` and `GEODN_DISCOVERY_PASSWORD` (optional) for basic auth to get GeoDN.Discovery (former PAIRS) metadata
-
+ 
 `FLASK_APP` and `FLASK_DEBUG` environment variables are useful for debugging:
 
 ```shell
@@ -181,9 +180,6 @@ DASK_SCHEDULER_ADDRESS=http://127.0.0.1:8787
 ### optional environment variables
 
 PYTHONPATH=/Users/alice/tensorlakehouse-openeo-driver/
-# basic credential to proprietary solution
-GEODN_DISCOVERY_PASSWORD=<geodn-discovery-password>
-GEODN_DISCOVERY_USERNAME=<geodn-discovery-username>
 # authorization server
 APPID_ISSUER=<authorization server url>
 # username and password
