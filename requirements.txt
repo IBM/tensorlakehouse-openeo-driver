@@ -135,7 +135,7 @@ hda==2.34
 httpcore==1.0.9
 httplib2==0.22.0
 httpx==0.27.2
-ibm-cos-sdk==2.13.6
+ibm-cos-sdk==2.14.2
 ibm-cos-sdk-core==2.14.2
 ibm-cos-sdk-s3transfer==2.14.2
 identify==2.6.12
