@@ -1326,6 +1326,38 @@ class MockSTACClient:
         return MockPystacClient()
 
 
+def generate_curvilinear_xarray(
+    bands: List[str],
+    bbox: tuple[float, float, float, float],
+    ny: int = 50,
+    nx: int = 100,
+    coord_x: str = "longitude",
+    coord_y: str = "latitude",
+) -> xr.Dataset:
+    west, south, east, north = bbox
+    # Create the Dataset
+    lon_2d = np.random.rand(nx, ny) * (east - west) + west 
+    lat_2d = np.random.rand(nx, ny) * (north  - south) + south 
+    data = dict()
+    factors = [1000 * (10 ** i) for i in range(1, len(bands) + 1)]
+    for band, factor in zip(bands, factors):
+        data_values = np.random.rand(nx, ny) * factor
+        data[band] = (("y", "x"), data_values)
+    # Create an xarray DataArray with the curvilinear coordinates
+    # 'x' and 'y' are the "logical" dimensions of the data, while 'lon_2d' and 'lat_2d'
+    # are the "multidimensional coordinates" that define the actual geographic location.
+    ds = xr.Dataset(
+        data,
+        coords={coord_x: (("y", "x"), lon_2d), coord_y: (("y", "x"), lat_2d)},
+    )
+
+    # Optional: add CF-compliant attributes
+    # ds["temperature"].attrs = {"long_name": "example variable", "units": "1"}
+
+    print(ds)
+    return ds
+
+
 def generate_xarray(
     bands: List[str],
     latmax: float,
@@ -1346,6 +1378,7 @@ def generate_xarray(
     coord_x: str = DEFAULT_X_DIMENSION,
     coord_y: str = DEFAULT_Y_DIMENSION,
     coord_time: str = DEFAULT_TIME_DIMENSION,
+    a_0: int = 15,
 ) -> Union[xr.DataArray, xr.Dataset]:
     """generate a synthetic data array for testing
 
@@ -1397,9 +1430,9 @@ def generate_xarray(
     arrays = list()
     for band_name in bands:
         if num_periods is None:
-            band_data = 15 + 8 * np.random.randn(size_y, size_x)
+            band_data = a_0 + 8 * np.random.randn(size_y, size_x)
         else:
-            band_data = 15 + 8 * np.random.randn(num_periods, size_y, size_x)
+            band_data = a_0 + 8 * np.random.randn(num_periods, size_y, size_x)
         # reference_time = pd.Timestamp("2014-09-05")
         da = xr.DataArray(
             name=band_name,

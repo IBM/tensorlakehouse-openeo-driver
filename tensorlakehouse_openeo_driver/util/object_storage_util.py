@@ -92,9 +92,10 @@ def remove_invalid_characters(name: str) -> str:
 
 
 if __name__ == "__main__":
-    buckets = ["sentinel-2", "sentinel-1", "hls", "sentinel2-l2a-jp2"]
+    buckets = ["ibm-eis-ga-1-era5-pr-wdc"]
     for bucket in buckets:
         env_var = get_credentials_by_bucket(bucket=bucket)
         assert isinstance(env_var, dict)
         for v in env_var.values():
             assert v is not None
+        

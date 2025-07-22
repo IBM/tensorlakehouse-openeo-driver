@@ -1,13 +1,17 @@
+import pandas as pd
+from rasterio.crs import CRS
+import numpy as np
 from io import BytesIO
 from pathlib import Path
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
-
 import earthkit
 from pystac import Asset, Item
+from scipy.interpolate import griddata
 import urllib
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
+    DEFAULT_TIME_DIMENSION,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
     TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR,
@@ -26,6 +30,7 @@ from tensorlakehouse_openeo_driver.geospatial_utils import (
     clip_box,
     expand_time_dimension,
     filter_by_time,
+    get_xarray_coord,
     rename_vars,
     reproject_bbox,
 )
@@ -149,6 +154,94 @@ class Grib2FileReader(RasterFileReader):
         ds = xr.merge(datasets)
         return ds
 
+    @staticmethod
+    def _regrid_to_rectilinear(
+        arr: xr.DataArray,
+        x_coord: str = DEFAULT_X_DIMENSION,
+        y_coord: str = DEFAULT_Y_DIMENSION,
+        x_dim: str = DEFAULT_X_DIMENSION,
+        y_dim: str = DEFAULT_Y_DIMENSION,
+        temporal_dim: str = DEFAULT_TIME_DIMENSION,
+        band_dim: str = DEFAULT_BANDS_DIMENSION,
+    ) -> xr.DataArray:
+        """convert a curvilinear grid to a rectilinear grid
+
+        Args:
+            arr (xr.DataArray): object that has a curvilinear grid 
+            x_coord (str, optional): name of x coord. Defaults to DEFAULT_X_DIMENSION.
+            y_coord (str, optional): name of y coord. Defaults to DEFAULT_Y_DIMENSION.
+            x_dim (str, optional): name of x dim. Defaults to DEFAULT_X_DIMENSION.
+            y_dim (str, optional): name of y dime. Defaults to DEFAULT_Y_DIMENSION.
+            temporal_dim (str, optional): name of temporal dim. Defaults to DEFAULT_TIME_DIMENSION.
+            band_dim (str, optional): name of bands dim. Defaults to DEFAULT_BANDS_DIMENSION.
+
+        Returns:
+            xr.DataArray: rectilinear xarray
+        """
+        # get size of x and y dimensions
+        nx = arr.sizes[DEFAULT_X_DIMENSION]
+        ny = arr.sizes[DEFAULT_Y_DIMENSION]
+        # get all x and y coord values
+        longitude_values = arr.coords[x_coord].values.flatten()
+        latitude_values = arr.coords[y_coord].values.flatten()
+        # find max and min for both x and y 
+        minx = min(longitude_values)
+        maxx = max(longitude_values)
+        assert minx < maxx, f"Error! {minx=} >= {maxx=}"
+        miny = min(latitude_values)
+        maxy = max(latitude_values)
+        assert miny < maxy, f"Error! {miny=} >= {maxy=}"
+
+        # Define target grid (evenly gridded)
+        step_x = (maxx - minx) / nx
+        step_y = (maxy - miny) / ny
+        lat_new = np.arange(miny, maxy, step_y)
+        lon_new = np.arange(minx, maxx, step_x)
+        lon_grid, lat_grid = np.meshgrid(lon_new, lat_new)
+
+        # Flatten the curvilinear grid
+        points = np.array([latitude_values, longitude_values]).T
+        num_time_dim = arr.sizes[temporal_dim]
+        num_bands_dim = arr.sizes[band_dim]
+        arrays_time: list[xr.DataArray] = list()
+        # timestamps list will store label of temporal coords
+        timestamps = list()
+        # select temporal index
+        for t_index in range(0, num_time_dim):
+            timestamps.append(arr[temporal_dim].values[t_index])
+            array_band: list[xr.DataArray] = list()
+            # bands will store band names
+            bands = list()
+            # select band index
+            for b_index in range(0, num_bands_dim):
+                band_name = arr[band_dim].values[b_index]
+                bands.append(band_name)
+                values = arr.isel(
+                    {temporal_dim: t_index, band_dim: b_index}
+                ).values.flatten()
+
+                # Interpolate to new regular grid
+                data_interp = griddata(
+                    points, values, (lat_grid, lon_grid), method="linear"
+                )
+                # create new xarray object
+                regridded = xr.DataArray(
+                    data_interp,
+                    coords={y_dim: lat_new, x_dim: lon_new},
+                    dims=(y_dim, x_dim),
+                    name=band_name,
+                )
+                array_band.append(regridded)
+            # concat arrays over band dimension
+            arrays_time.append(xr.concat(array_band, pd.Index(bands, name=band_dim)))
+
+        # concat arrays over temporal dimension
+        reproject_array = xr.concat(
+            arrays_time, pd.Index(timestamps, name=temporal_dim)
+        )
+        assert isinstance(reproject_array, xr.DataArray)
+        return reproject_array
+
     def load_items(self) -> xr.DataArray:
         """load items that are associated with grib2 files
 
@@ -159,7 +252,7 @@ class Grib2FileReader(RasterFileReader):
         """
         logger.debug(f"Loading GRIB2 files: bands={self.bands} bbox={self.bbox}")
         # initialize array and crs variables
-        da = None
+        data_array = None
         crs_code = None
         time_dim = None
         data_arrays = list()
@@ -223,8 +316,24 @@ class Grib2FileReader(RasterFileReader):
         )
         assert x_dim is not None
         assert y_dim is not None
-        assert isinstance(data_array, xr.DataArray)
-        da = clip_box(
+        assert isinstance(
+            data_array, xr.DataArray
+        ), f"Error! {type(data_array)} is not a xarray.DataArray"
+        x_coord = get_xarray_coord(data=data_array, dimension=DEFAULT_X_DIMENSION)
+        assert x_coord is not None
+        y_coord = get_xarray_coord(data=data_array, dimension=DEFAULT_Y_DIMENSION)
+        assert y_coord is not None
+        assert time_dim is not None
+        data_array = Grib2FileReader._regrid_to_rectilinear(
+            arr=data_array,
+            x_coord=x_coord,
+            y_coord=y_coord,
+            y_dim=DEFAULT_Y_DIMENSION,
+            x_dim=DEFAULT_X_DIMENSION,
+            temporal_dim=time_dim,
+        )
+        logger.debug(data_array.sizes)
+        data_array = clip_box(
             data=data_array,
             bbox=reprojected_bbox,
             crs=crs_code,
@@ -232,9 +341,11 @@ class Grib2FileReader(RasterFileReader):
             y_dim=y_dim,
         )
         # remove timestamps that have not been selected by end-user
-        if time_dim is not None and time_dim in da.dims:
-            da = filter_by_time(
-                data=da, temporal_extent=self.temporal_extent, temporal_dim=time_dim
+        if time_dim is not None and time_dim in data_array.dims:
+            data_array = filter_by_time(
+                data=data_array,
+                temporal_extent=self.temporal_extent,
+                temporal_dim=time_dim,
             )
 
-        return da
+        return data_array
