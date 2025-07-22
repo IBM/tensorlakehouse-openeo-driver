@@ -5,13 +5,10 @@ from pystac_client import CollectionClient
 from pystac import Item
 from openeo_driver.backend import CollectionCatalog
 from tensorlakehouse_openeo_driver.constants import (
-    GEODN_DISCOVERY_USERNAME,
-    GEODN_DISCOVERY_PASSWORD,
     STAC_URL,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
 )
-from tensorlakehouse_openeo_driver.geodn_discovery import GeoDNDiscovery
 from datetime import datetime
 import logging
 from tensorlakehouse_openeo_driver.model.datacube_variable import DataCubeVariable
@@ -39,9 +36,6 @@ class TensorLakehouseCollectionCatalog(CollectionCatalog):
     def __init__(self):
         super().__init__(all_metadata=list())
         self.access_token = None
-        self.discovery = GeoDNDiscovery(
-            username=GEODN_DISCOVERY_USERNAME, password=GEODN_DISCOVERY_PASSWORD
-        )
         self._stac_catalog = None
 
     @property

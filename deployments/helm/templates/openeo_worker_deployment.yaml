@@ -1,0 +1,289 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: tensorlakehouse-openeo-driver-worker
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: {{ .Values.tensorlakehouse.replicasWorker }}
+  selector:
+    matchLabels:
+      app: tensorlakehouse-openeo-driver-worker
+  template:
+    metadata:
+      labels:
+        app: tensorlakehouse-openeo-driver-worker
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets }}
+      containers:
+        - name: tensorlakehouse-openeo-driver-worker
+          image: {{ .Values.tensorlakehouse.image }}
+          ports:
+            - containerPort: 9091
+              protocol: TCP
+          env:
+            - name: STAC_URL
+              value: >-
+                {{ .Values.stacurl }}
+            - name: OPENEO_GEODN_DRIVER_PORT
+              value: '9091'
+            - name: DASK_SCHEDULER_ADDRESS
+              value: 'dask-scheduler:8786'
+            - name: KUBEFLOW_PIPELINE_API 
+              value: >-
+                {{ .Values.kubeflowpipelines.host }}
+            - name: SENTINEL_DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: SENTINEL_DB_HOST
+            - name: SENTINEL_DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: SENTINEL_DB_PORT
+            - name: SENTINEL_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: SENTINEL_DB_NAME
+            - name: SENTINEL_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: SENTINEL_DB_USER
+            - name: SENTINEL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: SENTINEL_DB_PASSWORD
+            - name: BROKER_URL
+              value: {{ .Values.redis }}
+            - name: RESULT_BACKEND
+              value: {{ .Values.redis }}
+            - name: APPID_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: APPID_ISSUER
+            - name: OPENEO_AUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: OPENEO_AUTH_CLIENT_SECRET
+            - name: OPENEO_AUTH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: OPENEO_AUTH_CLIENT_ID
+            - name: COSGEODNDISCOVERY_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: COSGEODNDISCOVERY_ACCESS_KEY_ID
+            - name: COSGEODNDISCOVERY_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: COSGEODNDISCOVERY_SECRET_ACCESS_KEY
+            - name: GEOLABDATA_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: GEOLABDATA_ACCESS_KEY_ID
+            - name: GEOLABDATA_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: GEOLABDATA_SECRET_ACCESS_KEY
+            - name: COS_METHANE_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: COS_METHANE_ACCESS_KEY_ID
+            - name: COS_METHANE_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: COS_METHANE_SECRET_ACCESS_KEY
+            - name: TLHPRODUCTION_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: TLHPRODUCTION_ACCESS_KEY_ID
+            - name: TLHPRODUCTION_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: TLHPRODUCTION_SECRET_ACCESS_KEY
+            - name: UKCP18_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: UKCP18_INSTANCE
+            - name: UKCP18_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: UKCP18_ENDPOINT
+            - name: SENTINEL1_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL1_INSTANCE
+            - name: SENTINEL1_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL1_ENDPOINT
+            - name: SENTINEL2_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL2_INSTANCE
+            - name: SENTINEL2_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL2_ENDPOINT
+            - name: SENTINEL5_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL5_INSTANCE
+            - name: SENTINEL5_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL5_ENDPOINT
+            - name: SENTINEL210MLULC_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL210MLULC_INSTANCE
+            - name: SENTINEL210MLULC_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL210MLULC_ENDPOINT
+            - name: TASMAXRCP85LANDCPMUK22KM_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: TASMAXRCP85LANDCPMUK22KM_INSTANCE
+            - name: TASMAXRCP85LANDCPMUK22KM_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: TASMAXRCP85LANDCPMUK22KM_ENDPOINT
+            - name: SENTINEL2MSIL1C_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL2MSIL1C_INSTANCE
+            - name: SENTINEL2MSIL1C_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL2MSIL1C_ENDPOINT
+            - name: SENTINEL2L2AJP2_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL2L2AJP2_INSTANCE
+            - name: SENTINEL2L2AJP2_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: SENTINEL2L2AJP2_ENDPOINT
+            - name: CHMETH_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: CHMETH_INSTANCE
+            - name: CHMETH_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: CHMETH_ENDPOINT
+            - name: HLS_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: HLS_INSTANCE
+            - name: HLS_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: HLS_ENDPOINT
+            - name: OPENEOTEST_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: OPENEOTEST_INSTANCE
+            - name: OPENEOTEST_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: OPENEOTEST_ENDPOINT
+            - name: OPENEOGEODNDRIVEROUTPUT_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: OPENEOGEODNDRIVEROUTPUT_INSTANCE
+            - name: OPENEOGEODNDRIVEROUTPUT_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: OPENEOGEODNDRIVEROUTPUT_ENDPOINT
+            - name: IBMEISGA1ERA5PRWDC_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: IBMEISGA1ERA5PRWDC_INSTANCE
+            - name: IBMEISGA1ERA5PRWDC_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: IBMEISGA1ERA5PRWDC_ENDPOINT
+          command:
+            - celery
+          args:
+            - '-A'
+            - tensorlakehouse_openeo_driver.tasks
+            - worker
+            - '-s'
+            - /tmp/celerybeat-schedule
+            - '--concurrency'
+            - '2'
+            - '--prefetch-multiplier'
+            - '1'
+            - '-Ofair'
+            - '-B'
+            - '-Q'
+            - tensorlakehouse-queue
+            - '--loglevel'
+            - 'DEBUG'
+          resources:
+            limits:
+              cpu: {{ quote .Values.tensorlakehouse.cpu }}
+              memory: {{ .Values.tensorlakehouse.memory }}
+            requests:
+              cpu: {{ quote .Values.tensorlakehouse.cpu }}
+              memory: {{ .Values.tensorlakehouse.memory }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      securityContext: {}
+      dnsPolicy: ClusterFirst
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

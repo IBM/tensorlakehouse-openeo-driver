@@ -1,30 +1,25 @@
----
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: openeo-geodn-driver
+  name: tensorlakehouse-openeo-driver
   namespace: {{ .Values.namespace }}
-  generation: 1
-  annotations:
-    deployment.kubernetes.io/revision: '1'
+  labels:
+    app.kubernetes.io/managed-by: Helm
 spec:
-  replicas: 1
+  replicas: {{ .Values.tensorlakehouse.replicasWebserver }}
   selector:
     matchLabels:
-      app: openeo-geodn-driver
+      app: tensorlakehouse-openeo-driver
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        app: openeo-geodn-driver
+        app: tensorlakehouse-openeo-driver
     spec:
-      {{ if .Values.use_pull_secret }}
       imagePullSecrets:
-      - name: {{ .Values.pull_secret }}
-      {{ end }}
+        - name: {{ .Values.imagePullSecrets }}
       containers:
-        - name: openeo-geodn-driver
-          image: 'docker.io/tensorlakehouse/openeo-geodn-driver:0.2.0'
+        - name: tensorlakehouse-openeo-driver
+          image: {{ .Values.tensorlakehouse.image }}
           ports:
             - containerPort: 9091
               protocol: TCP
@@ -36,55 +31,96 @@ spec:
               value: '9091'
             - name: DASK_SCHEDULER_ADDRESS
               value: 'dask-scheduler:8786'
-            - name: GEODN_DISCOVERY_API_KEY
+            - name: KUBEFLOW_PIPELINE_API 
+              value: >-
+                {{ .Values.kubeflowpipelines.host }}
+            - name: SENTINEL_DB_HOST
               valueFrom:
                 secretKeyRef:
-                  name: openeo-geodn-driver-secret
-                  key: GEODN_DISCOVERY_API_KEY            
-            - name: GEODN_DISCOVERY_USERNAME
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: SENTINEL_DB_HOST
+            - name: SENTINEL_DB_PORT
               valueFrom:
                 secretKeyRef:
-                  name: openeo-geodn-driver-secret
-                  key: GEODN_DISCOVERY_USERNAME
-            - name: GEODN_DISCOVERY_PASSWORD
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: SENTINEL_DB_PORT
+            - name: SENTINEL_DB_NAME
               valueFrom:
                 secretKeyRef:
-                  name: openeo-geodn-driver-secret
-                  key: GEODN_DISCOVERY_PASSWORD
-            - name: OPENEO_AUTH_CLIENT_ID
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: SENTINEL_DB_NAME
+            - name: SENTINEL_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: openeo-geodn-driver-secret
-                  key: OPENEO_AUTH_CLIENT_ID
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: SENTINEL_DB_USER
+            - name: SENTINEL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: SENTINEL_DB_PASSWORD
+            - name: BROKER_URL
+              value: {{ .Values.redis }}
+            - name: RESULT_BACKEND
+              value: {{ .Values.redis }}
+            - name: APPID_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: APPID_ISSUER
             - name: OPENEO_AUTH_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: openeo-geodn-driver-secret
+                  name: {{ .Values.tensorlakehouse.secretName }}
                   key: OPENEO_AUTH_CLIENT_SECRET
-            - name: RESULT_BACKEND
+            - name: OPENEO_AUTH_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: openeo-geodn-driver-secret
-                  key: RESULT_BACKEND
-            - name: CREDENTIALS
+                  name: {{ .Values.tensorlakehouse.secretName }}
+                  key: OPENEO_AUTH_CLIENT_ID
+            - name: HLS_INSTANCE
               valueFrom:
-                secretKeyRef:
-                  name: openeo-geodn-driver-secret
-                  key: CREDENTIALS
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: HLS_INSTANCE
+            - name: HLS_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: HLS_ENDPOINT
+            - name: OPENEOTEST_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: OPENEOTEST_INSTANCE
+            - name: OPENEOTEST_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: OPENEOTEST_ENDPOINT
+            - name: OPENEOGEODNDRIVEROUTPUT_INSTANCE
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: OPENEOGEODNDRIVEROUTPUT_INSTANCE
+            - name: OPENEOGEODNDRIVEROUTPUT_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tensorlakehouse-configmap
+                  key: OPENEOGEODNDRIVEROUTPUT_ENDPOINT
           resources:
             limits:
-              cpu: '2'
-              memory: 4G
+              cpu: {{ quote .Values.tensorlakehouse.cpu }}
+              memory: {{ .Values.tensorlakehouse.memory }}
             requests:
-              cpu: '2'
-              memory: 4G
+              cpu: {{ quote .Values.tensorlakehouse.cpu }}
+              memory: {{ .Values.tensorlakehouse.memory }}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           imagePullPolicy: Always
       restartPolicy: Always
-      terminationGracePeriodSeconds: 30
-      dnsPolicy: ClusterFirst
       securityContext: {}
+      dnsPolicy: ClusterFirst
       schedulerName: default-scheduler
   strategy:
     type: RollingUpdate

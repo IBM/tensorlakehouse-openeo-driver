@@ -11,8 +11,6 @@ services:
         - BROKER_URL=${BROKER_URL}
         - RESULT_BACKEND=${RESULT_BACKEND}
         - CREDENTIALS=${CREDENTIALS}
-        - GEODN_DISCOVERY_PASSWORD=${GEODN_DISCOVERY_PASSWORD}
-        - GEODN_DISCOVERY_USERNAME=${GEODN_DISCOVERY_USERNAME}
         - DASK_SCHEDULER_ADDRESS=${DASK_SCHEDULER_ADDRESS}
         - STAC_URL=http://stac:8080/
         - APPID_ISSUER=${APPID_ISSUER}
@@ -35,8 +33,6 @@ services:
         - BROKER_URL=${BROKER_URL}
         - RESULT_BACKEND=${RESULT_BACKEND}
         - CREDENTIALS=${CREDENTIALS}
-        - GEODN_DISCOVERY_PASSWORD=${GEODN_DISCOVERY_PASSWORD}
-        - GEODN_DISCOVERY_USERNAME=${GEODN_DISCOVERY_USERNAME}
         - DASK_SCHEDULER_ADDRESS=${DASK_SCHEDULER_ADDRESS}
         - STAC_URL=http://stac:8080/
         - APPID_ISSUER=${APPID_ISSUER}
@@ -46,7 +42,7 @@ services:
         - OPENEO_AUTH_CLIENT_SECRET=${OPENEO_AUTH_CLIENT_SECRET}
       restart: always
     stac:
-      image: localhost/stac-fastapi-pgstac:latest
+      image: stac-fastapi-pgstac:latest
       container_name: stac
       networks:
         - neta

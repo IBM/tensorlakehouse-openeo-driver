@@ -23,7 +23,7 @@ from shapely.geometry import shape
 xr.set_options(keep_attrs=True)
 
 
-def _get_xarray_coord(data: xr.DataArray, dimension: str) -> str | None:
+def get_xarray_coord(data: xr.DataArray, dimension: str) -> str | None:
     """find coordinate name of a given dimension
 
     Args:
@@ -131,9 +131,9 @@ def clip_box(
     # area selected by the end-user
     minx, miny, maxx, maxy = bbox
     # get coords
-    x_coord = _get_xarray_coord(data=data, dimension=x_dim)
+    x_coord = get_xarray_coord(data=data, dimension=x_dim)
     assert x_coord is not None
-    y_coord = _get_xarray_coord(data=data, dimension=y_dim)
+    y_coord = get_xarray_coord(data=data, dimension=y_dim)
     assert y_coord is not None
     # "xarray disallows variables with more than 1 dimension that share a name with one of their
     # dimensions to avoid conflicts and ambiguity when accessing data". Thus, when coordinates
