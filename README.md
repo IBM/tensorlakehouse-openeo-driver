@@ -145,7 +145,7 @@ podman build -t tensorlakehouse-openeo-driver -f Containerfile .
 Clone [STAC repository](https://github.com/stac-utils/stac-fastapi-pgstac.git) and build a STAC image
 
 ```shell
-podman build -t stac-fastapi-pgstac -f Containerfile .
+podman build -t stac-fastapi-pgstac -f Containerfile .  
 ```
 
 ### *Step 4* - Run services using podman-compose
