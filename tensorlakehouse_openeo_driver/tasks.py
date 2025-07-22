@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from openeo_pg_parser_networkx import OpenEOProcessGraph
 from typing import Any, Dict
@@ -42,15 +41,6 @@ def create_batch_jobs(
     logger.debug(
         f"tasks::create_batch_jobs - job_id={job_id} status={status} process={process} title={title}"
     )
-    # PIPELINE CREDENTIALS
-    TLH_SENTINEL2_ACCESS_KEY_ID = os.environ["TLH_SENTINEL2_ACCESS_KEY_ID"]
-    assert TLH_SENTINEL2_ACCESS_KEY_ID is not None
-
-    TLH_SENTINEL2_SECRET_ACCESS_KEY = os.environ["TLH_SENTINEL2_SECRET_ACCESS_KEY"]
-    assert TLH_SENTINEL2_SECRET_ACCESS_KEY is not None
-
-    TLH_SENTINEL2_ENDPOINT = os.environ["TLH_SENTINEL2_ENDPOINT"]
-    assert TLH_SENTINEL2_ENDPOINT is not None
 
     # set metadata
     metadata: Dict[str, Any] = {

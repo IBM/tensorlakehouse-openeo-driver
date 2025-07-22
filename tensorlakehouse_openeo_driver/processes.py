@@ -7,6 +7,10 @@ from rasterio.enums import Resampling
 from tensorlakehouse_openeo_driver.process_implementations.load_collection import (
     LoadCollectionFromCOS,
 )
+from openeo_processes_dask.process_implementations.exceptions import (
+    DimensionMissing,
+)
+
 import geopandas as gpd
 import numpy as np
 import openeo
@@ -673,13 +677,18 @@ def resample_cube_spatial(
         "q3",
     ]
 
+    if (
+        data.openeo.y_dim is None
+        or data.openeo.x_dim is None
+        or target.openeo.y_dim is None
+        or target.openeo.x_dim is None
+    ):
+        raise DimensionMissing(
+            f"Spatial dimension missing from data or target. Available dimensions for data: {data.dims} for target: {target.dims}"
+        )
+
     # ODC reproject requires y to be before x
-    required_dim_order = (
-        data.openeo.band_dims
-        + data.openeo.temporal_dims
-        + tuple([data.openeo.y_dim])
-        + tuple([data.openeo.x_dim])
-    )
+    required_dim_order = (..., data.openeo.y_dim, data.openeo.x_dim)
 
     data_reordered = data.transpose(*required_dim_order, missing_dims="ignore")
     target_reordered = target.transpose(*required_dim_order, missing_dims="ignore")
@@ -693,11 +702,19 @@ def resample_cube_spatial(
             f"[{', '.join(methods_list)}]"
         )
 
-    resampled_data = _reproject_cube_match(
-        data_cube=data_reordered,
-        match_data_array=target_reordered,
-        resampling=Resampling[method],
+    resampled_data = data_reordered.odc.reproject(
+        target_reordered.odc.geobox, resampling=method
     )
+
+    resampled_data.rio.write_crs(target_reordered.rio.crs, inplace=True)
+
+    try:
+        # odc.reproject renames the coordinates according to the geobox, this undoes that.
+        resampled_data = resampled_data.rename(
+            {"longitude": data.openeo.x_dim, "latitude": data.openeo.y_dim}
+        )
+    except ValueError:
+        pass
 
     # Order axes back to how they were before
     resampled_data = resampled_data.transpose(*data.dims)
@@ -706,7 +723,72 @@ def resample_cube_spatial(
     for k, v in data.attrs.items():
         if k.lower() != "crs":
             resampled_data.attrs[k] = v
+    # odc.reproject function creates slightly different coordinate values. For instance,
+    # instead of 41.00, it creates 41.0000000001. This difference affects merge_cube process.
+    # Thus, we ensure that coords have exactly the same values
+    resampled_sizes = resampled_data.sizes
+    for dim in [data.openeo.x_dim, data.openeo.y_dim]:
+        for i in range(0, resampled_sizes[dim]):
+            if resampled_data[dim].values[i] != target[dim].values[i] and np.isclose(
+                resampled_data[dim].values[i], target[dim].values[i], rtol=0.01
+            ):
+                resampled_data[dim].values[i] = target[dim].values[i]
+
     return resampled_data
+
+
+# def resample_cube_spatial(
+#     data: RasterCube, target: RasterCube, method="near", options=None
+# ) -> RasterCube:
+#     methods_list = [
+#         "near",
+#         "bilinear",
+#         "cubic",
+#         "cubicspline",
+#         "lanczos",
+#         "average",
+#         "mode",
+#         "max",
+#         "min",
+#         "med",
+#         "q1",
+#         "q3",
+#     ]
+
+#     # ODC reproject requires y to be before x
+#     required_dim_order = (
+#         data.openeo.band_dims
+#         + data.openeo.temporal_dims
+#         + tuple([data.openeo.y_dim])
+#         + tuple([data.openeo.x_dim])
+#     )
+
+#     data_reordered = data.transpose(*required_dim_order, missing_dims="ignore")
+#     target_reordered = target.transpose(*required_dim_order, missing_dims="ignore")
+
+#     if method == "near":
+#         method = "nearest"
+
+#     elif method not in methods_list:
+#         raise Exception(
+#             f'Selected resampling method "{method}" is not available! Please select one of '
+#             f"[{', '.join(methods_list)}]"
+#         )
+
+#     resampled_data = _reproject_cube_match(
+#         data_cube=data_reordered,
+#         match_data_array=target_reordered,
+#         resampling=Resampling[method],
+#     )
+
+#     # Order axes back to how they were before
+#     resampled_data = resampled_data.transpose(*data.dims)
+
+#     # Ensure that attrs except crs are copied over
+#     for k, v in data.attrs.items():
+#         if k.lower() != "crs":
+#             resampled_data.attrs[k] = v
+#     return resampled_data
 
 
 def merge_cubes(

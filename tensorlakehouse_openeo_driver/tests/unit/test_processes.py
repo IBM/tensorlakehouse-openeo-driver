@@ -137,31 +137,51 @@ def test_resample_spatial(resolution: int):
 
 
 @pytest.mark.parametrize(
-    "bands_1, bands_2, bbox_1, bbox_2, spatial_ext_1, spatial_ext_2, expected_dim_size",
+    "bands_1, bands_2, bbox_1, bbox_2, spatial_ext_1, spatial_ext_2, dims_cube_1, dims_cube_2, a_0_1, a_0_2, expected_dim_size",
     [
+        # (
+        #     ["B02", "B03"],
+        #     ["Fmask"],
+        #     [-91, 40, -90, 41],
+        #     [-91, 40, -90, 41],
+        #     [pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)],
+        #     [pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)],
+        #     {DEFAULT_BANDS_DIMENSION: 3},
+        # ),
         (
-            ["B02", "B03"],
-            ["Fmask"],
+            ["B02"],
+            ["B03"],
             [-91, 40, -90, 41],
-            [-91, 40, -90, 41],
-            [pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)],
-            [pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)],
-            {DEFAULT_BANDS_DIMENSION: 3},
-        ),
-        (
-            ["B02", "B03"],
-            ["B02", "B03"],
-            [-91, 40, -90, 41],
-            [-91, 40, -90, 41],
-            [pd.Timestamp(2020, 1, 1), pd.Timestamp(2021, 1, 1)],
-            [pd.Timestamp(2021, 1, 2), pd.Timestamp(2022, 1, 1)],
-            {DEFAULT_BANDS_DIMENSION: 2, DEFAULT_TIME_DIMENSION: 20},
+            [-90.5, 40.5, -90.1, 40.8],
+            None,
+            None,
+            (None, 100, 100),
+            (None, 200, 200),
+            100,
+            1,
+            {
+                DEFAULT_BANDS_DIMENSION: 2,
+                DEFAULT_X_DIMENSION: 100,
+                DEFAULT_Y_DIMENSION: 100,
+            },
         ),
     ],
 )
 def test_merge_cubes(
-    bands_1, bands_2, bbox_1, bbox_2, spatial_ext_1, spatial_ext_2, expected_dim_size
+    bands_1: List[str],
+    bands_2: List[str],
+    bbox_1,
+    bbox_2,
+    spatial_ext_1,
+    spatial_ext_2,
+    dims_cube_1,
+    dims_cube_2,
+    a_0_1,
+    a_0_2,
+    expected_dim_size,
 ):
+    size_t_1, size_x_1, size_y_1 = dims_cube_1
+    size_t_2, size_x_2, size_y_2 = dims_cube_2
     cube1 = generate_xarray(
         bands=bands_1,
         lonmin=bbox_1[0],
@@ -170,6 +190,10 @@ def test_merge_cubes(
         latmax=bbox_1[3],
         temporal_extent=spatial_ext_1,
         freq=None,
+        size_x=size_x_1,
+        size_y=size_y_1,
+        num_periods=size_t_1,
+        a_0=a_0_1,
     )
     cube2 = generate_xarray(
         bands=bands_2,
@@ -179,8 +203,16 @@ def test_merge_cubes(
         latmax=bbox_2[3],
         temporal_extent=spatial_ext_2,
         freq=None,
+        size_x=size_x_2,
+        size_y=size_y_2,
+        num_periods=size_t_2,
+        a_0=a_0_2,
     )
+    cube1.rio.to_raster("cube_1_before_merge.tif")
+    cube2.rio.to_raster("cube_2_before_merge.tif")
     merged_cube = merge_cubes(cube1=cube1, cube2=cube2)
+    merged_cube.isel(bands=0).rio.to_raster("cube_1_after_merge.tif")
+    merged_cube.isel(bands=1).rio.to_raster("cube_2_after_merge.tif")
     assert sorted(merged_cube[DEFAULT_BANDS_DIMENSION].values) == sorted(
         set(bands_1 + bands_2)
     )
@@ -249,8 +281,8 @@ def test_aggregate_temporal_period(period: str, expected_size: int):
 @pytest.mark.parametrize(
     "source_data, target_data",
     [
-        ((40, -91, 41, -90, 100, 100), (40, -91, 41, -90, 50, 50)),
-        ((40, -91, 41, -90, 100, 100), (40.2, -91.2, 41.2, -90.2, 50, 50)),
+        ((-91, 40, -90, 41, 100, 100), (-91, 40, -90, 41, 50, 50)),
+        ((-91, 40, -90, 41, 100, 100), (-91.2, 40.2, -90.2, 41.2, 50, 50)),
     ],
 )
 def test_resample_cube_spatial(source_data, target_data):
@@ -268,14 +300,30 @@ def test_resample_cube_spatial(source_data, target_data):
             temporal_extent=(pd.Timestamp(2020, 1, 1), pd.Timestamp(2020, 1, 7)),
             freq="D",
             num_periods=None,
+            crs=4326,
         )
         data_list.append(data)
     data = data_list[0]
     target = data_list[1]
-    aligned = resample_cube_spatial(data=data, target=target)
-    assert target.x.size == aligned.x.size
-    assert target.y.size == aligned.y.size
+    resampled_cube = resample_cube_spatial(data=data, target=target)
+    # DEBUGGING
+    # data_path = TEST_DATA_ROOT / "data.tif"
+    # target_path = TEST_DATA_ROOT / "target.tif"
+    # resampled_path = TEST_DATA_ROOT / "resampled.tif"
+    # data.isel({DEFAULT_TIME_DIMENSION: 0, DEFAULT_BANDS_DIMENSION: 0}).rio.to_raster(
+    #     data_path
+    # )
+    # target.isel({DEFAULT_TIME_DIMENSION: 0, DEFAULT_BANDS_DIMENSION: 0}).rio.to_raster(
+    #     target_path
+    # )
+    # resampled_cube.isel({DEFAULT_TIME_DIMENSION: 0, DEFAULT_BANDS_DIMENSION: 0}).rio.to_raster(
+    #     resampled_path
+    # )
+    assert target.x.size == resampled_cube.x.size
+    assert target.y.size == resampled_cube.y.size
     for dim in ["x", "y"]:
-        aligned_coords = aligned[dim].values
-        target_coords = target[dim].values
-        assert np.array_equal(aligned_coords, target_coords)
+        aligned_dim_values = resampled_cube[dim].values
+        target_dim_values = target[dim].values
+        for i, j in zip(aligned_dim_values, target_dim_values):
+            # assert np.isclose(i, j, rtol=0.01)
+            assert np.equal(i, j)

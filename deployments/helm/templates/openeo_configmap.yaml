@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tensorlakehouse-configmap
+  namespace: {{ .Values.namespace }}
+data:
+  # mapping between COS buckets and instances
+  UKCP18_INSTANCE: cos-geodn-discovery
+  UKCP18_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  SENTINEL1_INSTANCE: cos-geodn-discovery
+  SENTINEL1_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  SENTINEL2_INSTANCE: cos-geodn-discovery
+  SENTINEL2_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  SENTINEL5_INSTANCE: cos-geodn-discovery
+  SENTINEL5_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  SENTINEL210MLULC_INSTANCE: geolab-data
+  SENTINEL210MLULC_ENDPOINT: s3.us-south.cloud-object-storage.appdomain.cloud
+  TASMAXRCP85LANDCPMUK22KM_INSTANCE: geolab-data
+  TASMAXRCP85LANDCPMUK22KM_ENDPOINT: s3.us-south.cloud-object-storage.appdomain.cloud
+  SENTINEL2MSIL1C_INSTANCE: COS_Methane
+  SENTINEL2MSIL1C_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  SENTINEL2L2AJP2_INSTANCE: COS_Methane
+  SENTINEL2L2AJP2_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  CHMETH_INSTANCE: COS_Methane
+  CHMETH_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  HLS_INSTANCE: tlh-production
+  HLS_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  OPENEOTEST_INSTANCE: cos-geodn-discovery
+  OPENEOTEST_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  FMGEOSPATIALCOSDEV_INSTANCE: fm-geospatial-cos-dev
+  FMGEOSPATIALCOSDEV_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  OPENEOGEODNDRIVEROUTPUT_INSTANCE: geolab-data
+  OPENEOGEODNDRIVEROUTPUT_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+  IBMEISGA1ERA5PRWDC_INSTANCE: ibm_ei_instance
+  IBMEISGA1ERA5PRWDC_ENDPOINT: s3.us-east.cloud-object-storage.appdomain.cloud
+
