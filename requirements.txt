@@ -144,7 +144,7 @@ ijson==3.3.0
 imageio==2.35.1
 imagesize==1.4.1
 importlib-resources==5.13.0
-importlib_metadata==8.5.0
+importlib_metadata==8.7.0
 iniconfig==2.1.0
 ipykernel==6.29.5
 ipyleaflet==0.19.2
