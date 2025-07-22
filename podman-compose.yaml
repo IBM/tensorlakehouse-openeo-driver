@@ -42,7 +42,7 @@ services:
         - OPENEO_AUTH_CLIENT_SECRET=${OPENEO_AUTH_CLIENT_SECRET}
       restart: always
     stac:
-      image: localhost/stac-fastapi-pgstac:latest
+      image: stac-fastapi-pgstac:latest
       container_name: stac
       networks:
         - neta

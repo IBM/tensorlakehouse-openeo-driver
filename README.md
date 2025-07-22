@@ -8,14 +8,12 @@ The Tensorlakehouse openEO driver is a backend implementation of the [openEO API
   - [User guide](#user-guide)
   - [Python Environment](#python-environment)
   - [Installation](#installation)
-  - [Running locally using KIND (Kubernetes In Docker) - RECOMMENDED](#running-locally-using-kind-kubernetes-in-docker---recommended)
   - [Running locally using containers podman-compose (or docker-compose)](#running-locally-using-containers-podman-compose-or-docker-compose)
-    - [Setting environment varibles:](#setting-environment-varibles)
-    - [Building and running container images](#building-and-running-container-images)
-      - [*Step 1* Generate credentials](#step-1-generate-credentials)
-      - [*Step 2.* Set the environment variables and create  `.env` file](#step-2-set-the-environment-variables-and-create--env-file)
-      - [*Step 3* - Build tensorlakehouse-openeo-driver](#step-3---build-tensorlakehouse-openeo-driver)
-      - [*Step 4* - Run services using podman-compose](#step-4---run-services-using-podman-compose)
+    - [*Step 1* Generate credentials](#step-1-generate-credentials)
+    - [*Step 2.* Set the environment variables and create  `.env` file](#step-2-set-the-environment-variables-and-create--env-file)
+    - [*Step 3* - Build tensorlakehouse-openeo-driver and STAC images](#step-3---build-tensorlakehouse-openeo-driver-and-stac-images)
+    - [*Step 4* - Run services using podman-compose](#step-4---run-services-using-podman-compose)
+  - [Running locally using KIND (Kubernetes In Docker)](#running-locally-using-kind-kubernetes-in-docker)
   - [Setup Broker and Result store](#setup-broker-and-result-store)
   - [Software architecture](#software-architecture)
   - [Contributing](#contributing)
@@ -36,76 +34,19 @@ Using a virtual environment for all commands in this guide is strongly recommend
 2. Install *tensorlakehouse-openeo-driver* dependencies: `pip install -r requirements.txt`. Optionally, you can install other dependencies for development purpose: `pip install -r dev_requirements.txt`
 3. Optional, but strongly suggested: follow the step described [here](https://github.com/ibm/detect-secrets) to setup detect-secrets tool
 
-## Running locally using KIND (Kubernetes In Docker) - RECOMMENDED
-Prerequisites:
-- docker/podman installation (e.g., 'docker ps' should run without error)
-- kubectl: Follow the [instructions](https://kubernetes.io/docs/tasks/tools/) for your platform
-- KIND (Just pick a [release](https://github.com/kubernetes-sigs/kind/releases) for your platform, it is just one binary you need to add to you system's path)
-- HELM (Just pick a [release](https://github.com/helm/helm/releases) for your platform, it is just one binary you need to add to you system's path)
-
-Commands:  
-- `git clone https://github.com/IBM/tensorlakehouse-openeo-driver.git`  
-- `cd tensorlakehouse-openeo-driver/deployments/helm`  
-- `./create_kind_cluster.sh`  
-- `./deploy_to_kind.sh`  
-
-You can use `watch -n 1 kubectl get po` to follow process on installation. After quite some time, you should see all pods in running or completed state.
-
-This is an example output:
-```
-dask-worker-f5c5c4896-jwdm4            1/1     Running   0          46h  
-openeo-geodn-driver-7f5c6f498c-p8r7w   1/1     Running   0          46h  
-pgstac-fastapi-6c8bb56b96-b4jct        1/1     Running   0          46h  
-pgstacpostgis-64c49bdfdd-rjpw2         1/1     Running   0          46h  
-stac-explorer-7cd65d9bf7-zhzv7         1/1     Running   0          46h  
-```
-
-You sould be able to access the following services now:  
-dask-scheduler: http://localhost:8787  
-openeo-geodn-driver: http://localhost:9091  
-pgstac-fastapi: http://localhost:8080  
-stac-explorer: http://localhost:8081  
-pgstacpostgisservice: http://localhost:5432  
-
-
-Optionally, you can add some STAC entries using:  
-`./init_stac.sh`
-
 
 ## Running locally using containers podman-compose (or docker-compose)
 
-### Setting environment varibles:
 
- - `PYTHONPATH` for instance, `PYTHONPATH=/Users/alice/tensorlakehouse-openeo-driver/`
- - `STAC_URL` URL to the STAC service that you want to connect to (e.g., `https://stac-fastapi-sqlalchemy-nasageospatial-dev.cash.sl.cloud9.ibm.com`)
- - Please see this [section](#step-1-generate-credentials) on how to set the environment variables related to credentials that allow to access COS buckets
- - `BROKER_URL` - URL to the broker, which mediates communication between clients and workers.
- - `RESULT_BACKEND` - URL to the backend, which is necessary when we want to keep track of the tasks' states or retrieve results from tasks
- - if you want to implement OIDC authentication you need:
-   - `APPID_ISSUER`  which is the authorization server url
-   - `APPID_USERNAME` username of the authorization server
-   - `APPID_PASSWORD` password of the authorization server
-   - `OPENEO_AUTH_CLIENT_ID`  client ID
-   - `OPENEO_AUTH_CLIENT_SECRET` client secret
- 
-`FLASK_APP` and `FLASK_DEBUG` environment variables are useful for debugging:
-
-```shell
-cd <path-to-parent-dir>/tensorlakehouse-openeo-driver/
-export FLASK_APP=tensorlakehouse_openeo_driver.local_app
-export FLASK_DEBUG=1
-flask run
-```
-
-### Building and running container images
 
 Prerequisites: 
-- docker or podman-compose installed
+- docker or podman installed
+- `docker compose` or `podman-compose` installed
 - postgres database with postgis extension 
 - redis database - see [setup redis](#setup-redis)
 
 
-#### *Step 1* Generate credentials
+### *Step 1* Generate credentials
 
 Each COS instance might have different credentials to access it, so tensorlakehouse uses the bucket name to identify the COS instance by setting environment variables. For instance, if you have a bucket called `my-bucket` that is located in a COS instance called `my-cos-instance`, the environment variables will be:
 
@@ -163,7 +104,7 @@ def remove_invalid_characters(name: str) -> str:
 ```
 
 
-#### *Step 2.* Set the environment variables and create  `.env` file
+### *Step 2.* Set the environment variables and create  `.env` file
 ```
 # credentials to access cloud object store 
 MYCOSINSTANCE_ACCESS_KEY=my-access-key
@@ -194,15 +135,20 @@ TENSORLAKEHOUSE_OPENEO_DRIVER_PORT=9091
 
 ```
 
-#### *Step 3* - Build tensorlakehouse-openeo-driver
+### *Step 3* - Build tensorlakehouse-openeo-driver and STAC images
 
 Podman is a drop-in replacement for Docker. If you are a Docker user, just replace `podman` by `docker` and you will be fine. Go to repository root dir and run:
 ```shell
-podman build -t tensorlakehouse-openeo-driver -f Containerfile
+podman build -t tensorlakehouse-openeo-driver -f Containerfile .
 ```
 
+Clone [STAC repository](https://github.com/stac-utils/stac-fastapi-pgstac.git) and build a STAC image
 
-#### *Step 4* - Run services using podman-compose
+```shell
+podman build -t stac-fastapi-pgstac -f Containerfile .
+```
+
+### *Step 4* - Run services using podman-compose
 
  
 run podman-compose 
@@ -210,6 +156,44 @@ run podman-compose
 ```shell
 podman-compose -f podman-compose.yml --env-file /Users/alice/tensorlakehouse-openeo-driver/.env up
 ```
+
+
+## Running locally using KIND (Kubernetes In Docker)
+Prerequisites:
+- docker/podman installation (e.g., 'docker ps' should run without error)
+- kubectl: Follow the [instructions](https://kubernetes.io/docs/tasks/tools/) for your platform
+- KIND (Just pick a [release](https://github.com/kubernetes-sigs/kind/releases) for your platform, it is just one binary you need to add to you system's path)
+- HELM (Just pick a [release](https://github.com/helm/helm/releases) for your platform, it is just one binary you need to add to you system's path)
+
+Commands:  
+- `git clone https://github.com/IBM/tensorlakehouse-openeo-driver.git`  
+- `cd tensorlakehouse-openeo-driver/deployments/helm`  
+- `./create_kind_cluster.sh`  
+- `./deploy_to_kind.sh`  
+
+You can use `watch -n 1 kubectl get po` to follow process on installation. After quite some time, you should see all pods in running or completed state.
+
+This is an example output:
+```
+dask-worker-f5c5c4896-jwdm4            1/1     Running   0          46h  
+openeo-geodn-driver-7f5c6f498c-p8r7w   1/1     Running   0          46h  
+pgstac-fastapi-6c8bb56b96-b4jct        1/1     Running   0          46h  
+pgstacpostgis-64c49bdfdd-rjpw2         1/1     Running   0          46h  
+stac-explorer-7cd65d9bf7-zhzv7         1/1     Running   0          46h  
+```
+
+You sould be able to access the following services now:  
+dask-scheduler: http://localhost:8787  
+openeo-geodn-driver: http://localhost:9091  
+pgstac-fastapi: http://localhost:8080  
+stac-explorer: http://localhost:8081  
+pgstacpostgisservice: http://localhost:5432  
+
+
+Optionally, you can add some STAC entries using:  
+`./init_stac.sh`
+
+
 
 ## Setup Broker and Result store
 
