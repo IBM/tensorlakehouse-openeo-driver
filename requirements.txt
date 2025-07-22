@@ -140,7 +140,7 @@ ibm-cos-sdk-core==2.13.6
 ibm-cos-sdk-s3transfer==2.13.6
 identify==2.6.12
 idna==3.10
-ijson==3.3.0
+ijson==3.4.0
 imageio==2.37.0
 imagesize==1.4.1
 importlib-resources==5.13.0
