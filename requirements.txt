@@ -235,7 +235,7 @@ pathspec==0.12.1
 pdbufr==0.13.0
 pendulum==2.1.2
 pexpect==4.9.0
-pillow==11.2.1
+pillow==11.3.0
 PIMS==0.7
 Pint==0.24.4
 planetary-computer==1.0.0
