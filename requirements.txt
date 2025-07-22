@@ -285,7 +285,7 @@ pyzmq==27.0.0
 rasterio==1.4.3
 redis==5.0.0
 referencing==0.36.2
-requests==2.32.2
+requests==2.32.4
 requests-oauthlib==2.0.0
 reretry==0.11.8
 responses==0.25.7
