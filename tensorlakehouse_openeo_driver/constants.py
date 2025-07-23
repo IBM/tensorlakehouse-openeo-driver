@@ -15,14 +15,6 @@ logging.config.fileConfig(fname=LOGGING_CONF_PATH, disable_existing_loggers=Fals
 logger = logging.getLogger("geodnLogger")
 
 
-#  DATASERVICE endpoint
-GEODN_DATASERVICE_ENDPOINT_DEFAULT = "https://pairs.res.ibm.com/pairsdataservice"
-GEODN_DATASERVICE_ENDPOINT = os.getenv(
-    "GEODN_DATASERVICE_ENDPOINT", GEODN_DATASERVICE_ENDPOINT_DEFAULT
-)
-GEODN_DATASERVICE_USER = os.getenv("GEODN_DATASERVICE_USER", "")
-GEODN_DATASERVICE_PASSWORD = os.getenv("GEODN_DATASERVICE_PASSWORD", "")
-
 # appId credentials
 APPID_ISSUER = os.getenv("APPID_ISSUER")
 OPENEO_AUTH_CLIENT_ID = os.getenv("OPENEO_AUTH_CLIENT_ID")
