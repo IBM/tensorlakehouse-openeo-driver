@@ -165,9 +165,9 @@ class COGFileReader(RasterFileReader):
         """
 
         logger.debug(f"_load_items_using_odc_stac - connecting to {self.endpoint=}")
-        assert self.access_key_id is not None
-        assert self.endpoint is not None
-        assert self.secret_access_key is not None
+        assert self.access_key_id is not None, "Error! access_key_id is None"
+        assert self.endpoint is not None, "Error! endpoint is None"
+        assert self.secret_access_key is not None, "Error! secret_access_key is None"
         # setting gdal env vars https://gdal.org/en/latest/user/configoptions.html
         os.environ["AWS_ACCESS_KEY_ID"] = self.access_key_id
         os.environ["AWS_SECRET_ACCESS_KEY"] = self.secret_access_key

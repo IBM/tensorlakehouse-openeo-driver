@@ -9,6 +9,7 @@ from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
 )
+from tensorlakehouse_openeo_driver.geodn_discovery import GeoDNDiscovery
 from datetime import datetime
 import logging
 from tensorlakehouse_openeo_driver.model.datacube_variable import DataCubeVariable
