@@ -9,8 +9,8 @@ The Tensorlakehouse openEO driver is a backend implementation of the [openEO API
   - [Python Environment](#python-environment)
   - [Installation](#installation)
   - [Running locally using containers podman-compose (or docker-compose)](#running-locally-using-containers-podman-compose-or-docker-compose)
-    - [*Step 1* Generate credentials](#step-1-generate-credentials)
-    - [*Step 2.* Set the environment variables and create  `.env` file](#step-2-set-the-environment-variables-and-create--env-file)
+    - [*Step 1* - Generate credentials](#step-1---generate-credentials)
+    - [*Step 2* - Set the environment variables and create  `.env` file](#step-2---set-the-environment-variables-and-create--env-file)
     - [*Step 3* - Build tensorlakehouse-openeo-driver and STAC images](#step-3---build-tensorlakehouse-openeo-driver-and-stac-images)
     - [*Step 4* - Run services using podman-compose](#step-4---run-services-using-podman-compose)
   - [Running locally using KIND (Kubernetes In Docker)](#running-locally-using-kind-kubernetes-in-docker)
@@ -43,10 +43,10 @@ Prerequisites:
 - docker or podman installed
 - `docker compose` or `podman-compose` installed
 - postgres database with postgis extension 
-- redis database - see [setup redis](#setup-redis)
+- redis database - see [setup redis](#setup-broker-and-result-store)
 
 
-### *Step 1* Generate credentials
+### *Step 1* - Generate credentials
 
 Each COS instance might have different credentials to access it, so tensorlakehouse uses the bucket name to identify the COS instance by setting environment variables. For instance, if you have a bucket called `my-bucket` that is located in a COS instance called `my-cos-instance`, the environment variables will be:
 
@@ -104,7 +104,7 @@ def remove_invalid_characters(name: str) -> str:
 ```
 
 
-### *Step 2.* Set the environment variables and create  `.env` file
+### *Step 2* - Set the environment variables and create  `.env` file
 ```
 # credentials to access cloud object store 
 MYCOSINSTANCE_ACCESS_KEY=my-access-key
