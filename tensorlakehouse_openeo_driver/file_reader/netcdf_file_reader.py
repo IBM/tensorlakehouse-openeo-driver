@@ -120,7 +120,7 @@ class NetCDFFileReader(RasterFileReader):
             data_arrays.append(da)
         if len(data_arrays) > 1:
             # concatenate all xarray.DataArray objects
-            data_array = xr.concat(data_arrays, dim=DEFAULT_TIME_DIMENSION)
+            data_array = xr.concat(data_arrays, dim=time_dim)
         else:
             data_array = data_arrays.pop()
         # filter by area of interest
