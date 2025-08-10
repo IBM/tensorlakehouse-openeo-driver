@@ -197,7 +197,7 @@ mistune==3.0.2
 moto==4.1.15
 msgpack==1.1.1
 multidict==6.1.0
-multiurl==0.3.5
+multiurl==0.3.7
 mypy==1.5.1
 mypy-extensions==1.0.0
 myst-parser==0.17.2
