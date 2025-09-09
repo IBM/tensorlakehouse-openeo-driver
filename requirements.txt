@@ -229,7 +229,6 @@ openeo-pg-parser-networkx==2025.5.2
 openeo-processes==0.0.4
 openeo-processes-dask==2025.5.1
 openeo_driver @ git+https://github.com/Open-EO/openeo-python-driver.git@0511bdc4e9ab4c8f812dd7e6ed7ac8bef6ed9713
-openeo_geodn_driver==0.0.post2+g3671f5b.d20240417
 openpyxl==3.1.5
 orderly-set==5.4.1
 orjson==3.10.18
@@ -348,7 +347,6 @@ strip-hints==0.1.13
 tableschema==1.20.11
 tabulate==0.9.0
 tblib==3.0.0
-tensorlakehouse-openeo-driver==0.0.post256+g69a71d5.d20250703
 termcolor==2.4.0
 terminado==0.18.1
 tifffile==2024.9.20
