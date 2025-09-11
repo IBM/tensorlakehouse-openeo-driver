@@ -10,7 +10,7 @@ services:
         - PYTHONPATH=/opt/app-root/src/tensorlakehouse-openeo-driver
         - BROKER_URL=${BROKER_URL}
         - RESULT_BACKEND=${RESULT_BACKEND}
-        - DASK_SCHEDULER_ADDRESS=http://dask:8787
+        - DASK_SCHEDULER_ADDRESS=tcp://daskscheduler:8786
         - STAC_URL=http://stac:8080/
       ports:
         - "9092:9091"
@@ -18,7 +18,7 @@ services:
       depends_on:
         - stac
         - worker
-        - dask
+        - daskscheduler
     worker:
       image: tensorlakehouse/openeo-geodn-driver:20250910
       container_name: worker
@@ -27,15 +27,24 @@ services:
         - PYTHONPATH=/opt/app-root/src/tensorlakehouse-openeo-driver
         - BROKER_URL=${BROKER_URL}
         - RESULT_BACKEND=${RESULT_BACKEND}
-        - DASK_SCHEDULER_ADDRESS=http://dask:8787
+        - DASK_SCHEDULER_ADDRESS=tcp://daskscheduler:8786
         - STAC_URL=http://stac:8080/
       restart: always
       depends_on:
-        - dask
-    dask:
-      image: tensorlakehouse/dask:0.11
-      container_name: dask
-      restart: always
+        - daskscheduler
+    daskscheduler:
+      image: daskdev/dask:latest
+      command: dask scheduler
+      ports:
+        - "8786:8786" # Dask scheduler port
+        - "8787:8787" # Dask dashboard port
+    daskworker:
+      image: daskdev/dask:latest
+      command: dask worker tcp://daskscheduler:8786
+      depends_on:
+        - daskscheduler
+      deploy:
+        replicas: 3 # 
     stac:
       image: tensorlakehouse/stac-fastapi-pgstac:2025-09-11
       container_name: stac
