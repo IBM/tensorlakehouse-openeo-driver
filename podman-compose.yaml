@@ -30,7 +30,7 @@ services:
         - STAC_URL=http://stac:8080/
       restart: always
     stac:
-      image: tensorlakehouse/stac-fastapi-pgstac:0.1.4
+      image: tensorlakehouse/stac-fastapi-pgstac:2025-09-11
       container_name: stac
       networks:
         - neta
