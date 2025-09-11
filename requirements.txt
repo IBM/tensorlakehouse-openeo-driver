@@ -159,9 +159,6 @@ importlib-resources==5.13.0
 importlib_metadata==8.7.0
 iniconfig==2.1.0
 ipykernel==6.29.5
-ipyleaflet==0.19.2
-ipython==8.21.0
-ipywidgets==8.1.7
 isodate==0.6.1
 isoduration==20.11.0
 itsdangerous==2.2.0
@@ -221,7 +218,7 @@ numpy-groupies==0.11.3
 oauthlib==3.2.2
 odc-algo==1.0.1
 odc-geo==0.4.10
-odc-loader @ git+https://github.com/opendatacube/odc-loader.git@9b6a1e5bf531d5bd678ebab151665649a67d45a1
+odc-loader 
 odc-stac==0.4.0
 odclib==1.6.0
 openeo==0.41.0

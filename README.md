@@ -26,7 +26,7 @@ Please read our [user-guide section](./docs/userguide.md) if you're interested t
 
 ## Python Environment
 
-Using a virtual environment for all commands in this guide is strongly recommended. In particular, we recommend *python 3.9.16 version*
+Using a virtual environment for all commands in this guide is strongly recommended. In particular, we recommend *python 3.11 version*
 
 ## Installation
 
