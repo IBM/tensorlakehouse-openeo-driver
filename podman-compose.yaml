@@ -1,7 +1,7 @@
 version: '3.7'
 services:
     webserver:
-      image: tensorlakehouse-openeo-driver:latest
+      image: tensorlakehouse/openeo-geodn-driver:20250910
       container_name: webserver
       networks:
         - neta
@@ -19,7 +19,7 @@ services:
         - stac
         - worker
     worker:
-      image: tensorlakehouse-openeo-driver:latest
+      image: tensorlakehouse/openeo-geodn-driver:20250910
       container_name: worker
       command: celery -A tensorlakehouse_openeo_driver.tasks worker -s /tmp/celerybeat-schedule --concurrency 2 --prefetch-multiplier 1 -Ofair -B  -Q tensorlakehouse-queue --loglevel=info
       environment:
@@ -30,7 +30,7 @@ services:
         - STAC_URL=http://stac:8080/
       restart: always
     stac:
-      image: stac-fastapi-pgstac:latest
+      image: tensorlakehouse/stac-fastapi-pgstac:0.1.4
       container_name: stac
       networks:
         - neta

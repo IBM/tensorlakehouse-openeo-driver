@@ -76,7 +76,8 @@ datacube==1.9.5
 dataflows-tabulator==1.54.3
 debugpy==1.8.14
 decorator==5.2.1
-deepdiff==8.5.0
+# deepdiff vulnerability https://github.com/IBM/tensorlakehouse-openeo-driver/security/dependabot/13
+deepdiff>=8.6.1
 defusedxml==0.7.1
 deprecat==2.1.3
 Deprecated==1.2.18
