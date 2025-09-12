@@ -57,7 +57,7 @@ def create_app(environment: str = "production") -> OpenEoApiApp:
     # "create_app" factory for Flask Application discovery
     # see https://flask.palletsprojects.com/en/2.1.x/cli/#application-discovery
     logger.debug(
-        f"Starting openeo-geodn-driver - Env vars: \nSTAC_URL={STAC_URL} \
+        f"Starting tensorlakehouse - Env vars: \nSTAC_URL={STAC_URL} \
         \nDASK_SCHEDULER_ADDRESS={DASK_SCHEDULER_ADDRESS}"
     )
     assert environment.lower() in [

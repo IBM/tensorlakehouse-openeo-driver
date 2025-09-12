@@ -1,7 +1,7 @@
 version: '3.7'
 services:
     webserver:
-      image: tensorlakehouse-openeo-driver:latest
+      image: tensorlakehouse/openeo-geodn-driver:20250910
       container_name: webserver
       networks:
         - neta
@@ -10,39 +10,49 @@ services:
         - PYTHONPATH=/opt/app-root/src/tensorlakehouse-openeo-driver
         - BROKER_URL=${BROKER_URL}
         - RESULT_BACKEND=${RESULT_BACKEND}
-        - CREDENTIALS=${CREDENTIALS}
-        - DASK_SCHEDULER_ADDRESS=${DASK_SCHEDULER_ADDRESS}
+        - DASK_SCHEDULER_ADDRESS=tcp://daskscheduler:8786
         - STAC_URL=http://stac:8080/
-        - APPID_ISSUER=${APPID_ISSUER}
-        - APPID_USERNAME=${APPID_USERNAME}
-        - APPID_PASSWORD=${APPID_PASSWORD}
-        - OPENEO_AUTH_CLIENT_ID=${OPENEO_AUTH_CLIENT_ID}
-        - OPENEO_AUTH_CLIENT_SECRET=${OPENEO_AUTH_CLIENT_SECRET}
       ports:
         - "9092:9091"
       restart: always
       depends_on:
         - stac
         - worker
+        - daskscheduler
     worker:
-      image: tensorlakehouse-openeo-driver:latest
+      image: tensorlakehouse/openeo-geodn-driver:20250910
       container_name: worker
+      networks:
+        - neta
       command: celery -A tensorlakehouse_openeo_driver.tasks worker -s /tmp/celerybeat-schedule --concurrency 2 --prefetch-multiplier 1 -Ofair -B  -Q tensorlakehouse-queue --loglevel=info
       environment:
         - PYTHONPATH=/opt/app-root/src/tensorlakehouse-openeo-driver
         - BROKER_URL=${BROKER_URL}
         - RESULT_BACKEND=${RESULT_BACKEND}
-        - CREDENTIALS=${CREDENTIALS}
-        - DASK_SCHEDULER_ADDRESS=${DASK_SCHEDULER_ADDRESS}
+        - DASK_SCHEDULER_ADDRESS=tcp://daskscheduler:8786
         - STAC_URL=http://stac:8080/
-        - APPID_ISSUER=${APPID_ISSUER}
-        - APPID_USERNAME=${APPID_USERNAME}
-        - APPID_PASSWORD=${APPID_PASSWORD}
-        - OPENEO_AUTH_CLIENT_ID=${OPENEO_AUTH_CLIENT_ID}
-        - OPENEO_AUTH_CLIENT_SECRET=${OPENEO_AUTH_CLIENT_SECRET}
       restart: always
+      depends_on:
+        - daskscheduler
+    daskscheduler:
+      image: daskdev/dask:2025.7.0-py3.11
+      networks:
+        - neta
+      command: dask scheduler
+      ports:
+        - "8786:8786" # Dask scheduler port
+        - "8787:8787" # Dask dashboard port
+    daskworker:
+      image: daskdev/dask:2025.7.0-py3.11
+      networks:
+        - neta
+      command: dask worker tcp://daskscheduler:8786
+      depends_on:
+        - daskscheduler
+      deploy:
+        replicas: 3 # 
     stac:
-      image: stac-fastapi-pgstac:latest
+      image: tensorlakehouse/stac-fastapi-pgstac:2025-09-11
       container_name: stac
       networks:
         - neta
@@ -55,6 +65,7 @@ services:
         - WEBCONCURRENCY=2
         - POSTGRES_USER=${POSTGRES_USER}
         - POSTGRES_PASS=${POSTGRES_PASS}
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
         - POSTGRES_DBNAME=${POSTGRES_DBNAME}
         - POSTGRES_HOST=${POSTGRES_HOST}
         - POSTGRES_HOST_READER=${POSTGRES_HOST_READER}
