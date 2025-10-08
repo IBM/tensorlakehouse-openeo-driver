@@ -34,6 +34,7 @@ services:
       restart: always
       depends_on:
         - daskscheduler
+        - stac
     daskscheduler:
       image: daskdev/dask:2025.7.0-py3.11
       networks:
