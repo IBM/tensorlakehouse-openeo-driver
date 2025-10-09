@@ -37,7 +37,9 @@ def make_dask_client() -> Client:
 
     client = None
     # if remote dask scheduler is available
-    if DASK_SCHEDULER_ADDRESS is not None and "0.0.0.0" in DASK_SCHEDULER_ADDRESS:
+    if DASK_SCHEDULER_ADDRESS is not None and (
+        "0.0.0.0" in DASK_SCHEDULER_ADDRESS or "127.0.0.1" in DASK_SCHEDULER_ADDRESS
+    ):
         # otherwise use local dask cluster
         cluster = LocalCluster(n_workers=4)
         logger.debug(f"\n\nDask dashboard link={cluster.dashboard_link}")
