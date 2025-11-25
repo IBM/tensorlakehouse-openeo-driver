@@ -12,7 +12,7 @@ assert isinstance(STAC_URL, str)
 LOGGING_CONF_PATH = Path(__file__).parent.parent / "logging.conf"
 assert LOGGING_CONF_PATH.exists()
 logging.config.fileConfig(fname=LOGGING_CONF_PATH, disable_existing_loggers=False)
-logger = logging.getLogger("geodnLogger")
+logger = logging.getLogger("tlhLogger")
 
 
 # appId credentials

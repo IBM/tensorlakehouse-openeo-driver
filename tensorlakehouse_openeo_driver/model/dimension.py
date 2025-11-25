@@ -14,7 +14,7 @@ from tensorlakehouse_openeo_driver.constants import (
 )
 
 logging.config.fileConfig(fname=LOGGING_CONF_PATH, disable_existing_loggers=False)
-logger = logging.getLogger("geodnLogger")
+logger = logging.getLogger("tlhLogger")
 
 
 class Dimension:

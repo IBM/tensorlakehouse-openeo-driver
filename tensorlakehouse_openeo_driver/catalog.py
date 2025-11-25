@@ -24,7 +24,7 @@ from tensorlakehouse_openeo_driver.stac.stac import make_stac_client
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("geodnLogger")
+logger = logging.getLogger("tlhLogger")
 
 
 class TensorLakehouseCollectionCatalog(CollectionCatalog):

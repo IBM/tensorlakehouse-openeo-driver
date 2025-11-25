@@ -13,7 +13,7 @@ from tensorlakehouse_openeo_driver.tensorlakehouse_backend import (
     TensorLakeHouseBackendImplementation,
 )
 
-# from openeo_driver.server import run_gunicorn
+from openeo_driver.server import run_gunicorn
 from openeo_driver.util.logging import get_logging_config, setup_logging, show_log_level
 from openeo_driver.views import OpenEoApiApp, build_app
 from tensorlakehouse_openeo_driver.constants import (
@@ -25,7 +25,7 @@ from tensorlakehouse_openeo_driver.constants import (
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("geodnLogger")
+logger = logging.getLogger("tlhLogger")
 
 
 def make_dask_client() -> Client:
@@ -69,8 +69,8 @@ def create_app(environment: str = "production") -> OpenEoApiApp:
     ], f"Error! Invalid environment: {environment}"
     app = build_app(backend_implementation=TensorLakeHouseBackendImplementation())
     app.config.from_mapping(
-        OPENEO_TITLE="GeoDN Backend compliant with OpenEO",
-        OPENEO_DESCRIPTION="GeoDN Backend compliant with OpenEO",
+        OPENEO_TITLE="Tensorlakehouse Backend compliant with OpenEO",
+        OPENEO_DESCRIPTION="Tensorlakehouse Backend compliant with OpenEO",
         OPENEO_BACKEND_VERSION=openeo_driver.__version__,
     )
     if environment.lower() == "dev":
@@ -112,5 +112,5 @@ if __name__ == "__main__":
     port = TENSORLAKEHOUSE_OPENEO_DRIVER_PORT
     debug = os.getenv("FLASK_DEBUG", False)
     app.run(host=host, port=port, debug=debug)
-    # print(f"Running gunicorn {host}:{port}")
-    # run_gunicorn(app=app, threads=4, host=host, port=port)
+    print(f"Running gunicorn {host}:{port}")
+    run_gunicorn(app=app, threads=4, host=host, port=port)

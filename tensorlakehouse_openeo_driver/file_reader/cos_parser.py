@@ -16,7 +16,7 @@ from tensorlakehouse_openeo_driver.util.object_storage_util import (
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("geodnLogger")
+logger = logging.getLogger("tlhLogger")
 
 
 class COSConnector:

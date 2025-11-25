@@ -31,7 +31,7 @@ from openeo.udf import run_udf_code
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("geodnLogger")
+logger = logging.getLogger("tlhLogger")
 
 
 class TensorlakehouseProcessing(ConcreteProcessing):

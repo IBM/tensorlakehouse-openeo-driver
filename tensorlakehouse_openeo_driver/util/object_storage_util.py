@@ -5,7 +5,7 @@ import logging.config
 
 assert os.path.isfile("logging.conf")
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("geodnLogger")
+logger = logging.getLogger("tlhLogger")
 
 
 def get_credentials_by_bucket(bucket: str) -> Dict[str, Optional[str]]:

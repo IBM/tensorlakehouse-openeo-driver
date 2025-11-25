@@ -58,7 +58,7 @@ from tensorlakehouse_openeo_driver.stac.stac import make_stac_client
 from tensorlakehouse_openeo_driver.stac.stac_utils import get_dimension_names
 
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("geodnLogger")
+logger = logging.getLogger("tlhLogger")
 
 NEW_DIM_NAME = "__cubes__"
 NEW_DIM_COORDS = ["cube1", "cube2"]

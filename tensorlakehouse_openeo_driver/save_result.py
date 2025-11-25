@@ -24,7 +24,7 @@ import zipfile
 import os
 
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("geodnLogger")
+logger = logging.getLogger("tlhLogger")
 
 
 class GeoDNImageCollectionResult(ImageCollectionResult):
