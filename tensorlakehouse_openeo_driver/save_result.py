@@ -19,13 +19,11 @@ from tensorlakehouse_openeo_driver.constants import (
     PARQUET,
 )
 import logging
-import logging.config
 import zipfile
 import os
 
-logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("tlhLogger")
-
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class GeoDNImageCollectionResult(ImageCollectionResult):
     def __init__(

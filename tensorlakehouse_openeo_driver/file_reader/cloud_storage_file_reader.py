@@ -12,9 +12,8 @@ from datetime import datetime
 from openeo_pg_parser_networkx.pg_schema import ParameterReference
 from tensorlakehouse_openeo_driver.util import object_storage_util
 
-assert os.path.isfile("logging.conf")
-logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("tlhLogger")
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class CloudStorageFileReader:

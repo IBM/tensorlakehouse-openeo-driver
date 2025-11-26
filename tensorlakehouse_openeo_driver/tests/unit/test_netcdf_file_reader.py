@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import pytest
 import xarray as xr
@@ -22,11 +23,7 @@ import os
 
 ITEM_CUBE_DIM_LEVEL = {
     "bbox": [-18, -9, 17, 8],
-    "assets": {
-        "data": {
-            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/no_time_dim_data_.nc"
-        }
-    },
+    "assets": {"data": {"href": "./tests/unit_test_data/no_time_dim_data_.nc"}},
     "properties": {
         "datetime": "2000-11-30T00:00:00Z",
         "cube:dimensions": {
@@ -59,6 +56,80 @@ ITEM_CUBE_DIM_LEVEL = {
     },
 }
 
+MOCK_ERA5_ITEM = {
+    "stac_version": "1.0.0",
+    "stac_extensions": [
+        "https://stac-extensions.github.io/scientific/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/datacube/v2.2.0/schema.json",
+    ],
+    "type": "Feature",
+    "id": "era5_global_jan2024_t2m_conv_latlon",
+    "collection": "era5-reanalysis-global-conv-latlon",
+    "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [-180.0, -90.0],
+                [179.75, -90.0],
+                [179.75, 90.0],
+                [-180.0, 90.0],
+                [-180.0, -90.0],
+            ]
+        ],
+    },
+    "bbox": [-180.0, -90.0, 179.75, 90.0],
+    "properties": {
+        "datetime": "2024-01-01T00:00:00+00:00",
+        "start_datetime": "2024-01-01T00:00:00+00:00",
+        "end_datetime": "2024-01-31T23:00:00+00:00",
+        "cube:dimensions": {
+            "t": {
+                "type": "temporal",
+                "extent": ["2020-01-01T00:00:00+00:00", "2020-01-31T23:00:00+00:00"],
+            },
+            "x": {
+                "type": "spatial",
+                "axis": "x",
+                "extent": [-180.0, 179.75],
+                "reference_system": 4326,
+                "step": 0.01,
+            },
+            "y": {
+                "type": "spatial",
+                "axis": "y",
+                "extent": [-90.0, 90.0],
+                "reference_system": 4326,
+                "step": 0.01,
+            },
+        },
+        "cube:variables": {
+            "tasmax": {
+                "dimensions": ["t", "y", "x"],
+                "type": "float32",
+                "description": "2 metre temperature",
+                "unit": "K",
+            }
+        },
+        "gsd": 0.25,
+    },
+    "assets": {
+        "data": {
+            "href": "./tests/unit_test_data/filename_2000_2001.nc",
+            "type": "application/netcdf",
+            "title": "ERA5 Reanalysis Data",
+            "description": "NetCDF file containing ERA5 reanalysis data",
+            "roles": ["data"],
+        }
+    },
+    "links": [
+        {
+            "rel": "collection",
+            "href": "./era5-reanalysis-global-conv-latlon/collection.json",
+            "type": "application/json",
+        }
+    ],
+}
+
 
 class FakeS3Filesystem:
 
@@ -74,9 +145,7 @@ class FakeS3Filesystem:
                 {
                     "bbox": [-1, 51, 0, 52],
                     "assets": {
-                        "data": {
-                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/filename_2000_2001.nc"
-                        }
+                        "data": {"href": "./tests/unit_test_data/filename_2000_2001.nc"}
                     },
                     "properties": {
                         "start_datetime": "2000-01-01T00:00:00Z",
@@ -109,9 +178,7 @@ class FakeS3Filesystem:
                 {
                     "bbox": [-1, 51, 0, 52],
                     "assets": {
-                        "data": {
-                            "href": "./tensorlakehouse_openeo_driver/tests/unit_test_data/filename_2001_2002.nc"
-                        }
+                        "data": {"href": "./tests/unit_test_data/filename_2001_2002.nc"}
                     },
                     "properties": {
                         "start_datetime": "2000-01-01T00:00:00Z",
@@ -196,6 +263,20 @@ class FakeS3Filesystem:
                 "level": 1,
             },
         ),
+        (
+            [MOCK_ERA5_ITEM],
+            (-0.9, 51.2, -0.1, 51.9),
+            (datetime(2000, 11, 30), datetime(2000, 11, 30)),
+            None,
+            ["tasmax"],
+            4326,
+            {
+                "t": 1,
+                "y": 70,
+                "x": 80,
+                DEFAULT_BANDS_DIMENSION: 1,
+            },
+        ),
     ],
 )
 def test_load_items(
@@ -212,6 +293,11 @@ def test_load_items(
     os.environ["TLH_MYBUCKET_ENDPOINT"] = (
         "s3.us-south.cloud-object-storage.appdomain.cloud"
     )
+    for item in items:
+        asset = item["assets"]["data"]
+        href = asset["href"]
+        path = Path(".") / href
+        assert path.exists(), f"Error! {path} file does not exist"
 
     with patch.object(
         NetCDFFileReader, "create_s3filesystem", return_value=FakeS3Filesystem()

@@ -8,7 +8,6 @@ from tensorlakehouse_openeo_driver.constants import (
     NETCDF,
     PARQUET,
     TENSORLAKEHOUSE_OPENEO_DRIVER_DATA_DIR,
-    logger,
 )
 from shapely.geometry.polygon import Polygon
 from shapely.ops import unary_union
@@ -18,8 +17,13 @@ import pandas as pd
 
 from tensorlakehouse_openeo_driver.processing import TensorlakehouseProcessing
 from tensorlakehouse_openeo_driver.save_result import GeoDNImageCollectionResult
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = Celery("tasks")
+
 
 app.config_from_object("tensorlakehouse_openeo_driver.celeryconfig")
 # TODO replace this by environment variable

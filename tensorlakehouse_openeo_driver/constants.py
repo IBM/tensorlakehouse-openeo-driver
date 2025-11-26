@@ -1,18 +1,14 @@
 import logging
-import logging.config
 import os
 from pathlib import Path
 from typing import Optional
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # set URL of STAC service, which provides collections and items
 STAC_URL = os.environ["STAC_URL"]
 assert STAC_URL is not None
 assert isinstance(STAC_URL, str)
-
-LOGGING_CONF_PATH = Path(__file__).parent.parent / "logging.conf"
-assert LOGGING_CONF_PATH.exists()
-logging.config.fileConfig(fname=LOGGING_CONF_PATH, disable_existing_loggers=False)
-logger = logging.getLogger("tlhLogger")
 
 
 # appId credentials

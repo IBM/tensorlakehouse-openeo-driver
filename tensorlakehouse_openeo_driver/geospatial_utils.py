@@ -129,7 +129,7 @@ def clip_box(
         input_crs = CRS.from_epsg(crs)
         data.rio.write_crs(input_crs, inplace=True)
     # area selected by the end-user
-    minx, miny, maxx, maxy = bbox
+    min_input_x, min_input_y, max_input_x, max_input_y = bbox
     # get coords
     x_coord = get_xarray_coord(data=data, dimension=x_dim)
     assert x_coord is not None
@@ -151,9 +151,13 @@ def clip_box(
     else:
 
         data = data.assign_coords({x_coord: (((data[x_coord] + 180) % 360) - 180)})
-        data = _rename_coords(
-            data=data, x_coord=x_coord, x_dim=x_dim, y_coord=y_coord, y_dim=y_dim
-        )
+        # data = _rename_coords(
+        #     data=data,
+        #     x_coord=DEFAULT_X_DIMENSION,
+        #     x_dim=x_dim,
+        #     y_coord=DEFAULT_Y_DIMENSION,
+        #     y_dim=y_dim,
+        # )
         # clip_box works if coords and dims have the same name
         rename_dict = dict()
         if y_dim != DEFAULT_Y_DIMENSION:
@@ -164,12 +168,16 @@ def clip_box(
             data = data.rename(rename_dict)
 
         # adjust user input based on the limits of the data coordinates
-        minx = max(minx, min(data[DEFAULT_X_DIMENSION].values.flatten()))
-        maxx = min(maxx, max(data[DEFAULT_X_DIMENSION].values.flatten()))
+        minx = min(data[DEFAULT_X_DIMENSION].values.flatten())
+        minx = max(min_input_x, minx)
+        maxx = max(data[DEFAULT_X_DIMENSION].values.flatten())
+        maxx = min(max_input_x, maxx)
         assert minx < maxx, f"Error! {minx=} >= {maxx=}"
-        miny = max(miny, min(data[DEFAULT_Y_DIMENSION].values.flatten()))
-        maxy = min(maxy, max(data[DEFAULT_Y_DIMENSION].values.flatten()))
-        assert miny < maxy, f"Error! {miny=} >= {maxy=}"
+        miny = min(data[DEFAULT_Y_DIMENSION].values.flatten())
+        miny = max(min_input_y, miny)
+        maxy = max(data[DEFAULT_Y_DIMENSION].values.flatten())
+        maxy = min(max_input_y, maxy)
+        assert miny < maxy, f"Error! {miny} >= {maxy=}"
 
         try:
             data = data.rio.clip_box(
@@ -182,10 +190,10 @@ def clip_box(
         except TypeError:
             # handling the case when a given coord has multiple dimensions (curvilinear)
             data = data.where(
-                (data.x <= maxx)
-                & (data.x >= minx)
-                & (data.y <= maxy)
-                & (data.y >= miny),
+                (data.x <= max_input_x)
+                & (data.x >= min_input_x)
+                & (data.y <= max_input_y)
+                & (data.y >= min_input_y),
                 drop=True,
             )
         except OneDimensionalRaster:
@@ -193,9 +201,9 @@ def clip_box(
 
             # assumption: coordinates are sorted
             # get index of x that is smaller than minx
-            minx_index = bisect.bisect_left(a=data.x.values.flatten(), x=minx)
+            minx_index = bisect.bisect_left(a=data.x.values.flatten(), x=min_input_x)
             # get index of x that is greater than maxx
-            maxx_index = bisect.bisect_right(a=data.x.values.flatten(), x=maxx)
+            maxx_index = bisect.bisect_right(a=data.x.values.flatten(), x=max_input_x)
             if minx_index == maxx_index:
                 if minx_index > 0:
                     minx_index -= 1
@@ -203,9 +211,9 @@ def clip_box(
                     maxx_index += 1
 
             # get index of y that is smaller than miny
-            miny_index = bisect.bisect_left(a=data.y.values.flatten(), x=miny)
+            miny_index = bisect.bisect_left(a=data.y.values.flatten(), x=min_input_y)
             # get index of y that is smaller than maxy
-            maxy_index = bisect.bisect_right(a=data.y.values.flatten(), x=maxy)
+            maxy_index = bisect.bisect_right(a=data.y.values.flatten(), x=max_input_y)
             if miny_index == maxy_index:
                 if miny_index > 0:
                     miny_index -= 1

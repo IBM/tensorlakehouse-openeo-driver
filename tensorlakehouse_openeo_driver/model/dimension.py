@@ -4,18 +4,15 @@ import pandas as pd
 
 
 import logging
-import logging.config
 
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_Z_DIMENSION,
-    LOGGING_CONF_PATH,
     DEFAULT_X_DIMENSION,
     DEFAULT_Y_DIMENSION,
 )
 
-logging.config.fileConfig(fname=LOGGING_CONF_PATH, disable_existing_loggers=False)
-logger = logging.getLogger("tlhLogger")
-
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class Dimension:
     def __init__(self, description: str, type: str = "spatial") -> None:

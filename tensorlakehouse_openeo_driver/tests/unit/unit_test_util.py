@@ -1336,10 +1336,10 @@ def generate_curvilinear_xarray(
 ) -> xr.Dataset:
     west, south, east, north = bbox
     # Create the Dataset
-    lon_2d = np.random.rand(nx, ny) * (east - west) + west 
-    lat_2d = np.random.rand(nx, ny) * (north  - south) + south 
+    lon_2d = np.random.rand(nx, ny) * (east - west) + west
+    lat_2d = np.random.rand(nx, ny) * (north - south) + south
     data = dict()
-    factors = [1000 * (10 ** i) for i in range(1, len(bands) + 1)]
+    factors = [1000 * (10**i) for i in range(1, len(bands) + 1)]
     for band, factor in zip(bands, factors):
         data_values = np.random.rand(nx, ny) * factor
         data[band] = (("y", "x"), data_values)

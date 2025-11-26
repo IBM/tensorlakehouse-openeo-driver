@@ -1,4 +1,3 @@
-import os
 from typing import Any, Dict, List, Optional
 
 from pystac_client import CollectionClient
@@ -22,9 +21,8 @@ from tensorlakehouse_openeo_driver.model.dimension import (
 )
 from tensorlakehouse_openeo_driver.stac.stac import make_stac_client
 
-assert os.path.isfile("logging.conf")
-logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("tlhLogger")
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class TensorLakehouseCollectionCatalog(CollectionCatalog):

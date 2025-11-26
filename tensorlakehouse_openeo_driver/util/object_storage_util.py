@@ -1,11 +1,9 @@
 import os
 from typing import Dict, Optional
 import logging
-import logging.config
 
-assert os.path.isfile("logging.conf")
-logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("tlhLogger")
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 def get_credentials_by_bucket(bucket: str) -> Dict[str, Optional[str]]:
@@ -98,4 +96,3 @@ if __name__ == "__main__":
         assert isinstance(env_var, dict)
         for v in env_var.values():
             assert v is not None
-        

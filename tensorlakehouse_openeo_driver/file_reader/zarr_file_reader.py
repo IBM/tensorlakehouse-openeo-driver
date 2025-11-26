@@ -18,9 +18,8 @@ from tensorlakehouse_openeo_driver.geospatial_utils import (
     reproject_bbox,
 )
 
-assert os.path.isfile("logging.conf")
-logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("tlhLogger")
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class ZarrFileReader(CloudStorageFileReader):

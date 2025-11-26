@@ -167,7 +167,7 @@ class Grib2FileReader(RasterFileReader):
         """convert a curvilinear grid to a rectilinear grid
 
         Args:
-            arr (xr.DataArray): object that has a curvilinear grid 
+            arr (xr.DataArray): object that has a curvilinear grid
             x_coord (str, optional): name of x coord. Defaults to DEFAULT_X_DIMENSION.
             y_coord (str, optional): name of y coord. Defaults to DEFAULT_Y_DIMENSION.
             x_dim (str, optional): name of x dim. Defaults to DEFAULT_X_DIMENSION.
@@ -184,7 +184,7 @@ class Grib2FileReader(RasterFileReader):
         # get all x and y coord values
         longitude_values = arr.coords[x_coord].values.flatten()
         latitude_values = arr.coords[y_coord].values.flatten()
-        # find max and min for both x and y 
+        # find max and min for both x and y
         minx = min(longitude_values)
         maxx = max(longitude_values)
         assert minx < maxx, f"Error! {minx=} >= {maxx=}"
