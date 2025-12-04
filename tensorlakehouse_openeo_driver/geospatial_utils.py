@@ -66,19 +66,6 @@ def get_xarray_coord(data: xr.DataArray, dimension: str) -> str | None:
     return coord_name
 
 
-def _rename_coords(
-    data: xr.DataArray, y_coord: str, x_coord: str, y_dim: str, x_dim: str
-) -> xr.DataArray:
-    rename_dict = dict()
-    if y_coord != y_dim:
-        rename_dict[y_coord] = y_dim
-    if x_coord != x_dim:
-        rename_dict[x_coord] = x_dim
-    if len(rename_dict) > 0:
-        data = data.rename(rename_dict)
-    return data
-
-
 def _clip_curvilinear_raster(
     data: xr.DataArray,
     bbox: Tuple[float, float, float, float],
@@ -112,17 +99,7 @@ def clip_box(
     y_dim: str,
     crs: Optional[int] = 4326,
 ) -> xr.DataArray:
-    """filter out data that is not within bbox
-
-    Args:
-        data (xr.Dataset): data cube obtained from COS
-        bbox (List[float]): area of interest (west, south, east, north)
-        crs (int): reference system
-        items (List[Item]): list of STAC items
-
-    Returns:
-        xr.DataArray: filtered xarray
-    """
+   
 
     # set CRS
     if data.rio.crs is None:
@@ -150,14 +127,6 @@ def clip_box(
         )
     else:
 
-        data = data.assign_coords({x_coord: (((data[x_coord] + 180) % 360) - 180)})
-        # data = _rename_coords(
-        #     data=data,
-        #     x_coord=DEFAULT_X_DIMENSION,
-        #     x_dim=x_dim,
-        #     y_coord=DEFAULT_Y_DIMENSION,
-        #     y_dim=y_dim,
-        # )
         # clip_box works if coords and dims have the same name
         rename_dict = dict()
         if y_dim != DEFAULT_Y_DIMENSION:
@@ -180,8 +149,11 @@ def clip_box(
         assert miny < maxy, f"Error! {miny} >= {maxy=}"
 
         try:
+            reference_system = None
+            if isinstance(crs, int):
+                reference_system = CRS.from_epsg(crs)
             data = data.rio.clip_box(
-                minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=crs
+                minx=minx, miny=miny, maxx=maxx, maxy=maxy, crs=reference_system
             )
             # restore original dimension names
             reversed_dict = {v: k for k, v in rename_dict.items()}
@@ -517,6 +489,7 @@ def reproject_bbox(
     bbox: Tuple[float, float, float, float],
     dst_crs: Union[int, str],
     src_crs: Union[int, str] = 4326,
+    is_360_degree: bool = False,
 ) -> Tuple[float, float, float, float]:
     """reproject bounding box to specified dst_crs
 
@@ -530,20 +503,23 @@ def reproject_bbox(
     """
     crs_from: CRS = _get_epsg(crs_code=src_crs)
     crs_to: CRS = _get_epsg(crs_code=dst_crs)
-    if crs_from.to_epsg() == crs_to.to_epsg():
-        return bbox
+    # check if origin and target CRS are different
+    if crs_from.to_epsg() != crs_to.to_epsg():
 
-    transformer = pyproj.Transformer.from_crs(
-        crs_from=crs_from, crs_to=crs_to, always_xy=True
-    )
-    minx, miny, maxx, maxy = bbox
-    assert minx <= maxx, f"Error! {minx=} <= {maxx=} is false"
-    assert miny <= maxy, f"Error! {miny=} <= {maxy=} is false"
-    repr_minx, repr_miny = transformer.transform(minx, miny)
-    repr_maxx, repr_maxy = transformer.transform(maxx, maxy)
-    assert repr_minx <= repr_maxx, f"Error! {repr_minx=} <= {repr_maxx=}"
-    assert repr_miny <= repr_maxy, f"Error! {repr_miny=} <= {repr_maxy=}"
-    return (repr_minx, repr_miny, repr_maxx, repr_maxy)
+        transformer = pyproj.Transformer.from_crs(
+            crs_from=crs_from, crs_to=crs_to, always_xy=True
+        )
+        minx, miny, maxx, maxy = bbox
+        assert minx <= maxx, f"Error! {minx=} <= {maxx=} is false"
+        assert miny <= maxy, f"Error! {miny=} <= {maxy=} is false"
+        repr_minx, repr_miny = transformer.transform(minx, miny)
+        repr_maxx, repr_maxy = transformer.transform(maxx, maxy)
+        assert repr_minx <= repr_maxx, f"Error! {repr_minx=} <= {repr_maxx=}"
+        assert repr_miny <= repr_maxy, f"Error! {repr_miny=} <= {repr_maxy=}"
+        bbox = (repr_minx, repr_miny, repr_maxx, repr_maxy)
+    if is_360_degree:
+        bbox = convert_bbox_to_360_degrees_system(bbox=bbox)
+    return bbox
 
 
 def _get_epsg(crs_code: Union[str, int]) -> CRS:
@@ -605,9 +581,23 @@ def from_bbox_to_polygon(bbox: Tuple[float, float, float, float]) -> Polygon:
     return p
 
 
-def convert_longitude_coords(lon: float) -> float:
-    new_lon = float(((lon + 180.0) % 360.0) - 180.0)
-    return new_lon
+def convert_longitude_to_0_360(lon):
+    if lon < 0:
+        return lon + 360
+    else:
+        return lon
+
+
+def convert_bbox_to_360_degrees_system(
+    bbox: tuple[float, float, float, float],
+) -> tuple[float, float, float, float]:
+    if len(bbox) != 4:
+        raise ValueError(f"Error! Invalid bbox={bbox}")
+    else:
+        minx, miny, maxx, maxy = bbox
+        new_minx = convert_longitude_to_0_360(minx)
+        new_maxx = convert_longitude_to_0_360(maxx)
+        return (new_minx, miny, new_maxx, maxy)
 
 
 def main():

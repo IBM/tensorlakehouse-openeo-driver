@@ -45,6 +45,17 @@ class NetCDFFileReader(RasterFileReader):
             properties=properties,
         )
 
+    def _is_360_degree_system(self) -> bool:
+        item = self.items[0]
+        cube_dimensions = item.properties.get("cube:dimensions", {})
+        for dim in cube_dimensions.values():
+            if dim["type"] == "spatial" and dim["axis"] == "x":
+                extents = dim.get("extent")
+
+                if isinstance(extents, list) and len(extents) == 2 and extents[1] > 180:
+                    return True
+        return False
+
     def load_items(self) -> xr.DataArray:
         """load items that are associated with netcdf files
 
@@ -125,8 +136,12 @@ class NetCDFFileReader(RasterFileReader):
             data_array = data_arrays.pop()
         # filter by area of interest
         assert isinstance(crs_code, int), f"Error! Invalid type: {crs_code=}"
+        is_360_degree_system = self._is_360_degree_system()
         reprojected_bbox = reproject_bbox(
-            bbox=self.bbox, src_crs=4326, dst_crs=crs_code
+            bbox=self.bbox,
+            src_crs=4326,
+            dst_crs=crs_code,
+            is_360_degree=is_360_degree_system,
         )
         assert (
             x_dim is not None and y_dim is not None

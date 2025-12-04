@@ -79,22 +79,22 @@ MOCK_ERA5_ITEM = {
     },
     "bbox": [-180.0, -90.0, 179.75, 90.0],
     "properties": {
-        "datetime": "2024-01-01T00:00:00+00:00",
+        "datetime": None,
         "start_datetime": "2024-01-01T00:00:00+00:00",
         "end_datetime": "2024-01-31T23:00:00+00:00",
         "cube:dimensions": {
-            "t": {
+            "valid_time": {
                 "type": "temporal",
                 "extent": ["2020-01-01T00:00:00+00:00", "2020-01-31T23:00:00+00:00"],
             },
-            "x": {
+            "longitude": {
                 "type": "spatial",
                 "axis": "x",
-                "extent": [-180.0, 179.75],
+                "extent": [0.0, 360.0],
                 "reference_system": 4326,
                 "step": 0.01,
             },
-            "y": {
+            "latitude": {
                 "type": "spatial",
                 "axis": "y",
                 "extent": [-90.0, 90.0],
@@ -103,8 +103,8 @@ MOCK_ERA5_ITEM = {
             },
         },
         "cube:variables": {
-            "tasmax": {
-                "dimensions": ["t", "y", "x"],
+            "t2m": {
+                "dimensions": ["valid_time", "latitude", "longitude"],
                 "type": "float32",
                 "description": "2 metre temperature",
                 "unit": "K",
@@ -114,7 +114,7 @@ MOCK_ERA5_ITEM = {
     },
     "assets": {
         "data": {
-            "href": "./tests/unit_test_data/filename_2000_2001.nc",
+            "href": "/Users/ltizzei/Downloads/era5_global_jan2024_t2m.nc",
             "type": "application/netcdf",
             "title": "ERA5 Reanalysis Data",
             "description": "NetCDF file containing ERA5 reanalysis data",
@@ -266,14 +266,14 @@ class FakeS3Filesystem:
         (
             [MOCK_ERA5_ITEM],
             (-0.9, 51.2, -0.1, 51.9),
-            (datetime(2000, 11, 30), datetime(2000, 11, 30)),
+            (datetime(2024, 1, 1), datetime(2024, 1, 3)),
             None,
-            ["tasmax"],
+            ["t2m"],
             4326,
             {
-                "t": 1,
-                "y": 70,
-                "x": 80,
+                "valid_time": 49,
+                "longitude": 4,
+                "latitude": 4,
                 DEFAULT_BANDS_DIMENSION: 1,
             },
         ),
