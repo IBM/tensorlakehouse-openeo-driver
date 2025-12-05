@@ -104,7 +104,7 @@ assert result_backend is not None, "Error! RESULT_BACKEND is None"
 REDIS_CERT_NAME = os.getenv("REDIS_CERT_NAME")
 REDIS_CERT = os.getenv("REDIS_CERT")
 
-
+TEST_WORKING_DIR = Path(__file__).parent / "tests" 
 KUBEFLOW_PIPELINE_API = os.getenv("KUBEFLOW_PIPELINE_API")
 
 NASA_STAC = "https://cmr.earthdata.nasa.gov/stac/LPCLOUD"

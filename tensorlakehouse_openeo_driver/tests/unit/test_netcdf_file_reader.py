@@ -5,6 +5,7 @@ import xarray as xr
 from tensorlakehouse_openeo_driver.constants import (
     DEFAULT_BANDS_DIMENSION,
     DEFAULT_TIME_DIMENSION,
+    TEST_WORKING_DIR
 )
 from tensorlakehouse_openeo_driver.file_reader.cloud_storage_file_reader import (
     CloudStorageFileReader,
@@ -20,10 +21,13 @@ from tensorlakehouse_openeo_driver.stac.stac_utils import make_pystac_item
 from tensorlakehouse_openeo_driver.util import object_storage_util
 import os
 
+FILENAME_2000_2001 = TEST_WORKING_DIR / "unit_test_data" / "filename_2000_2001.nc"
+FILENAME_2001_2002 = TEST_WORKING_DIR / "unit_test_data" / "filename_2001_2002.nc"
+NO_TIME_DIM_DATA = TEST_WORKING_DIR / "unit_test_data" / "no_time_dim_data_.nc"
 
 ITEM_CUBE_DIM_LEVEL = {
     "bbox": [-18, -9, 17, 8],
-    "assets": {"data": {"href": "./tests/unit_test_data/no_time_dim_data_.nc"}},
+    "assets": {"data": {"href": NO_TIME_DIM_DATA}},
     "properties": {
         "datetime": "2000-11-30T00:00:00Z",
         "cube:dimensions": {
@@ -43,6 +47,7 @@ ITEM_CUBE_DIM_LEVEL = {
             },
             "level": {
                 "type": "spatial",
+                "axis": "z",
                 "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             },
             "time": {
@@ -56,79 +61,79 @@ ITEM_CUBE_DIM_LEVEL = {
     },
 }
 
-MOCK_ERA5_ITEM = {
-    "stac_version": "1.0.0",
-    "stac_extensions": [
-        "https://stac-extensions.github.io/scientific/v1.0.0/schema.json",
-        "https://stac-extensions.github.io/datacube/v2.2.0/schema.json",
-    ],
-    "type": "Feature",
-    "id": "era5_global_jan2024_t2m_conv_latlon",
-    "collection": "era5-reanalysis-global-conv-latlon",
-    "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-            [
-                [-180.0, -90.0],
-                [179.75, -90.0],
-                [179.75, 90.0],
-                [-180.0, 90.0],
-                [-180.0, -90.0],
-            ]
-        ],
-    },
-    "bbox": [-180.0, -90.0, 179.75, 90.0],
-    "properties": {
-        "datetime": None,
-        "start_datetime": "2024-01-01T00:00:00+00:00",
-        "end_datetime": "2024-01-31T23:00:00+00:00",
-        "cube:dimensions": {
-            "valid_time": {
-                "type": "temporal",
-                "extent": ["2020-01-01T00:00:00+00:00", "2020-01-31T23:00:00+00:00"],
-            },
-            "longitude": {
-                "type": "spatial",
-                "axis": "x",
-                "extent": [0.0, 360.0],
-                "reference_system": 4326,
-                "step": 0.01,
-            },
-            "latitude": {
-                "type": "spatial",
-                "axis": "y",
-                "extent": [-90.0, 90.0],
-                "reference_system": 4326,
-                "step": 0.01,
-            },
-        },
-        "cube:variables": {
-            "t2m": {
-                "dimensions": ["valid_time", "latitude", "longitude"],
-                "type": "float32",
-                "description": "2 metre temperature",
-                "unit": "K",
-            }
-        },
-        "gsd": 0.25,
-    },
-    "assets": {
-        "data": {
-            "href": "/Users/ltizzei/Downloads/era5_global_jan2024_t2m.nc",
-            "type": "application/netcdf",
-            "title": "ERA5 Reanalysis Data",
-            "description": "NetCDF file containing ERA5 reanalysis data",
-            "roles": ["data"],
-        }
-    },
-    "links": [
-        {
-            "rel": "collection",
-            "href": "./era5-reanalysis-global-conv-latlon/collection.json",
-            "type": "application/json",
-        }
-    ],
-}
+# MOCK_ERA5_ITEM = {
+#     "stac_version": "1.0.0",
+#     "stac_extensions": [
+#         "https://stac-extensions.github.io/scientific/v1.0.0/schema.json",
+#         "https://stac-extensions.github.io/datacube/v2.2.0/schema.json",
+#     ],
+#     "type": "Feature",
+#     "id": "era5_global_jan2024_t2m_conv_latlon",
+#     "collection": "era5-reanalysis-global-conv-latlon",
+#     "geometry": {
+#         "type": "Polygon",
+#         "coordinates": [
+#             [
+#                 [-180.0, -90.0],
+#                 [179.75, -90.0],
+#                 [179.75, 90.0],
+#                 [-180.0, 90.0],
+#                 [-180.0, -90.0],
+#             ]
+#         ],
+#     },
+#     "bbox": [-180.0, -90.0, 179.75, 90.0],
+#     "properties": {
+#         "datetime": None,
+#         "start_datetime": "2024-01-01T00:00:00+00:00",
+#         "end_datetime": "2024-01-31T23:00:00+00:00",
+#         "cube:dimensions": {
+#             "valid_time": {
+#                 "type": "temporal",
+#                 "extent": ["2020-01-01T00:00:00+00:00", "2020-01-31T23:00:00+00:00"],
+#             },
+#             "longitude": {
+#                 "type": "spatial",
+#                 "axis": "x",
+#                 "extent": [0.0, 360.0],
+#                 "reference_system": 4326,
+#                 "step": 0.01,
+#             },
+#             "latitude": {
+#                 "type": "spatial",
+#                 "axis": "y",
+#                 "extent": [-90.0, 90.0],
+#                 "reference_system": 4326,
+#                 "step": 0.01,
+#             },
+#         },
+#         "cube:variables": {
+#             "t2m": {
+#                 "dimensions": ["valid_time", "latitude", "longitude"],
+#                 "type": "float32",
+#                 "description": "2 metre temperature",
+#                 "unit": "K",
+#             }
+#         },
+#         "gsd": 0.25,
+#     },
+#     "assets": {
+#         "data": {
+#             "href": "/Users/ltizzei/Downloads/era5_global_jan2024_t2m.nc",
+#             "type": "application/netcdf",
+#             "title": "ERA5 Reanalysis Data",
+#             "description": "NetCDF file containing ERA5 reanalysis data",
+#             "roles": ["data"],
+#         }
+#     },
+#     "links": [
+#         {
+#             "rel": "collection",
+#             "href": "./era5-reanalysis-global-conv-latlon/collection.json",
+#             "type": "application/json",
+#         }
+#     ],
+# }
 
 
 class FakeS3Filesystem:
@@ -145,7 +150,7 @@ class FakeS3Filesystem:
                 {
                     "bbox": [-1, 51, 0, 52],
                     "assets": {
-                        "data": {"href": "./tests/unit_test_data/filename_2000_2001.nc"}
+                        "data": {"href": FILENAME_2000_2001}
                     },
                     "properties": {
                         "start_datetime": "2000-01-01T00:00:00Z",
@@ -178,7 +183,7 @@ class FakeS3Filesystem:
                 {
                     "bbox": [-1, 51, 0, 52],
                     "assets": {
-                        "data": {"href": "./tests/unit_test_data/filename_2001_2002.nc"}
+                        "data": {"href": FILENAME_2001_2002}
                     },
                     "properties": {
                         "start_datetime": "2000-01-01T00:00:00Z",
@@ -263,20 +268,20 @@ class FakeS3Filesystem:
                 "level": 1,
             },
         ),
-        (
-            [MOCK_ERA5_ITEM],
-            (-0.9, 51.2, -0.1, 51.9),
-            (datetime(2024, 1, 1), datetime(2024, 1, 3)),
-            None,
-            ["t2m"],
-            4326,
-            {
-                "valid_time": 49,
-                "longitude": 4,
-                "latitude": 4,
-                DEFAULT_BANDS_DIMENSION: 1,
-            },
-        ),
+        # (
+        #     [MOCK_ERA5_ITEM],
+        #     (-0.9, 51.2, -0.1, 51.9),
+        #     (datetime(2024, 1, 1), datetime(2024, 1, 3)),
+        #     None,
+        #     ["t2m"],
+        #     4326,
+        #     {
+        #         "valid_time": 49,
+        #         "longitude": 4,
+        #         "latitude": 4,
+        #         DEFAULT_BANDS_DIMENSION: 1,
+        #     },
+        # ),
     ],
 )
 def test_load_items(
@@ -296,7 +301,8 @@ def test_load_items(
     for item in items:
         asset = item["assets"]["data"]
         href = asset["href"]
-        path = Path(".") / href
+        path = Path(href)
+        # path = TEST_WORKING_DIR / href
         assert path.exists(), f"Error! {path} file does not exist"
 
     with patch.object(

@@ -46,6 +46,15 @@ class NetCDFFileReader(RasterFileReader):
         )
 
     def _is_360_degree_system(self) -> bool:
+        """
+        Check if the system represents a 360-degree environment based on the first item's cube dimensions.
+
+        This method examines the first item in the collection to determine if it describes a 360-degree system.
+        It looks for a spatial dimension along the x-axis with an extent greater than 180 degrees.
+
+        Returns:
+            bool: True if the system is a 360-degree environment, False otherwise.
+        """
         item = self.items[0]
         cube_dimensions = item.properties.get("cube:dimensions", {})
         for dim in cube_dimensions.values():
