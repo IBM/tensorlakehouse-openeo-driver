@@ -74,7 +74,7 @@ dask-geopandas==0.5.0
 dask-image==2024.5.3
 datacube==1.9.5
 dataflows-tabulator==1.54.3
-debugpy==1.8.14
+debugpy==1.8.21
 decorator==5.2.1
 # deepdiff vulnerability https://github.com/IBM/tensorlakehouse-openeo-driver/security/dependabot/13
 deepdiff>=8.6.1
