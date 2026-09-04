@@ -1,0 +1,76 @@
+# Single-container pgstac: PostgreSQL + PostGIS + pgstac schema AND the
+# stac-fastapi-pgstac web API fused into one image.
+#
+# Normally this is deployed as two containers (see podman-compose.yaml):
+#   - ghcr.io/stac-utils/pgstac         -> the PostGIS database with the pgstac schema
+#   - ghcr.io/stac-utils/stac-fastapi-pgstac -> the STAC FastAPI service
+#
+# Here we base on the official pgstac database image (which already ships
+# PostGIS + the pgstac schema and its first-boot init scripts) and add the
+# STAC FastAPI application on top. A small entrypoint starts PostgreSQL in
+# the background, waits for it, then launches the API in the foreground.
+FROM ghcr.io/stac-utils/pgstac:latest
+
+USER root
+
+# Python tooling for the STAC FastAPI app (base image is Debian 11 / Python 3.9)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3-pip python3-venv \
+ && rm -rf /var/lib/apt/lists/*
+
+# stac-fastapi-pgstac 5.0.3 is the latest release that supports Python 3.9,
+# which is what the pgstac base image ships. Pin uvicorn for the ASGI server.
+RUN python3 -m pip install --no-cache-dir -U pip \
+ && python3 -m pip install --no-cache-dir \
+      "stac-fastapi-pgstac==5.0.3" \
+      "uvicorn[standard]"
+
+# Database defaults consumed by the stock postgres entrypoint.
+#
+# PGDATA is deliberately moved off /var/lib/postgresql/data (which the base
+# image declares as a VOLUME, so build-time writes there would be discarded)
+# to /pgdata, an ordinary image path. That lets us initialise the database at
+# build time (below) and ship it inside the image.
+ENV POSTGRES_USER=username \
+    POSTGRES_PASSWORD=password \
+    POSTGRES_DB=postgis \
+    PGUSER=username \
+    PGPASSWORD=password \
+    PGDATABASE=postgis \
+    PGDATA=/pgdata \
+    APP_HOST=0.0.0.0 \
+    APP_PORT=8080
+
+# Initialise the cluster + PostGIS + pgstac schema at BUILD time, then cleanly
+# shut it down. This bakes a ready-to-use database into the image so the
+# container starts in a few seconds at runtime instead of running the ~40s
+# first-boot init every time. On a serverless/ephemeral platform (e.g. Code
+# Engine) that long runtime init races with the platform's health checks and
+# gets killed mid-init, corrupting PGDATA and causing a crash loop; a
+# pre-initialised data dir avoids that entirely.
+# The -c overrides keep the build-time server within modest memory limits
+# regardless of the build host's RAM (the pgstac init script sizes buffers
+# from the host's total memory).
+RUN set -eux; \
+    mkdir -p /pgdata && chown postgres:postgres /pgdata; \
+    bash -c ' \
+      docker-entrypoint.sh postgres \
+        -c shared_buffers=256MB \
+        -c dynamic_shared_memory_type=mmap & \
+      PID=$!; \
+      for i in $(seq 1 120); do \
+        pg_isready -h 127.0.0.1 -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1 && break; \
+        kill -0 "$PID" 2>/dev/null || { echo "build-time postgres init failed"; exit 1; }; \
+        sleep 1; \
+      done; \
+      pg_isready -h 127.0.0.1 -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; \
+      gosu postgres pg_ctl -D "$PGDATA" -m fast -w stop; \
+    '
+
+COPY pgstac_single_entrypoint.sh /usr/local/bin/pgstac_single_entrypoint.sh
+RUN chmod +x /usr/local/bin/pgstac_single_entrypoint.sh
+
+# 5432 = PostgreSQL, 8080 = STAC FastAPI
+EXPOSE 5432 8080
+
+ENTRYPOINT ["/usr/local/bin/pgstac_single_entrypoint.sh"]
